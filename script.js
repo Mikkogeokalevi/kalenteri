@@ -249,7 +249,6 @@ function naytaTapahtumatKalenterissa() {
     });
 }
 
-// TÄMÄ FUNKTIO ON PÄIVITETTY LUOMAAN UUSI RAKENNE
 function naytaTulevatTapahtumat() {
     tulevatTapahtumatLista.innerHTML = '';
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
@@ -267,22 +266,26 @@ function naytaTulevatTapahtumat() {
 
     tulevat.forEach(tapahtuma => {
         const alku = new Date(tapahtuma.alku);
+        const loppu = new Date(tapahtuma.loppu); // Haetaan myös loppuaika
+
         const paiva = alku.toLocaleDateString('fi-FI', { weekday: 'short', day: 'numeric', month: 'numeric' });
-        const aika = alku.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+        const alkuAika = alku.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+        const loppuAika = loppu.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' }); // Formatoidaan loppuaika
+
+        const aikaTeksti = `${alkuAika} - ${loppuAika}`; // Yhdistetään ajat
+
         const item = document.createElement('div');
         
-        // Lisätään luokat värejä varten
         let luokat = 'tuleva-tapahtuma-item';
         if (tapahtuma.ketakoskee) {
             luokat += ` koskee-${tapahtuma.ketakoskee.toLowerCase()}`;
         }
         item.className = luokat;
         
-        // Luodaan uusi, monipuolisempi HTML-rakenne
         item.innerHTML = `
             <div class="tapahtuma-item-luoja">${tapahtuma.luoja ? tapahtuma.luoja.charAt(0) : '?'}</div>
             <div class="tapahtuma-item-tiedot">
-                <div class="tapahtuma-item-aika">${paiva} ${aika}</div>
+                <div class="tapahtuma-item-aika">${paiva} ${aikaTeksti}</div>
                 <div class="tapahtuma-item-otsikko">${tapahtuma.otsikko}</div>
             </div>
         `;
