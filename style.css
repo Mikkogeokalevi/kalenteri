@@ -381,7 +381,7 @@ input[type="checkbox"] {
     text-decoration: underline;
 }
 
-/* UUDET TYYLIT TEHTÄVÄLISTALLE */
+/* TEHTÄVÄLISTAN TYYLIT */
 .tehtavalista {
     background-color: var(--bg-sidebar);
     padding: 15px 20px;
@@ -418,9 +418,20 @@ input[type="checkbox"] {
     flex-shrink: 0;
 }
 
-.tehtava-teksti {
+/* MUUTETUT JA UUDET TYYLIT */
+.tehtava-tiedot {
     flex-grow: 1;
+}
+
+.tehtava-teksti {
     margin: 0;
+}
+
+.tehtava-meta {
+    font-size: 0.8em;
+    opacity: 0.7;
+    margin-top: 4px;
+    display: block;
 }
 
 .poista-tehtava-nappi {
