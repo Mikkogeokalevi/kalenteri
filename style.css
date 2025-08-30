@@ -111,12 +111,25 @@ main, .sivupalkki {
     align-items: center;
     justify-content: center;
 }
+
+/* MUUTETUT TYYLIT ALKAVAT TÄSTÄ */
 .paiva {
     background-color: var(--bg-calendar-day);
-    min-height: 110px;
+    min-height: 110px; /* Varmistetaan riittävä minimikorkeus */
+    height: 110px; /* Asetetaan kiinteä korkeus */
     padding: 8px;
     border-radius: 8px;
+    display: flex; /* Mahdollistaa sisällön paremman hallinnan */
+    flex-direction: column; /* Asetetaan päivän numero ja tapahtumat allekkain */
 }
+.tapahtumat-container {
+    flex-grow: 1; /* Antaa tämän elementin täyttää kaiken jäljellä olevan tilan */
+    overflow-y: auto; /* TÄMÄ ON TÄRKEIN: lisää pystysuoran vierityksen tarvittaessa */
+    scrollbar-width: thin; /* Siistitään vierityspalkkia selaimissa, jotka tukevat tätä */
+    scrollbar-color: var(--text-accent) var(--bg-sidebar);
+}
+/* MUUTETUT TYYLIT LOPPUVAT TÄHÄN */
+
 .paiva.tyhja {
     background-color: transparent;
     opacity: 0.5;
@@ -124,10 +137,11 @@ main, .sivupalkki {
 .paiva-numero {
     font-weight: bold;
     font-size: 0.9em;
+    margin-bottom: 4px; /* Pieni väli päivän numeron ja tapahtumien väliin */
 }
 .tapahtuma {
-    position: relative; /* Tarvitaan luoja-tunnisteen asemointiin */
-    padding-right: 15px; /* Tehdään tilaa tunnisteelle */
+    position: relative; 
+    padding-right: 15px; 
     color: var(--event-text);
     padding: 4px 6px;
     border-radius: 5px;
@@ -204,7 +218,7 @@ button:hover {
 .cancel-btn { background-color: transparent; border-color: #7f8c8d; color: #7f8c8d; }
 .cancel-btn:hover { background-color: #7f8c8d; color: #F8F8F8; }
 
-/* TULEVIEN TAPAHTUMIEN LISTAN UUDET JA PÄIVITETYT TYYLIT */
+/* TULEVIEN TAPAHTUMIEN LISTAN TYYLIT */
 .tulevat-tapahtumat {
     background-color: var(--bg-sidebar);
     padding: 15px 20px;
@@ -217,20 +231,20 @@ button:hover {
     color: var(--text-accent);
 }
 .tuleva-tapahtuma-item {
-    display: flex; /* Asettaa elementit vierekkäin */
-    align-items: center; /* Tasaa elementit pystysuunnassa keskelle */
+    display: flex; 
+    align-items: center; 
     padding: 10px;
     border-radius: 8px;
     margin-bottom: 8px;
     cursor: pointer;
     transition: transform 0.2s ease;
-    background-color: var(--bg-container); /* Oletusväri, jos värikoodia ei ole */
+    background-color: var(--bg-container); 
 }
 .tuleva-tapahtuma-item:hover {
     transform: scale(1.02);
 }
 .tapahtuma-item-luoja {
-    flex-shrink: 0; /* Estää laatikon kutistumisen */
+    flex-shrink: 0; 
     width: 32px;
     height: 32px;
     border-radius: 5px;
@@ -245,7 +259,7 @@ button:hover {
 }
 .tapahtuma-item-tiedot {
     flex-grow: 1;
-    overflow: hidden; /* Varmistaa, että ellipsis toimii */
+    overflow: hidden; 
 }
 .tapahtuma-item-aika {
     font-weight: bold;
@@ -273,7 +287,11 @@ button:hover {
         gap: 10px;
     }
     main, .sivupalkki { padding: 15px; }
-    .paiva { min-height: 90px; padding: 5px; }
+    .paiva { 
+        min-height: 100px;
+        height: 100px;
+        padding: 5px; 
+    }
     .tapahtuma { font-size: 0.75em; padding: 3px; }
     #kalenteri-paivat-otsikot, #kalenteri-grid {
         grid-template-columns: 25px repeat(7, 1fr);
@@ -304,7 +322,7 @@ button:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: -2px; /* Pieni säätö kohdistukseen */
+    margin: -2px; 
 }
 
 /* Tekijän tunniste tapahtuman sisällä */
