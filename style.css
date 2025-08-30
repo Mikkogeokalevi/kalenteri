@@ -187,7 +187,7 @@ button:hover {
     margin-bottom: 8px;
     cursor: pointer;
     transition: transform 0.2s ease;
-    background-color: var(--bg-container); 
+    /* POISTETTU oletustaustaväri, koska se tulee nyt luokasta tai tyylistä */
 }
 .tuleva-tapahtuma-item:hover {
     transform: scale(1.02);
@@ -197,7 +197,7 @@ button:hover {
     width: 32px;
     height: 32px;
     border-radius: 5px;
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(0, 0, 0, 0.2); /* Tummennus taustavärin päällä */
     color: var(--text-main);
     display: flex;
     align-items: center;
@@ -327,24 +327,23 @@ footer {
     transform: scale(1.2);
 }
 
-/* PALAUTETUT HENKILÖKOHTAISET VÄRIT */
 .tapahtuma-kuvake.koskee-perhe,
-.tuleva-tapahtuma-item.koskee-perhe .tapahtuma-item-luoja { 
+.tuleva-tapahtuma-item.koskee-perhe { 
     background-color: #f08080;
     color: #fff; 
 }
 .tapahtuma-kuvake.koskee-toni,
-.tuleva-tapahtuma-item.koskee-toni .tapahtuma-item-luoja { 
+.tuleva-tapahtuma-item.koskee-toni { 
     background-color: #2e8b57;
     color: #fff; 
 }
 .tapahtuma-kuvake.koskee-kaisa,
-.tuleva-tapahtuma-item.koskee-kaisa .tapahtuma-item-luoja { 
+.tuleva-tapahtuma-item.koskee-kaisa { 
     background-color: #9370db;
     color: #fff; 
 }
 .tapahtuma-kuvake.koskee-oona,
-.tuleva-tapahtuma-item.koskee-oona .tapahtuma-item-luoja { 
+.tuleva-tapahtuma-item.koskee-oona { 
     background-color: #4682b4;
     color: #fff; 
 }
