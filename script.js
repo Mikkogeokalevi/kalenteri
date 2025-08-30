@@ -1,13 +1,13 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
-// Sinun vahvistamasi  Firebase-konfiguraatio
+// Sinun vahvistamasi 1 Firebase-konfiguraatio
 const firebaseConfig = {
   apiKey: "AIzaSyCZIupycr2puYrPK2KajAW7PcThW9Pjhb0",
   authDomain: "perhekalenteri-projekti.firebaseapp.com",
   databaseURL: "https://perhekalenteri-projekti-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "perhekalenteri-projekti",
-  storageBucket: "perhekalenteri-projekti.firebasestorage.app",
+  storageBucket: "perhekalenteri-projekti.appspot.com",
   messagingSenderId: "588536838615",
   appId: "1:588536838615:web:148de0581bbd46c42c7392"
 };
@@ -125,6 +125,9 @@ function getWeekNumber(d) {
     return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 }
 
+// ===================================================================
+// TÄMÄ FUNKTIO ON KIRJOITETTU KOKONAAN UUDESTAAN VAKAAMMAKSI
+// ===================================================================
 function piirraKalenteri() {
     kalenteriGrid.innerHTML = '';
     kalenteriPaivatOtsikot.innerHTML = '';
@@ -134,27 +137,45 @@ function piirraKalenteri() {
     const vuosi = nykyinenPaiva.getFullYear();
     const kuukausi = nykyinenPaiva.getMonth();
     kuukausiOtsikko.textContent = `${nykyinenPaiva.toLocaleString('fi-FI', { month: 'long' })} ${vuosi}`;
-    const ekaPaiva = new Date(vuosi, kuukausi, 1);
-    const paivia = new Date(vuosi, kuukausi + 1, 0).getDate();
-    let viikonpaiva = ekaPaiva.getDay();
-    if (viikonpaiva === 0) { // Sunnuntai on 0, muutetaan se 7:ksi
-        viikonpaiva = 7;
-    }
-    
-    // Lisää tyhjät päivät ennen kuukauden ensimmäistä päivää
-    for (let i = 1; i < viikonpaiva; i++) {
-        kalenteriGrid.insertAdjacentHTML('beforeend', '<div class="paiva tyhja"></div>');
-    }
-    
-    // Lisää kuukauden päivät
-    for (let i = 1; i <= paivia; i++) {
-        const tamaPaiva = new Date(vuosi, kuukausi, i);
-        // Lisää viikkonumero aina maanantaisin (tai kuun ekana päivänä)
-        if (tamaPaiva.getDay() === 1 || i === 1) { 
-            kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="viikko-nro">${getWeekNumber(tamaPaiva)}</div>`);
+
+    const ekaKuunPaiva = new Date(vuosi, kuukausi, 1);
+    const vikaKuunPaiva = new Date(vuosi, kuukausi + 1, 0);
+
+    // Määritä kalenterin ensimmäinen näytettävä päivä (aina viikon maanantai)
+    const paivaViikossa = ekaKuunPaiva.getDay() === 0 ? 7 : ekaKuunPaiva.getDay(); // Ma=1, Su=7
+    const kalenterinAloitus = new Date(ekaKuunPaiva);
+    kalenterinAloitus.setDate(ekaKuunPaiva.getDate() - (paivaViikossa - 1));
+
+    let paivaIt = new Date(kalenterinAloitus);
+
+    // Käydään läpi 6 viikkoa, mikä kattaa kaikki mahdolliset kuukaudet
+    for (let i = 0; i < 6; i++) {
+        // Lisää viikkonumero rivin alkuun
+        kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="viikko-nro">${getWeekNumber(paivaIt)}</div>`);
+        
+        // Lisää viikon 7 päivää
+        for (let j = 0; j < 7; j++) {
+            const pvmString = `${paivaIt.getFullYear()}-${String(paivaIt.getMonth() + 1).padStart(2, '0')}-${String(paivaIt.getDate()).padStart(2, '0')}`;
+            const onkoNykyinenKuukausi = paivaIt.getMonth() === kuukausi;
+            
+            let paivaLuokat = "paiva";
+            if (!onkoNykyinenKuukausi) {
+                paivaLuokat += " tyhja";
+            }
+
+            kalenteriGrid.insertAdjacentHTML('beforeend', `
+                <div class="${paivaLuokat}" data-paivamaara="${pvmString}">
+                    <div class="paiva-numero">${paivaIt.getDate()}</div>
+                    <div class="tapahtumat-container"></div>
+                </div>
+            `);
+            paivaIt.setDate(paivaIt.getDate() + 1);
         }
-        const pvm = `${vuosi}-${String(kuukausi + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-        kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="paiva" data-paivamaara="${pvm}"><div class="paiva-numero">${i}</div><div class="tapahtumat-container"></div></div>`);
+        
+        // Optimointi: Jos olemme jo piirtäneet koko kuukauden, lopetetaan
+        if (paivaIt > vikaKuunPaiva && paivaIt.getDay() === 1) {
+            break;
+        }
     }
     naytaTapahtumatKalenterissa();
 }
@@ -204,12 +225,11 @@ function naytaTulevatTapahtumat() {
     tulevatTapahtumatLista.innerHTML = '';
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
     const nyt = new Date();
-    // Asetetaan kellonaika nollaksi, jotta vertailu kattaa koko kuluvan päivän
     const today = new Date(nyt.getFullYear(), nyt.getMonth(), nyt.getDate()); 
     const tulevat = window.kaikkiTapahtumat
         .filter(t => t.nakyvyys?.[nykyinenKayttaja] && new Date(t.alku) >= today)
         .sort((a, b) => new Date(a.alku) - new Date(b.alku))
-        .slice(0, 5); // Näytetään 5 seuraavaa tapahtumaa
+        .slice(0, 5);
 
     if (tulevat.length === 0) {
         tulevatTapahtumatLista.innerHTML = '<p>Ei tulevia tapahtumia.</p>';
@@ -223,7 +243,6 @@ function naytaTulevatTapahtumat() {
         const item = document.createElement('div');
         item.className = 'tuleva-tapahtuma-item';
         
-        // TÄMÄ ON KORJATTU RIVI: class. -> class=
         item.innerHTML = `
             <div class="tapahtuma-item-aika">${paiva} ${aika}</div>
             <div class="tapahtuma-item-otsikko">${tapahtuma.otsikko}</div>
