@@ -20,7 +20,7 @@ const PASSWORDS = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-// --- DOM-elementit ---
+// --- DOM-eleme ntit ---
 const loginOverlay = document.getElementById('login-overlay');
 const loginForm = document.getElementById('login-form');
 const mainContainer = document.getElementById('main-container');
