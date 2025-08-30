@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+import { getDatabase, ref, push, onValue, update, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCZIupycr2puYrPK2KajAW7PcThW9Pjhb0",
@@ -40,10 +40,17 @@ const avaaLisaysLomakeBtn = document.getElementById('avaa-lisays-lomake-btn');
 const sivupalkki = document.querySelector('.sivupalkki');
 const hakuKentta = document.getElementById('haku-kentta');
 
+// UUDET DOM-ELEMENTIT TEHTÄVÄLISTALLE
+const tehtavatContainer = document.getElementById('tehtavat-container');
+const uusiTehtavaTeksti = document.getElementById('uusi-tehtava-teksti');
+const lisaaTehtavaNappi = document.getElementById('lisaa-tehtava-nappi');
+
+
 // --- Sovelluksen tila ---
 let nykyinenKayttaja = null;
 let nykyinenPaiva = new Date();
 let unsubscribeFromEvents = null;
+let unsubscribeFromTasks = null; // UUSI
 
 document.addEventListener('DOMContentLoaded', () => {
     checkLoginStatus();
@@ -57,7 +64,6 @@ function checkLoginStatus() {
     }
 }
 
-// MUUTETTU FUNKTIO
 function toggleLoppuAika(isChecked, containerId) {
     const container = document.getElementById(containerId);
     const input = container.querySelector('input[type="datetime-local"]');
@@ -113,12 +119,19 @@ function lisaaKuuntelijat() {
         naytaTulevatTapahtumat();
     });
 
-    // MUUTETUT KUUNTELIJAT
     document.getElementById('tapahtuma-koko-paiva').addEventListener('change', (e) => {
         toggleLoppuAika(e.target.checked, 'loppu-aika-lisaa-container');
     });
     document.getElementById('muokkaa-tapahtuma-koko-paiva').addEventListener('change', (e) => {
         toggleLoppuAika(e.target.checked, 'loppu-aika-muokkaa-container');
+    });
+
+    // UUSI KUUNTELIJA TEHTÄVÄLISTALLE
+    lisaaTehtavaNappi.addEventListener('click', lisaaTehtava);
+    uusiTehtavaTeksti.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            lisaaTehtava();
+        }
     });
 }
 
@@ -160,9 +173,8 @@ function handleLogin(event) {
 
 function handleLogout() {
     localStorage.removeItem('loggedInUser');
-    if (unsubscribeFromEvents) {
-        unsubscribeFromEvents();
-    }
+    if (unsubscribeFromEvents) unsubscribeFromEvents();
+    if (unsubscribeFromTasks) unsubscribeFromTasks(); // UUSI
     nykyinenKayttaja = null;
     mainContainer.classList.add('hidden');
     loginOverlay.classList.remove('hidden');
@@ -185,8 +197,10 @@ function startAppForUser(user) {
 
     piirraKalenteri();
     kuunteleTapahtumia();
+    kuunteleTehtavia(); // UUSI
 }
 
+// ... (kaikki vanhat funktiot, kuten applyTheme, getWeekNumber, jne. pysyvät ennallaan)
 function applyTheme(user) {
     document.body.className = '';
     document.body.classList.add(`theme-${user.toLowerCase()}`);
@@ -303,7 +317,7 @@ function lisaaTapahtuma() {
     push(ref(database, 'tapahtumat'), uusi).then(() => {
         lisaaLomake.reset();
         sivupalkki.classList.add('hidden');
-        toggleLoppuAika(false, 'loppu-aika-lisaa-container'); // Palauttaa näkymän
+        toggleLoppuAika(false, 'loppu-aika-lisaa-container');
         naytaIlmoitus('Tapahtuma lisätty onnistuneesti!');
     });
 }
@@ -320,6 +334,8 @@ function kuunteleTapahtumia() {
         naytaTulevatTapahtumat();
     });
 }
+
+// ... (kaikki tapahtumien näyttämiseen ja muokkaamiseen liittyvät funktiot pysyvät ennallaan)
 
 function naytaTapahtumatKalenterissa() {
     document.querySelectorAll('.tapahtumat-container').forEach(c => c.innerHTML = '');
@@ -432,7 +448,6 @@ function avaaTapahtumaIkkuna(key) {
 
     modalOverlay.dataset.tapahtumaId = key;
     
-    // Näkymän täyttö
     document.getElementById('view-otsikko').textContent = tapahtuma.otsikko;
     document.getElementById('view-kuvaus').textContent = tapahtuma.kuvaus || 'Ei lisätietoja.';
     document.getElementById('view-luoja').textContent = tapahtuma.luoja;
@@ -457,7 +472,6 @@ function avaaTapahtumaIkkuna(key) {
         linkkiContainer.classList.add('hidden');
     }
     
-    // Muokkauslomakkeen täyttö
     document.getElementById('muokkaa-tapahtuma-id').value = key;
     document.getElementById('muokkaa-tapahtuma-otsikko').value = tapahtuma.otsikko;
     document.getElementById('muokkaa-tapahtuma-kuvaus').value = tapahtuma.kuvaus || '';
@@ -467,7 +481,6 @@ function avaaTapahtumaIkkuna(key) {
     
     const muokkaaKokoPaivaCheckbox = document.getElementById('muokkaa-tapahtuma-koko-paiva');
     muokkaaKokoPaivaCheckbox.checked = !!tapahtuma.kokoPaiva;
-    // Asetetaan "Loppuu"-kentän näkyvyys oikein heti ikkunan avautuessa
     toggleLoppuAika(muokkaaKokoPaivaCheckbox.checked, 'loppu-aika-muokkaa-container');
 
     document.querySelectorAll('input[name="muokkaa-nakyvyys"]').forEach(cb => {
@@ -568,4 +581,86 @@ function kopioiTapahtuma() {
         alert("Tapahtui virhe kopioinnissa.");
         console.error("Kopiointivirhe:", error);
     });
+}
+
+
+// --- UUDET FUNKTIOT TEHTÄVÄLISTALLE ---
+
+function kuunteleTehtavia() {
+    if (unsubscribeFromTasks) unsubscribeFromTasks();
+    const tehtavatRef = ref(database, 'tehtavalista');
+    unsubscribeFromTasks = onValue(tehtavatRef, (snapshot) => {
+        piirraTehtavalista(snapshot);
+    });
+}
+
+function piirraTehtavalista(snapshot) {
+    tehtavatContainer.innerHTML = '';
+    const tehtavat = [];
+    snapshot.forEach(child => {
+        tehtavat.push({ key: child.key, ...child.val() });
+    });
+
+    // Järjestä niin, että tekemättömät tulevat ensin
+    tehtavat.sort((a, b) => a.tehty - b.tehty);
+
+    if (tehtavat.length === 0) {
+        tehtavatContainer.innerHTML = '<p style="text-align:center; opacity:0.7;">Lista on tyhjä.</p>';
+        return;
+    }
+
+    tehtavat.forEach(tehtava => {
+        const item = document.createElement('div');
+        item.className = 'tehtava-item';
+        if (tehtava.tehty) {
+            item.classList.add('tehty');
+        }
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = tehtava.tehty;
+        checkbox.addEventListener('change', () => paivitaTehtavanTila(tehtava.key, checkbox.checked));
+
+        const teksti = document.createElement('p');
+        teksti.className = 'tehtava-teksti';
+        teksti.textContent = tehtava.teksti;
+
+        const poistaNappi = document.createElement('button');
+        poistaNappi.className = 'poista-tehtava-nappi';
+        poistaNappi.textContent = 'X';
+        poistaNappi.addEventListener('click', () => poistaTehtava(tehtava.key));
+        
+        item.appendChild(checkbox);
+        item.appendChild(teksti);
+        item.appendChild(poistaNappi);
+        tehtavatContainer.appendChild(item);
+    });
+}
+
+function lisaaTehtava() {
+    const teksti = uusiTehtavaTeksti.value.trim();
+    if (teksti === '') return;
+
+    const uusiTehtava = {
+        teksti: teksti,
+        tehty: false,
+        luoja: nykyinenKayttaja,
+        lisattyAika: serverTimestamp() // Käyttää Firebasen omaa aikaleimaa
+    };
+
+    push(ref(database, 'tehtavalista'), uusiTehtava).then(() => {
+        uusiTehtavaTeksti.value = '';
+    });
+}
+
+function paivitaTehtavanTila(key, onkoTehty) {
+    update(ref(database, `tehtavalista/${key}`), {
+        tehty: onkoTehty
+    });
+}
+
+function poistaTehtava(key) {
+    if (confirm('Haluatko varmasti poistaa tämän tehtävän?')) {
+        remove(ref(database, `tehtavalista/${key}`));
+    }
 }
