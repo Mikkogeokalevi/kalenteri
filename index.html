@@ -36,6 +36,7 @@
             <div id="tanaan-banneri"></div>
             <div class="tulevat-tapahtumat">
                 <h3>Tulevat Tapahtumat</h3>
+                <input type="search" id="haku-kentta" placeholder="Hae tapahtumista...">
                 <div id="tulevat-tapahtumat-lista"></div>
             </div>
 
@@ -93,59 +94,7 @@
     </div>
 
     <div id="tapahtuma-modal-overlay" class="modal-overlay hidden">
-        <div class="modal-content">
-            <div id="modal-view-content">
-                <h2 id="view-otsikko"></h2>
-                <p><strong>Aika:</strong> <span id="view-aika"></span></p>
-                <p id="view-kuvaus-container"><strong>Lisätiedot:</strong> <span id="view-kuvaus"></span></p>
-                <p><strong>Näkyvyys:</strong> <span id="view-nakyvyys"></span></p>
-                <p><em>Luonut: <span id="view-luoja"></span></em></p>
-                <div class="modal-buttons">
-                    <button type="button" id="kopioi-btn">Kopioi 🗓️</button>
-                    <button type="button" id="muokkaa-btn">Muokkaa ✏️</button>
-                    <button type="button" id="sulje-btn" class="cancel-btn">Sulje</button>
-                </div>
-            </div>
-            <div id="modal-edit-content" class="hidden">
-                <h2>Muokkaa tapahtumaa</h2>
-                <form id="muokkaa-tapahtuma-lomake">
-                    <input type="hidden" id="muokkaa-tapahtuma-id">
-                    <label for="muokkaa-tapahtuma-otsikko">Tapahtuma:</label>
-                    <input type="text" id="muokkaa-tapahtuma-otsikko" required>
-                    <label for="muokkaa-tapahtuma-kuvaus">Lisätiedot:</label>
-                    <textarea id="muokkaa-tapahtuma-kuvaus" rows="3"></textarea>
-                    <label for="muokkaa-tapahtuma-alku">Alkaa:</label>
-                    <input type="datetime-local" id="muokkaa-tapahtuma-alku" required>
-                    <label for="muokkaa-tapahtuma-loppu">Loppuu:</label>
-                    <input type="datetime-local" id="muokkaa-tapahtuma-loppu" required>
-                    
-                    <fieldset>
-                        <legend>Ketä koskee:</legend>
-                        <div class="ketakoskee-valinnat" id="muokkaa-ketakoskee">
-                            <label><input type="radio" name="muokkaa-ketakoskee" value="perhe"> Koko perhe</label>
-                            <label><input type="radio" name="muokkaa-ketakoskee" value="Toni"> Vain Toni</label>
-                            <label><input type="radio" name="muokkaa-ketakoskee" value="Kaisa"> Vain Kaisa</label>
-                            <label><input type="radio" name="muokkaa-ketakoskee" value="Oona"> Vain Oona</label>
-                        </div>
-                    </fieldset>
-
-                    <fieldset>
-                        <legend>Näkyy kenelle:</legend>
-                        <div class="nakyvyys-valinnat" id="muokkaa-nakyvyys">
-                            <label><input type="checkbox" name="muokkaa-nakyvyys" value="Toni"> Toni</label>
-                            <label><input type="checkbox" name="muokkaa-nakyvyys" value="Kaisa"> Kaisa</label>
-                            <label><input type="checkbox" name="muokkaa-nakyvyys" value="Oona"> Oona</label>
-                        </div>
-                    </fieldset>
-                    <div class="modal-buttons">
-                        <button type="button" id="tallenna-muutokset-btn">Tallenna</button>
-                        <button type="button" id="poista-tapahtuma-btn" class="delete-btn">Poista</button>
-                        <button type="button" id="peruuta-muokkaus-btn" class="cancel-btn">Peruuta</button>
-                    </div>
-                </form>
-            </div>
         </div>
-    </div>
 
     <div id="ilmoitus" class="hidden"></div>
     
