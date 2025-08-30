@@ -220,30 +220,34 @@ function kuunteleTapahtumia() {
     });
 }
 
+// TÄMÄ FUNKTIO ON MUUTETTU LUOMAAN KUVAKKEITA TEKSTIN SIJAAN
 function naytaTapahtumatKalenterissa() {
     document.querySelectorAll('.tapahtumat-container').forEach(c => c.innerHTML = '');
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
+
     window.kaikkiTapahtumat.forEach(tapahtuma => {
         if (tapahtuma.nakyvyys?.[nykyinenKayttaja] && tapahtuma.alku) {
             const paivaEl = document.querySelector(`.paiva[data-paivamaara="${tapahtuma.alku.substring(0, 10)}"]`);
             if (paivaEl) {
-                const tapahtumaEl = document.createElement('div');
+                const kuvake = document.createElement('div');
                 
-                let luokat = 'tapahtuma';
-                if (tapahtuma.luoja === nykyinenKayttaja) luokat += ' oma';
-                if (tapahtuma.ketakoskee) luokat += ` koskee-${tapahtuma.ketakoskee.toLowerCase()}`;
-                tapahtumaEl.className = luokat;
+                let luokat = 'tapahtuma-kuvake';
+                if (tapahtuma.ketakoskee) {
+                    luokat += ` koskee-${tapahtuma.ketakoskee.toLowerCase()}`;
+                }
+                kuvake.className = luokat;
+                kuvake.title = tapahtuma.otsikko; // Näyttää otsikon, kun hiiri on päällä
 
-                tapahtumaEl.textContent = tapahtuma.otsikko;
                 if (tapahtuma.luoja) {
-                    const luojaSpan = document.createElement('span');
-                    luojaSpan.className = 'tapahtuma-luoja';
-                    luojaSpan.textContent = tapahtuma.luoja.charAt(0);
-                    tapahtumaEl.appendChild(luojaSpan);
+                    kuvake.textContent = tapahtuma.luoja.charAt(0);
                 }
                 
-                tapahtumaEl.addEventListener('click', () => avaaTapahtumaIkkuna(tapahtuma.key));
-                paivaEl.querySelector('.tapahtumat-container').appendChild(tapahtumaEl);
+                kuvake.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Estää klikkauksen etenemisen taustalla olevaan päivään
+                    avaaTapahtumaIkkuna(tapahtuma.key);
+                });
+
+                paivaEl.querySelector('.tapahtumat-container').appendChild(kuvake);
             }
         }
     });
@@ -266,13 +270,13 @@ function naytaTulevatTapahtumat() {
 
     tulevat.forEach(tapahtuma => {
         const alku = new Date(tapahtuma.alku);
-        const loppu = new Date(tapahtuma.loppu); // Haetaan myös loppuaika
+        const loppu = new Date(tapahtuma.loppu);
 
         const paiva = alku.toLocaleDateString('fi-FI', { weekday: 'short', day: 'numeric', month: 'numeric' });
         const alkuAika = alku.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
-        const loppuAika = loppu.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' }); // Formatoidaan loppuaika
+        const loppuAika = loppu.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
 
-        const aikaTeksti = `${alkuAika} - ${loppuAika}`; // Yhdistetään ajat
+        const aikaTeksti = `${alkuAika} - ${loppuAika}`;
 
         const item = document.createElement('div');
         
