@@ -8,16 +8,32 @@
 </head>
 <body>
 
-    <div class="container">
-        <header>
-            <h1>Perheen Kalenteri</h1>
-            <div class="kayttaja-valitsin">
-                <label for="kayttaja">Kuka olet?</label>
-                <select id="kayttaja">
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-box">
+            <h2>Perheen Kalenteri</h2>
+            <form id="login-form">
+                <label for="login-user">Valitse käyttäjä:</label>
+                <select id="login-user">
                     <option value="Toni">Toni</option>
                     <option value="Kaisa">Kaisa</option>
                     <option value="Oona">Oona</option>
                 </select>
+                <label for="login-password">Salasana:</label>
+                <input type="password" id="login-password" required>
+                <button type="submit">Kirjaudu sisään</button>
+                <p id="login-error" class="hidden">Väärä salasana. Yritä uudelleen.</p>
+            </form>
+        </div>
+    </div>
+
+    <div id="main-container" class="container hidden">
+        <header>
+            <div class="header-content">
+                <h1>Perheen Kalenteri</h1>
+                <div id="user-info">
+                    Kirjautunut: <strong id="current-user-name"></strong>
+                    <button id="logout-btn">Kirjaudu ulos</button>
+                </div>
             </div>
         </header>
 
@@ -36,16 +52,12 @@
             <form id="lisaa-tapahtuma-lomake">
                 <label for="tapahtuma-otsikko">Tapahtuma:</label>
                 <input type="text" id="tapahtuma-otsikko" required>
-
                 <label for="tapahtuma-kuvaus">Lisätiedot:</label>
                 <textarea id="tapahtuma-kuvaus" rows="3"></textarea>
-
                 <label for="tapahtuma-alku">Alkaa:</label>
                 <input type="datetime-local" id="tapahtuma-alku" required>
-
                 <label for="tapahtuma-loppu">Loppuu:</label>
                 <input type="datetime-local" id="tapahtuma-loppu" required>
-                
                 <fieldset>
                     <legend>Näkyy kenelle:</legend>
                     <div class="nakyvyys-valinnat">
@@ -54,16 +66,13 @@
                         <label><input type="checkbox" name="nakyvyys" value="Oona" checked> Oona</label>
                     </div>
                 </fieldset>
-
                 <button type="submit">Lisää kalenteriin</button>
             </form>
         </aside>
-
     </div>
 
     <div id="tapahtuma-modal-overlay" class="modal-overlay hidden">
         <div class="modal-content">
-            
             <div id="modal-view-content">
                 <h2 id="view-otsikko"></h2>
                 <p><strong>Aika:</strong> <span id="view-aika"></span></p>
@@ -75,24 +84,18 @@
                     <button type="button" id="sulje-btn" class="cancel-btn">Sulje</button>
                 </div>
             </div>
-
             <div id="modal-edit-content" class="hidden">
                 <h2>Muokkaa tapahtumaa</h2>
                 <form id="muokkaa-tapahtuma-lomake">
                     <input type="hidden" id="muokkaa-tapahtuma-id">
-                    
                     <label for="muokkaa-tapahtuma-otsikko">Tapahtuma:</label>
                     <input type="text" id="muokkaa-tapahtuma-otsikko" required>
-
                     <label for="muokkaa-tapahtuma-kuvaus">Lisätiedot:</label>
                     <textarea id="muokkaa-tapahtuma-kuvaus" rows="3"></textarea>
-
                     <label for="muokkaa-tapahtuma-alku">Alkaa:</label>
                     <input type="datetime-local" id="muokkaa-tapahtuma-alku" required>
-
                     <label for="muokkaa-tapahtuma-loppu">Loppuu:</label>
                     <input type="datetime-local" id="muokkaa-tapahtuma-loppu" required>
-                    
                     <fieldset>
                         <legend>Näkyy kenelle:</legend>
                         <div class="nakyvyys-valinnat" id="muokkaa-nakyvyys">
@@ -101,7 +104,6 @@
                             <label><input type="checkbox" name="muokkaa-nakyvyys" value="Oona"> Oona</label>
                         </div>
                     </fieldset>
-                    
                     <div class="modal-buttons">
                         <button type="button" id="tallenna-muutokset-btn">Tallenna</button>
                         <button type="button" id="poista-tapahtuma-btn" class="delete-btn">Poista</button>
@@ -114,7 +116,6 @@
 
     <script type="module" src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"></script>
-    
     <script type="module" src="script.js"></script>
 </body>
 </html>
