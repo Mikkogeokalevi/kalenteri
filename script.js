@@ -43,6 +43,9 @@ const hakuKentta = document.getElementById('haku-kentta');
 const tehtavatContainer = document.getElementById('tehtavat-container');
 const uusiTehtavaTeksti = document.getElementById('uusi-tehtava-teksti');
 const lisaaTehtavaNappi = document.getElementById('lisaa-tehtava-nappi');
+const tehtavalistaToggle = document.getElementById('tehtavalista-toggle');
+const tehtavalistaSisalto = document.getElementById('tehtavalista-sisalto');
+const avoimetTehtavatLaskuri = document.getElementById('avoimet-tehtavat-laskuri');
 
 
 // --- Sovelluksen tila ---
@@ -130,6 +133,10 @@ function lisaaKuuntelijat() {
         if (e.key === 'Enter') {
             lisaaTehtava();
         }
+    });
+
+    tehtavalistaToggle.addEventListener('click', () => {
+        tehtavalistaSisalto.classList.toggle('hidden');
     });
 }
 
@@ -589,13 +596,15 @@ function kuunteleTehtavia() {
     });
 }
 
-// TÄMÄ FUNKTIO ON MUUTETTU
 function piirraTehtavalista(snapshot) {
     tehtavatContainer.innerHTML = '';
     const tehtavat = [];
     snapshot.forEach(child => {
         tehtavat.push({ key: child.key, ...child.val() });
     });
+
+    const avoimet = tehtavat.filter(t => !t.tehty);
+    avoimetTehtavatLaskuri.textContent = `${avoimet.length} avointa`;
 
     tehtavat.sort((a, b) => a.tehty - b.tehty);
 
@@ -616,7 +625,6 @@ function piirraTehtavalista(snapshot) {
         checkbox.checked = tehtava.tehty;
         checkbox.addEventListener('change', () => paivitaTehtavanTila(tehtava.key, checkbox.checked));
 
-        // UUSI OSA: Luodaan div-elementti tekstille ja metatiedoille
         const tiedotContainer = document.createElement('div');
         tiedotContainer.className = 'tehtava-tiedot';
 
@@ -624,7 +632,6 @@ function piirraTehtavalista(snapshot) {
         teksti.className = 'tehtava-teksti';
         teksti.textContent = tehtava.teksti;
         
-        // UUSI OSA: Luodaan metatietojen elementti
         const meta = document.createElement('small');
         meta.className = 'tehtava-meta';
         
@@ -634,7 +641,8 @@ function piirraTehtavalista(snapshot) {
         }
         if (tehtava.lisattyAika) {
             const pvm = new Date(tehtava.lisattyAika).toLocaleDateString('fi-FI');
-            metaTeksti += ` - ${pvm}`;
+            const aika = new Date(tehtava.lisattyAika).toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+            metaTeksti += ` - ${pvm} klo ${aika}`;
         }
         meta.textContent = metaTeksti;
 
