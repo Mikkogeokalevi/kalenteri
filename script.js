@@ -92,7 +92,7 @@ function handleLogin(event) {
 function handleLogout() {
     localStorage.removeItem('loggedInUser');
     if (unsubscribeFromEvents) {
-        unsubscribeFromEvents();
+        unsubscribeFromEvents(); 
     }
     nykyinenKayttaja = null;
     mainContainer.classList.add('hidden');
@@ -164,11 +164,14 @@ function kuunteleTapahtumia() {
     if (unsubscribeFromEvents) unsubscribeFromEvents();
     const tapahtumatRef = ref(database, 'tapahtumat');
     unsubscribeFromEvents = onValue(tapahtumatRef, (snapshot) => {
+        // --- LOPULLINEN ETSIVÄ ---
+        console.log("--- Raakadata Firebaselta ---");
+        console.log(snapshot.val()); // Tulostetaan koko saatu dataobjekti
+
         window.kaikkiTapahtumat = [];
         snapshot.forEach((child) => window.kaikkiTapahtumat.push({ key: child.key, ...child.val() }));
-        // KORJAUS: Kutsutaan aina koko kalenterin piirtoa datan muuttuessa.
+        
         piirraKalenteri();
-        // UUSI KUTSU: Päivitetään myös tulevien tapahtumien lista.
         naytaTulevatTapahtumat();
     });
 }
@@ -190,16 +193,18 @@ function naytaTapahtumatKalenterissa() {
     });
 }
 
-// UUSI FUNKTIO TULEVIEN TAPAHTUMIEN NÄYTTÄMISEEN
 function naytaTulevatTapahtumat() {
     tulevatTapahtumatLista.innerHTML = '';
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
 
     const nyt = new Date();
+    // Varmistetaan, että verrataan vain päivämääriä, ei kellonaikaa, jotta saman päivän tapahtumat näkyvät
+    const today = new Date(nyt.getFullYear(), nyt.getMonth(), nyt.getDate());
+
     const tulevat = window.kaikkiTapahtumat
-        .filter(t => t.nakyvyys?.[nykyinenKayttaja] && new Date(t.alku) >= nyt)
+        .filter(t => t.nakyvyys?.[nykyinenKayttaja] && new Date(t.alku) >= today)
         .sort((a, b) => new Date(a.alku) - new Date(b.alku))
-        .slice(0, 5); // Näytetään 5 seuraavaa
+        .slice(0, 5);
 
     if (tulevat.length === 0) {
         tulevatTapahtumatLista.innerHTML = '<p>Ei tulevia tapahtumia.</p>';
