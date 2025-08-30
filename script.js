@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
-// Sinun vahvistamasi 1 Firebase-konfiguraatio
 const firebaseConfig = {
   apiKey: "AIzaSyCZIupycr2puYrPK2KajAW7PcThW9Pjhb0",
   authDomain: "perhekalenteri-projekti.firebaseapp.com",
@@ -37,6 +36,8 @@ const lisaaLomake = document.getElementById('lisaa-tapahtuma-lomake');
 const modalOverlay = document.getElementById('tapahtuma-modal-overlay');
 const modalViewContent = document.getElementById('modal-view-content');
 const modalEditContent = document.getElementById('modal-edit-content');
+const avaaLisaysLomakeBtn = document.getElementById('avaa-lisays-lomake-btn');
+const sivupalkki = document.querySelector('.sivupalkki');
 
 // --- Sovelluksen tila ---
 let nykyinenKayttaja = null;
@@ -77,6 +78,18 @@ function lisaaKuuntelijat() {
     document.getElementById('kopioi-btn').addEventListener('click', kopioiTapahtuma);
     document.getElementById('tallenna-muutokset-btn').addEventListener('click', tallennaMuutokset);
     document.getElementById('poista-tapahtuma-btn').addEventListener('click', poistaTapahtuma);
+
+    avaaLisaysLomakeBtn.addEventListener('click', () => {
+        sivupalkki.classList.toggle('hidden');
+    });
+
+    document.getElementById('tapahtuma-alku').addEventListener('input', function() {
+        const loppuInput = document.getElementById('tapahtuma-loppu');
+        if (!loppuInput.value || loppuInput.value < this.value) {
+            loppuInput.value = this.value;
+        }
+        loppuInput.min = this.value;
+    });
 }
 
 function handleLogin(event) {
@@ -114,6 +127,8 @@ function startAppForUser(user) {
     paivitaTanaanBanneri();
     setInterval(paivitaTanaanBanneri, 1000); 
 
+    sivupalkki.classList.add('hidden');
+
     piirraKalenteri();
     kuunteleTapahtumia();
 }
@@ -139,6 +154,16 @@ function paivitaTanaanBanneri() {
         const aika = nyt.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         tanaanBanneri.innerHTML = `Tänään on ${viikonpaiva} ${paivamaara}, kello on ${aika}`;
     }
+}
+
+function naytaIlmoitus(viesti) {
+    const ilmoitus = document.getElementById('ilmoitus');
+    ilmoitus.textContent = viesti;
+    ilmoitus.classList.add('nayta');
+
+    setTimeout(() => {
+        ilmoitus.classList.remove('nayta');
+    }, 3000);
 }
 
 function piirraKalenteri() {
@@ -204,7 +229,12 @@ function lisaaTapahtuma() {
         nakyvyys: Array.from(document.querySelectorAll('input[name="nakyvyys"]:checked')).reduce((a, c) => ({ ...a, [c.value]: true }), {})
     };
     if (!uusi.otsikko || !uusi.alku || !uusi.loppu) return alert('Täytä vähintään otsikko, alkamis- ja loppumisaika.');
-    push(ref(database, 'tapahtumat'), uusi).then(() => lisaaLomake.reset());
+    
+    push(ref(database, 'tapahtumat'), uusi).then(() => {
+        lisaaLomake.reset();
+        sivupalkki.classList.add('hidden');
+        naytaIlmoitus('Tapahtuma lisätty onnistuneesti!');
+    });
 }
 
 function kuunteleTapahtumia() {
@@ -220,7 +250,6 @@ function kuunteleTapahtumia() {
     });
 }
 
-// TÄMÄ FUNKTIO ON MUUTETTU LUOMAAN KUVAKKEITA TEKSTIN SIJAAN
 function naytaTapahtumatKalenterissa() {
     document.querySelectorAll('.tapahtumat-container').forEach(c => c.innerHTML = '');
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
@@ -236,14 +265,14 @@ function naytaTapahtumatKalenterissa() {
                     luokat += ` koskee-${tapahtuma.ketakoskee.toLowerCase()}`;
                 }
                 kuvake.className = luokat;
-                kuvake.title = tapahtuma.otsikko; // Näyttää otsikon, kun hiiri on päällä
+                kuvake.title = tapahtuma.otsikko;
 
                 if (tapahtuma.luoja) {
                     kuvake.textContent = tapahtuma.luoja.charAt(0);
                 }
                 
                 kuvake.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Estää klikkauksen etenemisen taustalla olevaan päivään
+                    e.stopPropagation();
                     avaaTapahtumaIkkuna(tapahtuma.key);
                 });
 
@@ -389,7 +418,7 @@ function kopioiTapahtuma() {
     uusiTapahtuma.loppu = `${uusiPvm}T${tapahtuma.loppu.substring(11)}`;
 
     push(ref(database, 'tapahtumat'), uusiTapahtuma).then(() => {
-        alert(`Tapahtuma "${tapahtuma.otsikko}" kopioitu päivälle ${uusiPvm}.`);
+        naytaIlmoitus(`Tapahtuma kopioitu päivälle ${uusiPvm}.`);
         suljeTapahtumaIkkuna();
     }).catch(error => {
         alert("Tapahtui virhe kopioinnissa.");
