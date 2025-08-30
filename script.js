@@ -299,9 +299,16 @@ function avaaTapahtumaIkkuna(key) {
     document.getElementById('muokkaa-tapahtuma-kuvaus').value = tapahtuma.kuvaus || '';
     document.getElementById('muokkaa-tapahtuma-alku').value = tapahtuma.alku;
     document.getElementById('muokkaa-tapahtuma-loppu').value = tapahtuma.loppu;
+    
+    // Asetetaan "Näkyy kenelle" valinnat
     document.querySelectorAll('input[name="muokkaa-nakyvyys"]').forEach(cb => {
        cb.checked = !!tapahtuma.nakyvyys?.[cb.value];
     });
+
+    // Asetetaan "Ketä koskee" valinta
+    const ketakoskeeValue = tapahtuma.ketakoskee || 'perhe';
+    document.querySelector(`input[name="muokkaa-ketakoskee"][value="${ketakoskeeValue}"]`).checked = true;
+
     vaihdaTila('view');
     modalOverlay.classList.remove('hidden');
 }
@@ -330,13 +337,10 @@ function tallennaMuutokset() {
         alku: document.getElementById('muokkaa-tapahtuma-alku').value,
         loppu: document.getElementById('muokkaa-tapahtuma-loppu').value,
         nakyvyys: Array.from(document.querySelectorAll('input[name="muokkaa-nakyvyys"]:checked')).reduce((a, c) => ({ ...a, [c.value]: true }), {}),
-        ketakoskee: vanhaTapahtuma.ketakoskee || 'perhe',
+        ketakoskee: document.querySelector('input[name="muokkaa-ketakoskee"]:checked').value,
         luoja: vanhaTapahtuma.luoja
     };
     update(ref(database, `tapahtumat/${key}`), paivitys).then(() => {
-        // Suljetaan ja avataan ikkuna uudelleen päivitetyillä tiedoilla
-        suljeTapahtumaIkkuna();
-        avaaTapahtumaIkkuna(key);
         vaihdaTila('view');
     });
 }
@@ -356,7 +360,7 @@ function kopioiTapahtuma() {
     const uusiPvm = prompt("Anna uusi päivämäärä muodossa VVVV-KK-PP:", tapahtuma.alku.substring(0, 10));
     
     if (!uusiPvm || !/^\d{4}-\d{2}-\d{2}$/.test(uusiPvm)) {
-        if (uusiPvm !== null) { // Jos käyttäjä ei painanut Cancel
+        if (uusiPvm !== null) { 
             alert("Päivämäärä oli virheellinen. Kopiointia ei tehty.");
         }
         return;
