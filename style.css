@@ -112,7 +112,7 @@ main, .sivupalkki, footer {
 input, select, textarea, button {
     font-family: 'Georgia', serif;
 }
-input[type="text"], input[type="password"], input[type="datetime-local"], input[type="search"], select, textarea {
+input[type="text"], input[type="password"], input[type="datetime-local"], input[type="search"], input[type="url"], select, textarea {
     width: 100%;
     padding: 12px;
     box-sizing: border-box;
@@ -276,7 +276,6 @@ footer {
     opacity: 1;
     visibility: visible;
 }
-
 @media (max-width: 800px) {
     body { padding: 5px; }
     main, .sivupalkki, footer { padding: 15px; }
@@ -345,13 +344,16 @@ footer {
     background-color: #4682b4;
     color: #fff; 
 }
-
 #haku-kentta {
     margin-bottom: 15px;
     border-color: var(--bg-container);
 }
-
 #haku-kentta:focus {
     outline: none;
     border-color: var(--text-accent);
+}
+.checkbox-label {
+    display: block;
+    margin: 10px 0;
+    cursor: pointer;
 }
