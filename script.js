@@ -23,10 +23,10 @@ const database = getDatabase(app);
 // --- DOM-elementit ---
 const loginOverlay = document.getElementById('login-overlay');
 const loginForm = document.getElementById('login-form');
-const loginError = document.getElementById('login-error');
 const mainContainer = document.getElementById('main-container');
 const currentUserName = document.getElementById('current-user-name');
 const logoutBtn = document.getElementById('logout-btn');
+const tulevatTapahtumatLista = document.getElementById('tulevat-tapahtumat-lista');
 const kalenteriPaivatOtsikot = document.getElementById('kalenteri-paivat-otsikot');
 const kalenteriGrid = document.getElementById('kalenteri-grid');
 const kuukausiOtsikko = document.getElementById('kuukausi-otsikko');
@@ -36,18 +36,12 @@ const lisaaLomake = document.getElementById('lisaa-tapahtuma-lomake');
 const modalOverlay = document.getElementById('tapahtuma-modal-overlay');
 const modalViewContent = document.getElementById('modal-view-content');
 const modalEditContent = document.getElementById('modal-edit-content');
-const muokkaaBtn = document.getElementById('muokkaa-btn');
-const suljeBtn = document.getElementById('sulje-btn');
-const tallennaBtn = document.getElementById('tallenna-muutokset-btn');
-const poistaBtn = document.getElementById('poista-tapahtuma-btn');
-const peruutaMuokkausBtn = document.getElementById('peruuta-muokkaus-btn');
 
 // --- Sovelluksen tila ---
 let nykyinenKayttaja = null;
 let nykyinenPaiva = new Date();
 let unsubscribeFromEvents = null;
 
-// --- Päälogiikka ---
 document.addEventListener('DOMContentLoaded', () => {
     checkLoginStatus();
     lisaaKuuntelijat();
@@ -76,11 +70,11 @@ function lisaaKuuntelijat() {
         lisaaTapahtuma();
     });
     modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) suljeTapahtumaIkkuna(); });
-    suljeBtn.addEventListener('click', suljeTapahtumaIkkuna);
-    peruutaMuokkausBtn.addEventListener('click', () => vaihdaTila('view'));
-    muokkaaBtn.addEventListener('click', () => vaihdaTila('edit'));
-    tallennaBtn.addEventListener('click', tallennaMuutokset);
-    poistaBtn.addEventListener('click', poistaTapahtuma);
+    document.getElementById('sulje-btn').addEventListener('click', suljeTapahtumaIkkuna);
+    document.getElementById('peruuta-muokkaus-btn').addEventListener('click', () => vaihdaTila('view'));
+    document.getElementById('muokkaa-btn').addEventListener('click', () => vaihdaTila('edit'));
+    document.getElementById('tallenna-muutokset-btn').addEventListener('click', tallennaMuutokset);
+    document.getElementById('poista-tapahtuma-btn').addEventListener('click', poistaTapahtuma);
 }
 
 function handleLogin(event) {
@@ -91,14 +85,14 @@ function handleLogin(event) {
         localStorage.setItem('loggedInUser', user);
         startAppForUser(user);
     } else {
-        loginError.classList.remove('hidden');
+        document.getElementById('login-error').classList.remove('hidden');
     }
 }
 
 function handleLogout() {
     localStorage.removeItem('loggedInUser');
     if (unsubscribeFromEvents) {
-        unsubscribeFromEvents(); // Sulje vanha kuuntelija
+        unsubscribeFromEvents();
     }
     nykyinenKayttaja = null;
     mainContainer.classList.add('hidden');
@@ -110,11 +104,10 @@ function startAppForUser(user) {
     nykyinenKayttaja = user;
     loginOverlay.classList.add('hidden');
     mainContainer.classList.remove('hidden');
-    loginError.classList.add('hidden');
+    document.getElementById('login-error').classList.add('hidden');
     document.getElementById('login-password').value = '';
     currentUserName.textContent = nykyinenKayttaja;
     applyTheme(nykyinenKayttaja);
-    piirraKalenteri();
     kuunteleTapahtumia();
 }
 
@@ -127,63 +120,56 @@ function getWeekNumber(d) {
     d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-    return weekNo;
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 }
 
 function piirraKalenteri() {
     kalenteriGrid.innerHTML = '';
     kalenteriPaivatOtsikot.innerHTML = '';
     kalenteriPaivatOtsikot.insertAdjacentHTML('beforeend', '<div class="viikonpaiva"></div>');
-    const paivat = ['Ma', 'Ti', 'Ke', 'To', 'Pe', 'La', 'Su'];
-    paivat.forEach(paiva => {
-        kalenteriPaivatOtsikot.insertAdjacentHTML('beforeend', `<div class="viikonpaiva">${paiva}</div>`);
-    });
+    ['Ma', 'Ti', 'Ke', 'To', 'Pe', 'La', 'Su'].forEach(p => kalenteriPaivatOtsikot.insertAdjacentHTML('beforeend', `<div class="viikonpaiva">${p}</div>`));
+    
     const vuosi = nykyinenPaiva.getFullYear();
     const kuukausi = nykyinenPaiva.getMonth();
     kuukausiOtsikko.textContent = `${nykyinenPaiva.toLocaleString('fi-FI', { month: 'long' })} ${vuosi}`;
-    const kuukaudenEkaPaiva = new Date(vuosi, kuukausi, 1);
-    const paiviaKuukaudessa = new Date(vuosi, kuukausi + 1, 0).getDate();
-    let viikonpaivaIndeksi = kuukaudenEkaPaiva.getDay() || 7;
-    for (let i = 1; i < viikonpaivaIndeksi; i++) {
-        kalenteriGrid.insertAdjacentHTML('beforeend', '<div class="paiva tyhja"></div>');
-    }
-    for (let i = 1; i <= paiviaKuukaudessa; i++) {
+    const ekaPaiva = new Date(vuosi, kuukausi, 1);
+    const paivia = new Date(vuosi, kuukausi + 1, 0).getDate();
+    let viikonpaiva = ekaPaiva.getDay() || 7;
+    for (let i = 1; i < viikonpaiva; i++) kalenteriGrid.insertAdjacentHTML('beforeend', '<div class="paiva tyhja"></div>');
+    for (let i = 1; i <= paivia; i++) {
         const tamaPaiva = new Date(vuosi, kuukausi, i);
-        if (tamaPaiva.getDay() === 1 || (i === 1 && viikonpaivaIndeksi > 1)) {
+        if (tamaPaiva.getDay() === 1 || i === 1) {
             kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="viikko-nro">${getWeekNumber(tamaPaiva)}</div>`);
         }
-        if (i === 1 && viikonpaivaIndeksi === 1) {
-             kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="viikko-nro">${getWeekNumber(tamaPaiva)}</div>`);
-        }
-        const paivamaara = `${vuosi}-${String(kuukausi + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-        kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="paiva" data-paivamaara="${paivamaara}"><div class="paiva-numero">${i}</div><div class="tapahtumat-container"></div></div>`);
+        const pvm = `${vuosi}-${String(kuukausi + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+        kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="paiva" data-paivamaara="${pvm}"><div class="paiva-numero">${i}</div><div class="tapahtumat-container"></div></div>`);
     }
     naytaTapahtumatKalenterissa();
 }
 
 function lisaaTapahtuma() {
-    const uusiTapahtuma = {
+    const uusi = {
         otsikko: document.getElementById('tapahtuma-otsikko').value,
         kuvaus: document.getElementById('tapahtuma-kuvaus').value,
         alku: document.getElementById('tapahtuma-alku').value,
         loppu: document.getElementById('tapahtuma-loppu').value,
         luoja: nykyinenKayttaja,
-        nakyvyys: Array.from(document.querySelectorAll('input[name="nakyvyys"]:checked')).reduce((acc, cb) => ({ ...acc, [cb.value]: true }), {})
+        nakyvyys: Array.from(document.querySelectorAll('input[name="nakyvyys"]:checked')).reduce((a, c) => ({ ...a, [c.value]: true }), {})
     };
-    if (!uusiTapahtuma.otsikko || !uusiTapahtuma.alku || !uusiTapahtuma.loppu) return alert('Täytä vähintään otsikko, alkamis- ja loppumisaika.');
-    push(ref(database, 'tapahtumat'), uusiTapahtuma).then(() => lisaaLomake.reset());
+    if (!uusi.otsikko || !uusi.alku || !uusi.loppu) return alert('Täytä vähintään otsikko, alkamis- ja loppumisaika.');
+    push(ref(database, 'tapahtumat'), uusi).then(() => lisaaLomake.reset());
 }
 
 function kuunteleTapahtumia() {
-    if (unsubscribeFromEvents) {
-        unsubscribeFromEvents();
-    }
+    if (unsubscribeFromEvents) unsubscribeFromEvents();
     const tapahtumatRef = ref(database, 'tapahtumat');
     unsubscribeFromEvents = onValue(tapahtumatRef, (snapshot) => {
         window.kaikkiTapahtumat = [];
         snapshot.forEach((child) => window.kaikkiTapahtumat.push({ key: child.key, ...child.val() }));
-        naytaTapahtumatKalenterissa();
+        // KORJAUS: Kutsutaan aina koko kalenterin piirtoa datan muuttuessa.
+        piirraKalenteri();
+        // UUSI KUTSU: Päivitetään myös tulevien tapahtumien lista.
+        naytaTulevatTapahtumat();
     });
 }
 
@@ -192,15 +178,47 @@ function naytaTapahtumatKalenterissa() {
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
     window.kaikkiTapahtumat.forEach(tapahtuma => {
         if (tapahtuma.nakyvyys?.[nykyinenKayttaja] && tapahtuma.alku) {
-            const paivaElementti = document.querySelector(`.paiva[data-paivamaara="${tapahtuma.alku.substring(0, 10)}"]`);
-            if (paivaElementti) {
+            const paivaEl = document.querySelector(`.paiva[data-paivamaara="${tapahtuma.alku.substring(0, 10)}"]`);
+            if (paivaEl) {
                 const tapahtumaEl = document.createElement('div');
                 tapahtumaEl.className = `tapahtuma ${tapahtuma.luoja === nykyinenKayttaja ? 'oma' : ''}`;
                 tapahtumaEl.textContent = tapahtuma.otsikko;
                 tapahtumaEl.addEventListener('click', () => avaaTapahtumaIkkuna(tapahtuma.key));
-                paivaElementti.querySelector('.tapahtumat-container').appendChild(tapahtumaEl);
+                paivaEl.querySelector('.tapahtumat-container').appendChild(tapahtumaEl);
             }
         }
+    });
+}
+
+// UUSI FUNKTIO TULEVIEN TAPAHTUMIEN NÄYTTÄMISEEN
+function naytaTulevatTapahtumat() {
+    tulevatTapahtumatLista.innerHTML = '';
+    if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
+
+    const nyt = new Date();
+    const tulevat = window.kaikkiTapahtumat
+        .filter(t => t.nakyvyys?.[nykyinenKayttaja] && new Date(t.alku) >= nyt)
+        .sort((a, b) => new Date(a.alku) - new Date(b.alku))
+        .slice(0, 5); // Näytetään 5 seuraavaa
+
+    if (tulevat.length === 0) {
+        tulevatTapahtumatLista.innerHTML = '<p>Ei tulevia tapahtumia.</p>';
+        return;
+    }
+
+    tulevat.forEach(tapahtuma => {
+        const alku = new Date(tapahtuma.alku);
+        const paiva = alku.toLocaleDateString('fi-FI', { weekday: 'short', day: 'numeric', month: 'numeric' });
+        const aika = alku.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+
+        const item = document.createElement('div');
+        item.className = 'tuleva-tapahtuma-item';
+        item.innerHTML = `
+            <div class="tapahtuma-item-aika">${paiva} ${aika}</div>
+            <div class="tapahtuma-item-otsikko">${tapahtuma.otsikko}</div>
+        `;
+        item.addEventListener('click', () => avaaTapahtumaIkkuna(tapahtuma.key));
+        tulevatTapahtumatLista.appendChild(item);
     });
 }
 
@@ -250,7 +268,7 @@ function tallennaMuutokset() {
         kuvaus: document.getElementById('muokkaa-tapahtuma-kuvaus').value,
         alku: document.getElementById('muokkaa-tapahtuma-alku').value,
         loppu: document.getElementById('muokkaa-tapahtuma-loppu').value,
-        nakyvyys: Array.from(document.querySelectorAll('input[name="muokkaa-nakyvyys"]:checked')).reduce((acc, cb) => ({ ...acc, [cb.value]: true }), {})
+        nakyvyys: Array.from(document.querySelectorAll('input[name="muokkaa-nakyvyys"]:checked')).reduce((a, c) => ({ ...a, [c.value]: true }), {})
     };
     update(ref(database, `tapahtumat/${key}`), paivitys).then(() => {
         avaaTapahtumaIkkuna(key);
