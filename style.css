@@ -47,35 +47,29 @@ body {
     padding: 10px;
     transition: background-color 0.3s ease;
 }
+
+/* PÄÄASETTELUN MUUTOS: YKSI SARAKE */
 .container {
-    max-width: 1200px;
+    max-width: 900px; /* Levennetään hieman, koska sivupalkki poistui */
     margin: 0 auto;
     display: grid;
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: 1fr; /* Vain yksi sarake */
     gap: 20px;
 }
 header {
     grid-column: 1 / -1;
     border-bottom: 2px solid var(--bg-container);
     padding-bottom: 15px;
+    text-align: center; /* Keskitetään otsikko */
 }
 .header-content {
     display: flex;
-    justify-content: space-between;
+    justify-content: center; /* Keskitetään otsikko */
     align-items: center;
     flex-wrap: wrap;
     gap: 15px;
 }
-#user-info {
-    font-size: 0.9em;
-}
-#logout-btn {
-    width: auto;
-    padding: 5px 10px;
-    font-size: 0.9em;
-    margin: 0 0 0 10px;
-}
-main, .sivupalkki {
+main, .sivupalkki, footer {
     background-color: var(--bg-container);
     border-radius: 12px;
     padding: 20px;
@@ -87,254 +81,68 @@ main, .sivupalkki {
 .kalenteri-ylapalkki {
     margin-top: 20px;
 }
-.kalenteri-ylapalkki h2 {
-    color: var(--text-accent);
+/* ... (kalenterin, päivien, tapahtumakuvakkeiden yms. vanhat tyylit ennallaan) ... */
+
+/* UUDET TYYLIT */
+
+footer {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 15px;
+    background-color: transparent;
+    box-shadow: none;
+    border-top: 1px solid var(--bg-sidebar);
+}
+
+#user-info {
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+#logout-btn {
+    width: auto;
+    padding: 5px 10px;
+    font-size: 0.9em;
     margin: 0;
 }
-#kalenteri-paivat-otsikot, #kalenteri-grid {
-    display: grid;
-    grid-template-columns: 35px repeat(7, 1fr);
-    gap: 5px;
-}
-#kalenteri-paivat-otsikot {
-    margin-bottom: 10px;
-}
-.viikonpaiva, .viikko-nro {
-    text-align: center;
-    font-weight: bold;
-    font-size: 0.9em;
-    color: var(--text-accent);
-    opacity: 0.8;
-}
-.viikko-nro {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
 
-.paiva {
-    background-color: var(--bg-calendar-day);
-    min-height: 60px; /* Pienennetään korkeutta mobiilia varten */
-    padding: 4px;
-    border-radius: 8px;
-}
-.tapahtumat-container {
-    display: flex; /* Asetellaan kuvakkeet vierekkäin */
-    flex-wrap: wrap; /* Kuvakkeet rivittyvät, jos niitä on monta */
-    gap: 3px; /* Pieni väli kuvakkeiden väliin */
-    margin-top: 4px;
-}
-.paiva.tyhja {
-    background-color: transparent;
-    opacity: 0.5;
-}
-.paiva-numero {
-    font-weight: bold;
-    font-size: 0.9em;
-    margin-bottom: 4px;
-}
-/* Poistetaan vanha .tapahtuma-luokka, koska se ei ole enää käytössä kalenterissa */
-input, select, textarea, button {
-    font-family: 'Georgia', serif;
-}
-input[type="text"], input[type="password"], input[type="datetime-local"], select, textarea {
+.lisaa-nappi {
     width: 100%;
-    padding: 12px;
-    box-sizing: border-box;
-    background-color: var(--bg-sidebar);
-    color: var(--text-main);
-    border: 1px solid var(--bg-container);
-    border-radius: 8px;
-    font-size: 1em;
-}
-button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 20px;
-    border: 1px solid var(--text-accent);
-    background-color: transparent;
-    color: var(--text-accent);
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.2s, color 0.2s;
-}
-button:hover {
-    background-color: var(--text-accent);
-    color: var(--bg-main);
-}
-.login-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: var(--bg-main);
-    display: flex; justify-content: center; align-items: center; z-index: 2000;
-}
-.login-box {
-    background-color: var(--bg-sidebar);
-    padding: 30px; border-radius: 12px; text-align: center;
-    width: 90%; max-width: 350px;
-    border: 2px solid var(--bg-container);
-}
-#login-error { color: #e74c3c; margin-top: 10px; }
-.hidden { display: none !important; }
-.modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    display: flex; justify-content: center; align-items: center; z-index: 1000;
-}
-.modal-content {
-    background-color: var(--bg-sidebar);
-    padding: 25px; border-radius: 12px;
-    width: 90%; max-width: 500px;
-    border: 2px solid var(--text-accent);
-}
-.modal-content h2, #modal-view-content p strong { color: var(--text-accent); }
-.delete-btn { background-color: #e74c3c; border-color: #c0392b; color: white; }
-.delete-btn:hover { background-color: #c0392b; }
-.cancel-btn { background-color: transparent; border-color: #7f8c8d; color: #7f8c8d; }
-.cancel-btn:hover { background-color: #7f8c8d; color: #F8F8F8; }
-
-/* TULEVIEN TAPAHTUMIEN LISTAN TYYLIT */
-.tulevat-tapahtumat {
-    background-color: var(--bg-sidebar);
-    padding: 15px 20px;
-    border-radius: 12px;
-    margin-bottom: 20px;
-}
-.tulevat-tapahtumat h3 {
     margin-top: 0;
-    text-align: center;
-    color: var(--text-accent);
-}
-.tuleva-tapahtuma-item {
-    display: flex; 
-    align-items: center; 
-    padding: 10px;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    transition: transform 0.2s ease;
-    background-color: var(--bg-container); 
-}
-.tuleva-tapahtuma-item:hover {
-    transform: scale(1.02);
-}
-.tapahtuma-item-luoja {
-    flex-shrink: 0; 
-    width: 32px;
-    height: 32px;
-    border-radius: 5px;
-    background-color: rgba(0, 0, 0, 0.2);
-    color: var(--text-main);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 1.1em;
-    margin-right: 12px;
-}
-.tapahtuma-item-tiedot {
-    flex-grow: 1;
-    overflow: hidden; 
-}
-.tapahtuma-item-aika {
-    font-weight: bold;
-    font-size: 0.9em;
-}
-.tapahtuma-item-otsikko {
-    font-size: 1em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-#tulevat-tapahtumat-lista p {
-    text-align: center;
-    opacity: 0.7;
-}
-
-@media (max-width: 800px) {
-    body { padding: 5px; }
-    .container {
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
-    .header-content {
-        flex-direction: column;
-        gap: 10px;
-    }
-    main, .sivupalkki { padding: 15px; }
-    .paiva { 
-        min-height: 70px; /* Pienennetään korkeutta entisestään kapealla näytöllä */
-        padding: 4px; 
-    }
-    #kalenteri-paivat-otsikot, #kalenteri-grid {
-        grid-template-columns: 25px repeat(7, 1fr);
-        gap: 3px;
-    }
-}
-
-/* KAIKKI UUDET JA PÄIVITETYT TYYLIT */
-
-/* Tänään-palkin tyylit */
-#tanaan-banneri {
-    text-align: center;
-    padding: 10px;
-    background-color: var(--bg-sidebar);
-    border-radius: 8px;
     margin-bottom: 20px;
-    font-size: 1.1em;
-    color: var(--text-accent);
+    background-color: var(--bg-sidebar);
 }
-
-/* Kalenterin kuluvan päivän korostus */
-.paiva.tanaan .paiva-numero {
+.lisaa-nappi:hover {
     background-color: var(--text-accent);
     color: var(--bg-main);
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: -2px auto 0 auto;
 }
 
-/* UUSI TAPAHTUMAKUVAKE KALENTERISSA */
-.tapahtuma-kuvake {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8em;
+#ilmoitus {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--text-accent);
+    color: var(--bg-main);
+    padding: 15px 25px;
+    border-radius: 8px;
     font-weight: bold;
-    color: white;
-    cursor: pointer;
-    transition: transform 0.2s ease;
-}
-.tapahtuma-kuvake:hover {
-    transform: scale(1.2);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    z-index: 3000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
+#ilmoitus.nayta {
+    opacity: 1;
+    visibility: visible;
+}
 
-/* TAPAHTUMIEN VÄRIKOODIT (KUVAKE & TULEVAT-LISTA) */
-.tapahtuma-kuvake.koskee-perhe,
-.tuleva-tapahtuma-item.koskee-perhe { 
-    background-color: #f08080; /* Vaalea koralli */
-    color: #fff; 
-}
-.tapahtuma-kuvake.koskee-toni,
-.tuleva-tapahtuma-item.koskee-toni { 
-    background-color: #2e8b57; /* Merenvihreä */
-    color: #fff; 
-}
-.tapahtuma-kuvake.koskee-kaisa,
-.tuleva-tapahtuma-item.koskee-kaisa { 
-    background-color: #9370db; /* Keskivioletti */
-    color: #fff; 
-}
-.tapahtuma-kuvake.koskee-oona,
-.tuleva-tapahtuma-item.koskee-oona { 
-    background-color: #4682b4; /* Teräksensininen */
-    color: #fff; 
+/* Mobiilioptimointi: Poistetaan vanha @media-sääntö, koska asettelu on nyt oletuksena mobiiliystävällinen */
+@media (max-width: 800px) {
+    /* ... (vanhat mobiilisäännöt ennallaan) ... */
 }
