@@ -73,11 +73,15 @@ main {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+.tapahtuma:hover {
+    transform: scale(1.05);
 }
 .tapahtuma.oma {
-    background-color: #FFD700; /* Kulta korostaa omaa merkintää */
+    background-color: #FFD700;
 }
-
 
 /* Lomake */
 form label, form legend {
@@ -85,7 +89,7 @@ form label, form legend {
     margin-top: 10px;
     margin-bottom: 5px;
 }
-input[type="text"], input[type="date"], input[type="time"], select {
+input[type="text"], input[type="date"], input[type="time"], input[type="datetime-local"], select, textarea {
     width: 100%;
     padding: 10px;
     box-sizing: border-box;
@@ -94,6 +98,9 @@ input[type="text"], input[type="date"], input[type="time"], select {
     border: 1px solid #556B2F;
     border-radius: 4px;
     font-family: 'Georgia', serif;
+}
+textarea {
+    resize: vertical;
 }
 button {
     width: 100%;
@@ -113,4 +120,56 @@ button:hover {
 .nakyvyys-valinnat label {
     display: inline-block;
     margin-right: 15px;
+}
+
+/* Ponnahdusikkuna (Modal) */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.modal-overlay.hidden {
+    display: none;
+}
+.modal-content {
+    background-color: #2A381C;
+    padding: 25px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    border: 2px solid #90EE90;
+}
+.modal-content h2 {
+    margin-top: 0;
+    text-align: center;
+    color: #90EE90;
+}
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+.delete-btn {
+    background-color: #e74c3c;
+    border-color: #c0392b;
+    color: white;
+}
+.delete-btn:hover {
+    background-color: #c0392b;
+}
+.cancel-btn {
+    background-color: transparent;
+    border-color: #7f8c8d;
+    color: #7f8c8d;
+}
+.cancel-btn:hover {
+    background-color: #7f8c8d;
+    color: #F8F8F8;
 }
