@@ -1,4 +1,3 @@
-/* ... (kaikki aiemmat tyylit pysyvät ennallaan) ... */
 /* CSS Muuttujat teemoille */
 :root {
     /* Oletusteema (Toni - Vihreä) */
@@ -8,9 +7,6 @@
     --bg-calendar-day: #4a5c3a;
     --text-main: #F8F8F8;
     --text-accent: #90EE90;
-    --event-bg: #90EE90;
-    --event-text: #1a2015;
-    --event-own-bg: #FFD700;
     --shadow-color: rgba(0, 0, 0, 0.2);
 }
 body.theme-kaisa {
@@ -21,10 +17,6 @@ body.theme-kaisa {
     --bg-calendar-day: #5f4c5f;
     --text-main: #f5e6f5;
     --text-accent: #e6c6e6;
-    --event-bg: #e6c6e6;
-    --event-text: #2b202b;
-    --event-own-bg: #ffb6c1;
-    --shadow-color: rgba(0, 0, 0, 0.2);
 }
 body.theme-oona {
     /* Oona - Sininen teema */
@@ -34,10 +26,6 @@ body.theme-oona {
     --bg-calendar-day: #486071;
     --text-main: #e0e8ef;
     --text-accent: #a9d6e5;
-    --event-bg: #a9d6e5;
-    --event-text: #1f2a33;
-    --event-own-bg: #87ceeb;
-    --shadow-color: rgba(0, 0, 0, 0.2);
 }
 body {
     background-color: var(--bg-main);
@@ -47,24 +35,22 @@ body {
     padding: 10px;
     transition: background-color 0.3s ease;
 }
-
-/* PÄÄASETTELUN MUUTOS: YKSI SARAKE */
 .container {
-    max-width: 900px; /* Levennetään hieman, koska sivupalkki poistui */
+    max-width: 900px;
     margin: 0 auto;
     display: grid;
-    grid-template-columns: 1fr; /* Vain yksi sarake */
+    grid-template-columns: 1fr;
     gap: 20px;
 }
 header {
     grid-column: 1 / -1;
     border-bottom: 2px solid var(--bg-container);
     padding-bottom: 15px;
-    text-align: center; /* Keskitetään otsikko */
+    text-align: center;
 }
 .header-content {
     display: flex;
-    justify-content: center; /* Keskitetään otsikko */
+    justify-content: center;
     align-items: center;
     flex-wrap: wrap;
     gap: 15px;
@@ -81,10 +67,165 @@ main, .sivupalkki, footer {
 .kalenteri-ylapalkki {
     margin-top: 20px;
 }
-/* ... (kalenterin, päivien, tapahtumakuvakkeiden yms. vanhat tyylit ennallaan) ... */
-
-/* UUDET TYYLIT */
-
+.kalenteri-ylapalkki h2 {
+    color: var(--text-accent);
+    margin: 0;
+}
+#kalenteri-paivat-otsikot, #kalenteri-grid {
+    display: grid;
+    grid-template-columns: 35px repeat(7, 1fr);
+    gap: 5px;
+}
+#kalenteri-paivat-otsikot {
+    margin-bottom: 10px;
+}
+.viikonpaiva, .viikko-nro {
+    text-align: center;
+    font-weight: bold;
+    font-size: 0.9em;
+    color: var(--text-accent);
+    opacity: 0.8;
+}
+.viikko-nro {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.paiva {
+    background-color: var(--bg-calendar-day);
+    min-height: 60px;
+    padding: 4px;
+    border-radius: 8px;
+}
+.tapahtumat-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-top: 4px;
+}
+.paiva.tyhja {
+    background-color: transparent;
+    opacity: 0.5;
+}
+.paiva-numero {
+    font-weight: bold;
+    font-size: 0.9em;
+    margin-bottom: 4px;
+}
+input, select, textarea, button {
+    font-family: 'Georgia', serif;
+}
+input[type="text"], input[type="password"], input[type="datetime-local"], select, textarea {
+    width: 100%;
+    padding: 12px;
+    box-sizing: border-box;
+    background-color: var(--bg-sidebar);
+    color: var(--text-main);
+    border: 1px solid var(--bg-container);
+    border-radius: 8px;
+    font-size: 1em;
+}
+button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 20px;
+    border: 1px solid var(--text-accent);
+    background-color: transparent;
+    color: var(--text-accent);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.2s, color 0.2s;
+}
+button:hover {
+    background-color: var(--text-accent);
+    color: var(--bg-main);
+}
+.login-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: var(--bg-main);
+    display: flex; justify-content: center; align-items: center; z-index: 2000;
+}
+.login-box {
+    background-color: var(--bg-sidebar);
+    padding: 30px; border-radius: 12px; text-align: center;
+    width: 90%; max-width: 350px;
+    border: 2px solid var(--bg-container);
+}
+#login-error { color: #e74c3c; margin-top: 10px; }
+.hidden { display: none !important; }
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex; justify-content: center; align-items: center; z-index: 1000;
+}
+.modal-content {
+    background-color: var(--bg-sidebar);
+    padding: 25px; border-radius: 12px;
+    width: 90%; max-width: 500px;
+    border: 2px solid var(--text-accent);
+}
+.modal-content h2, #modal-view-content p strong { color: var(--text-accent); }
+.delete-btn { background-color: #e74c3c; border-color: #c0392b; color: white; }
+.delete-btn:hover { background-color: #c0392b; }
+.cancel-btn { background-color: transparent; border-color: #7f8c8d; color: #7f8c8d; }
+.cancel-btn:hover { background-color: #7f8c8d; color: #F8F8F8; }
+.tulevat-tapahtumat {
+    background-color: var(--bg-sidebar);
+    padding: 15px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+.tulevat-tapahtumat h3 {
+    margin-top: 0;
+    text-align: center;
+    color: var(--text-accent);
+}
+.tuleva-tapahtuma-item {
+    display: flex; 
+    align-items: center; 
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    background-color: var(--bg-container); 
+}
+.tuleva-tapahtuma-item:hover {
+    transform: scale(1.02);
+}
+.tapahtuma-item-luoja {
+    flex-shrink: 0; 
+    width: 32px;
+    height: 32px;
+    border-radius: 5px;
+    background-color: rgba(0, 0, 0, 0.2);
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-right: 12px;
+}
+.tapahtuma-item-tiedot {
+    flex-grow: 1;
+    overflow: hidden; 
+}
+.tapahtuma-item-aika {
+    font-weight: bold;
+    font-size: 0.9em;
+}
+.tapahtuma-item-otsikko {
+    font-size: 1em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#tulevat-tapahtumat-lista p {
+    text-align: center;
+    opacity: 0.7;
+}
 footer {
     grid-column: 1 / -1;
     text-align: center;
@@ -92,8 +233,8 @@ footer {
     background-color: transparent;
     box-shadow: none;
     border-top: 1px solid var(--bg-sidebar);
+    margin-top: 20px;
 }
-
 #user-info {
     font-size: 0.9em;
     display: flex;
@@ -101,25 +242,23 @@ footer {
     justify-content: center;
     gap: 15px;
 }
-
 #logout-btn {
     width: auto;
     padding: 5px 10px;
     font-size: 0.9em;
     margin: 0;
 }
-
 .lisaa-nappi {
     width: 100%;
     margin-top: 0;
     margin-bottom: 20px;
     background-color: var(--bg-sidebar);
+    font-weight: bold;
 }
 .lisaa-nappi:hover {
     background-color: var(--text-accent);
     color: var(--bg-main);
 }
-
 #ilmoitus {
     position: fixed;
     bottom: 20px;
@@ -136,13 +275,76 @@ footer {
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
 }
-
 #ilmoitus.nayta {
     opacity: 1;
     visibility: visible;
 }
 
-/* Mobiilioptimointi: Poistetaan vanha @media-sääntö, koska asettelu on nyt oletuksena mobiiliystävällinen */
 @media (max-width: 800px) {
-    /* ... (vanhat mobiilisäännöt ennallaan) ... */
+    body { padding: 5px; }
+    main, .sivupalkki, footer { padding: 15px; }
+    .paiva { 
+        min-height: 70px;
+        padding: 4px; 
+    }
+    #kalenteri-paivat-otsikot, #kalenteri-grid {
+        grid-template-columns: 25px repeat(7, 1fr);
+        gap: 3px;
+    }
+}
+#tanaan-banneri {
+    text-align: center;
+    padding: 10px;
+    background-color: var(--bg-sidebar);
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 1.1em;
+    color: var(--text-accent);
+}
+.paiva.tanaan .paiva-numero {
+    background-color: var(--text-accent);
+    color: var(--bg-main);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: -2px auto 0 auto;
+}
+.tapahtuma-kuvake {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8em;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+.tapahtuma-kuvake:hover {
+    transform: scale(1.2);
+}
+.tapahtuma-kuvake.koskee-perhe,
+.tuleva-tapahtuma-item.koskee-perhe { 
+    background-color: #f08080;
+    color: #fff; 
+}
+.tapahtuma-kuvake.koskee-toni,
+.tuleva-tapahtuma-item.koskee-toni { 
+    background-color: #2e8b57;
+    color: #fff; 
+}
+.tapahtuma-kuvake.koskee-kaisa,
+.tuleva-tapahtuma-item.koskee-kaisa { 
+    background-color: #9370db;
+    color: #fff; 
+}
+.tapahtuma-kuvake.koskee-oona,
+.tuleva-tapahtuma-item.koskee-oona { 
+    background-color: #4682b4;
+    color: #fff; 
 }
