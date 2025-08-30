@@ -51,11 +51,10 @@ let nykyinenPaiva = new Date();
 
 // --- Päälogiikka ---
 document.addEventListener('DOMContentLoaded', () => {
-    checkLoginStatus(); // MUUTOS: Tarkista kirjautumistilanne heti latauksen jälkeen
+    checkLoginStatus();
     lisaaKuuntelijat();
 });
 
-// UUSI FUNKTIO: Tarkistaa onko käyttäjä jo kirjautunut aiemmin
 function checkLoginStatus() {
     const rememberedUser = localStorage.getItem('loggedInUser');
     if (rememberedUser && PASSWORDS[rememberedUser]) {
@@ -94,7 +93,6 @@ function handleLogin(event) {
     const pass = document.getElementById('login-password').value;
 
     if (PASSWORDS[user] === pass) {
-        // MUUTOS: Tallenna onnistunut kirjautuminen selaimen muistiin
         localStorage.setItem('loggedInUser', user);
         startAppForUser(user);
     } else {
@@ -103,7 +101,6 @@ function handleLogin(event) {
 }
 
 function handleLogout() {
-    // MUUTOS: Poista käyttäjä selaimen muistista uloskirjautuessa
     localStorage.removeItem('loggedInUser');
     
     nykyinenKayttaja = null;
@@ -112,7 +109,6 @@ function handleLogout() {
     document.body.className = '';
 }
 
-// UUSI APUFUNKTIO: Käynnistää sovelluksen näkymän tietylle käyttäjälle
 function startAppForUser(user) {
     nykyinenKayttaja = user;
     
@@ -178,8 +174,6 @@ function piirraKalenteri() {
     naytaTapahtumatKalenterissa();
 }
 
-// Kaikki muut funktiot (lisaaTapahtuma, kuunteleTapahtumia jne.) pysyvät ennallaan.
-// ...
 function lisaaTapahtuma() {
     const uusiTapahtuma = {
         otsikko: document.getElementById('tapahtuma-otsikko').value,
@@ -239,7 +233,8 @@ function avaaTapahtumaIkkuna(key) {
     const options = { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' };
     document.getElementById('view-aika').textContent = `${alkuPvm.toLocaleString('fi-FI', options)} - ${loppuPvm.toLocaleString('fi-FI', options)}`;
 
-    document.getElementById('muokkaa-tapahtuma-id').value = key.
+    // TÄMÄ ON KORJATTU RIVI (piste poistettu)
+    document.getElementById('muokkaa-tapahtuma-id').value = key;
     document.getElementById('muokkaa-tapahtuma-otsikko').value = tapahtuma.otsikko;
     document.getElementById('muokkaa-tapahtuma-kuvaus').value = tapahtuma.kuvaus || '';
     document.getElementById('muokkaa-tapahtuma-alku').value = tapahtuma.alku;
