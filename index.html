@@ -49,11 +49,22 @@
                     <input type="text" id="tapahtuma-otsikko" required>
                     <label for="tapahtuma-kuvaus">Lisätiedot:</label>
                     <textarea id="tapahtuma-kuvaus" rows="3"></textarea>
-                    <label for="tapahtuma-alku">Alkaa:</label>
-                    <input type="datetime-local" id="tapahtuma-alku" required>
-                    <label for="tapahtuma-loppu">Loppuu:</label>
-                    <input type="datetime-local" id="tapahtuma-loppu" required>
                     
+                    <div class="checkbox-container">
+                        <label for="tapahtuma-koko-paiva">Koko päivän tapahtuma</label>
+                        <input type="checkbox" id="tapahtuma-koko-paiva">
+                    </div>
+
+                    <div id="aika-valinnat">
+                        <label for="tapahtuma-alku">Alkaa:</label>
+                        <input type="datetime-local" id="tapahtuma-alku" required>
+                        <label for="tapahtuma-loppu">Loppuu:</label>
+                        <input type="datetime-local" id="tapahtuma-loppu" required>
+                    </div>
+
+                    <label for="tapahtuma-linkki">Linkki (esim. Google Maps, Teams):</label>
+                    <input type="url" id="tapahtuma-linkki" placeholder="https://...">
+
                     <fieldset>
                         <legend>Ketä koskee:</legend>
                         <div class="ketakoskee-valinnat">
@@ -99,6 +110,7 @@
                 <h2 id="view-otsikko"></h2>
                 <p><strong>Aika:</strong> <span id="view-aika"></span></p>
                 <p id="view-kuvaus-container"><strong>Lisätiedot:</strong> <span id="view-kuvaus"></span></p>
+                <p id="view-linkki-container" class="hidden"><strong>Linkki:</strong> <a id="view-linkki" href="#" target="_blank" rel="noopener noreferrer">Avaa linkki</a></p>
                 <p><strong>Näkyvyys:</strong> <span id="view-nakyvyys"></span></p>
                 <p><em>Luonut: <span id="view-luoja"></span></em></p>
                 <div class="modal-buttons">
@@ -115,11 +127,22 @@
                     <input type="text" id="muokkaa-tapahtuma-otsikko" required>
                     <label for="muokkaa-tapahtuma-kuvaus">Lisätiedot:</label>
                     <textarea id="muokkaa-tapahtuma-kuvaus" rows="3"></textarea>
-                    <label for="muokkaa-tapahtuma-alku">Alkaa:</label>
-                    <input type="datetime-local" id="muokkaa-tapahtuma-alku" required>
-                    <label for="muokkaa-tapahtuma-loppu">Loppuu:</label>
-                    <input type="datetime-local" id="muokkaa-tapahtuma-loppu" required>
+
+                    <div class="checkbox-container">
+                         <label for="muokkaa-tapahtuma-koko-paiva">Koko päivän tapahtuma</label>
+                        <input type="checkbox" id="muokkaa-tapahtuma-koko-paiva">
+                    </div>
                     
+                    <div id="muokkaa-aika-valinnat">
+                        <label for="muokkaa-tapahtuma-alku">Alkaa:</label>
+                        <input type="datetime-local" id="muokkaa-tapahtuma-alku" required>
+                        <label for="muokkaa-tapahtuma-loppu">Loppuu:</label>
+                        <input type="datetime-local" id="muokkaa-tapahtuma-loppu" required>
+                    </div>
+
+                     <label for="muokkaa-tapahtuma-linkki">Linkki:</label>
+                    <input type="url" id="muokkaa-tapahtuma-linkki" placeholder="https://...">
+
                     <fieldset>
                         <legend>Ketä koskee:</legend>
                         <div class="ketakoskee-valinnat" id="muokkaa-ketakoskee">
