@@ -326,24 +326,9 @@ footer {
 .tapahtuma-kuvake:hover {
     transform: scale(1.2);
 }
-.tapahtuma-kuvake.koskee-perhe,
-.tuleva-tapahtuma-item.koskee-perhe { 
-    background-color: #f08080;
-    color: #fff; 
-}
-.tapahtuma-kuvake.koskee-toni,
-.tuleva-tapahtuma-item.koskee-toni { 
-    background-color: #2e8b57;
-    color: #fff; 
-}
-.tapahtuma-kuvake.koskee-kaisa,
-.tuleva-tapahtuma-item.koskee-kaisa { 
-    background-color: #9370db;
-    color: #fff; 
-}
-.tapahtuma-kuvake.koskee-oona,
-.tuleva-tapahtuma-item.koskee-oona { 
-    background-color: #4682b4;
+
+.tapahtuma-kuvake, .tuleva-tapahtuma-item {
+    background-color: #f08080; /* Oletusväri perheelle tai jos data puuttuu */
     color: #fff; 
 }
 
@@ -458,7 +443,7 @@ input[type="checkbox"] {
 .poista-tehtava-nappi {
     width: auto;
     padding: 4px 8px;
-    margin: 0 0 0 10px;
+    margin: 0 0 S0 10px;
     background-color: transparent;
     border: 1px solid #e74c3c;
     color: #e74c3c;
@@ -483,10 +468,16 @@ input[type="checkbox"] {
     margin-top: 0;
 }
 
-/* UUSI TYYLI HAKUTULOSTEN KOROSTAMISEEN */
 .paiva.haku-osuma {
     border: 2px solid var(--text-accent);
     box-shadow: 0 0 8px var(--text-accent);
     transform: scale(1.03);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ketakoskee-valinnat, .nakyvyys-valinnat {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
 }
