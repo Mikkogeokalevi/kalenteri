@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
-// Sinun vahvistamasi 1 Firebase-konfiguraatio
+// Sinun vahvistamasi  Firebase-konfiguraatio
 const firebaseConfig = {
   apiKey: "AIzaSyCZIupycr2puYrPK2KajAW7PcThW9Pjhb0",
   authDomain: "perhekalenteri-projekti.firebaseapp.com",
@@ -136,16 +136,21 @@ function piirraKalenteri() {
     kuukausiOtsikko.textContent = `${nykyinenPaiva.toLocaleString('fi-FI', { month: 'long' })} ${vuosi}`;
     const ekaPaiva = new Date(vuosi, kuukausi, 1);
     const paivia = new Date(vuosi, kuukausi + 1, 0).getDate();
-    let viikonpaiva = ekaPaiva.getDay() || 7;
+    let viikonpaiva = ekaPaiva.getDay();
+    if (viikonpaiva === 0) { // Sunnuntai on 0, muutetaan se 7:ksi
+        viikonpaiva = 7;
+    }
     
-    // TÄSSÄ OLI VIRHE, NYT KORJATTU
+    // Lisää tyhjät päivät ennen kuukauden ensimmäistä päivää
     for (let i = 1; i < viikonpaiva; i++) {
         kalenteriGrid.insertAdjacentHTML('beforeend', '<div class="paiva tyhja"></div>');
     }
     
+    // Lisää kuukauden päivät
     for (let i = 1; i <= paivia; i++) {
         const tamaPaiva = new Date(vuosi, kuukausi, i);
-        if (tamaPaiva.getDay() === 1 || i === 1) {
+        // Lisää viikkonumero aina maanantaisin (tai kuun ekana päivänä)
+        if (tamaPaiva.getDay() === 1 || i === 1) { 
             kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="viikko-nro">${getWeekNumber(tamaPaiva)}</div>`);
         }
         const pvm = `${vuosi}-${String(kuukausi + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
@@ -199,25 +204,31 @@ function naytaTulevatTapahtumat() {
     tulevatTapahtumatLista.innerHTML = '';
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
     const nyt = new Date();
-    const today = new Date(nyt.getFullYear(), nyt.getMonth(), nyt.getDate());
+    // Asetetaan kellonaika nollaksi, jotta vertailu kattaa koko kuluvan päivän
+    const today = new Date(nyt.getFullYear(), nyt.getMonth(), nyt.getDate()); 
     const tulevat = window.kaikkiTapahtumat
         .filter(t => t.nakyvyys?.[nykyinenKayttaja] && new Date(t.alku) >= today)
         .sort((a, b) => new Date(a.alku) - new Date(b.alku))
-        .slice(0, 5);
+        .slice(0, 5); // Näytetään 5 seuraavaa tapahtumaa
+
     if (tulevat.length === 0) {
         tulevatTapahtumatLista.innerHTML = '<p>Ei tulevia tapahtumia.</p>';
         return;
     }
+
     tulevat.forEach(tapahtuma => {
         const alku = new Date(tapahtuma.alku);
         const paiva = alku.toLocaleDateString('fi-FI', { weekday: 'short', day: 'numeric', month: 'numeric' });
         const aika = alku.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
         const item = document.createElement('div');
         item.className = 'tuleva-tapahtuma-item';
+        
+        // TÄMÄ ON KORJATTU RIVI: class. -> class=
         item.innerHTML = `
             <div class="tapahtuma-item-aika">${paiva} ${aika}</div>
-            <div class.tapahtuma-item-otsikko">${tapahtuma.otsikko}</div>
+            <div class="tapahtuma-item-otsikko">${tapahtuma.otsikko}</div>
         `;
+        
         item.addEventListener('click', () => avaaTapahtumaIkkuna(tapahtuma.key));
         tulevatTapahtumatLista.appendChild(item);
     });
