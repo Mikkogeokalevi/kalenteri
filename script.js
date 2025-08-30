@@ -144,9 +144,12 @@ function naytaTapahtumatKalenterissa() {
     if (!window.kaikkiTapahtumat) return;
 
     window.kaikkiTapahtumat.forEach(tapahtuma => {
-        if (tapahtuma.nakyvyys && tapahtuma.nakyvyys[nykyinenKayttaja]) {
-            const tapahtumanPaiva = tapahtuma.alku.substring(0, 10);
+        // TARKISTETAAN NÄKYYVYYS JA ONKO 'alku'-TIETO OLEMASSA
+        if (tapahtuma.nakyvyys && tapahtuma.nakyvyys[nykyinenKayttaja] && tapahtuma.alku) {
+            
+            const tapahtumanPaiva = tapahtuma.alku.substring(0, 10); 
             const paivaElementti = document.querySelector(`.paiva[data-paivamaara="${tapahtumanPaiva}"]`);
+            
             if (paivaElementti) {
                 const tapahtumaElementti = document.createElement('div');
                 tapahtumaElementti.classList.add('tapahtuma');
@@ -156,7 +159,6 @@ function naytaTapahtumatKalenterissa() {
                     tapahtumaElementti.classList.add('oma');
                 }
                 
-                // Lisää kuuntelija, joka avaa muokkausikkunan
                 tapahtumaElementti.addEventListener('click', () => avaaMuokkausIkkuna(tapahtuma.key));
 
                 paivaElementti.querySelector('.tapahtumat-container').appendChild(tapahtumaElementti);
@@ -171,14 +173,12 @@ function avaaMuokkausIkkuna(key) {
     const tapahtuma = window.kaikkiTapahtumat.find(t => t.key === key);
     if (!tapahtuma) return;
 
-    // Täytä lomakkeen kentät
     document.getElementById('muokkaa-tapahtuma-id').value = key;
     document.getElementById('muokkaa-tapahtuma-otsikko').value = tapahtuma.otsikko;
     document.getElementById('muokkaa-tapahtuma-kuvaus').value = tapahtuma.kuvaus || '';
     document.getElementById('muokkaa-tapahtuma-alku').value = tapahtuma.alku;
     document.getElementById('muokkaa-tapahtuma-loppu').value = tapahtuma.loppu;
     
-    // Aseta näkyvyys-checkboxit
     document.querySelectorAll('input[name="muokkaa-nakyvyys"]').forEach(checkbox => {
        checkbox.checked = !!(tapahtuma.nakyvyys && tapahtuma.nakyvyys[checkbox.value]);
     });
