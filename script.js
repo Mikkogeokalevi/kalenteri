@@ -125,9 +125,6 @@ function getWeekNumber(d) {
     return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 }
 
-// ===================================================================
-// TÄMÄ FUNKTIO ON KIRJOITETTU KOKONAAN UUDESTAAN VAKAAMMAKSI
-// ===================================================================
 function piirraKalenteri() {
     kalenteriGrid.innerHTML = '';
     kalenteriPaivatOtsikot.innerHTML = '';
@@ -141,19 +138,15 @@ function piirraKalenteri() {
     const ekaKuunPaiva = new Date(vuosi, kuukausi, 1);
     const vikaKuunPaiva = new Date(vuosi, kuukausi + 1, 0);
 
-    // Määritä kalenterin ensimmäinen näytettävä päivä (aina viikon maanantai)
     const paivaViikossa = ekaKuunPaiva.getDay() === 0 ? 7 : ekaKuunPaiva.getDay(); // Ma=1, Su=7
     const kalenterinAloitus = new Date(ekaKuunPaiva);
     kalenterinAloitus.setDate(ekaKuunPaiva.getDate() - (paivaViikossa - 1));
 
     let paivaIt = new Date(kalenterinAloitus);
 
-    // Käydään läpi 6 viikkoa, mikä kattaa kaikki mahdolliset kuukaudet
     for (let i = 0; i < 6; i++) {
-        // Lisää viikkonumero rivin alkuun
         kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="viikko-nro">${getWeekNumber(paivaIt)}</div>`);
         
-        // Lisää viikon 7 päivää
         for (let j = 0; j < 7; j++) {
             const pvmString = `${paivaIt.getFullYear()}-${String(paivaIt.getMonth() + 1).padStart(2, '0')}-${String(paivaIt.getDate()).padStart(2, '0')}`;
             const onkoNykyinenKuukausi = paivaIt.getMonth() === kuukausi;
@@ -172,7 +165,6 @@ function piirraKalenteri() {
             paivaIt.setDate(paivaIt.getDate() + 1);
         }
         
-        // Optimointi: Jos olemme jo piirtäneet koko kuukauden, lopetetaan
         if (paivaIt > vikaKuunPaiva && paivaIt.getDay() === 1) {
             break;
         }
@@ -198,7 +190,9 @@ function kuunteleTapahtumia() {
     const tapahtumatRef = ref(database, 'tapahtumat');
     unsubscribeFromEvents = onValue(tapahtumatRef, (snapshot) => {
         window.kaikkiTapahtumat = [];
-        snapshot.forEach((child) => window.kaikkiTapahtumat.push({ key: child.key, ...child.val() }));
+        snapshot.forEach((child) => {
+            window.kaikkiTapahtumat.push({ key: child.key, ...child.val() });
+        });
         naytaTapahtumatKalenterissa();
         naytaTulevatTapahtumat();
     });
@@ -309,7 +303,7 @@ function tallennaMuutokset() {
 
 function poistaTapahtuma() {
     const key = modalOverlay.dataset.tapahtumaId;
-    if (confirm('Haluatko varmasti poistaa tämän tapahtuman?')) {
+    if (confirm('Haluatko varmasti poistaa tämän oman tapahtuman?')) {
         remove(ref(database, `tapahtumat/${key}`)).then(() => suljeTapahtumaIkkuna());
     }
 }
