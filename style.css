@@ -10,6 +10,7 @@
     --event-bg: #90EE90;
     --event-text: #1a2015;
     --event-own-bg: #FFD700;
+    --shadow-color: rgba(0, 0, 0, 0.2);
 }
 
 body.theme-kaisa {
@@ -23,6 +24,7 @@ body.theme-kaisa {
     --event-bg: #e6c6e6;
     --event-text: #2b202b;
     --event-own-bg: #ffb6c1;
+    --shadow-color: rgba(0, 0, 0, 0.2);
 }
 
 body.theme-oona {
@@ -36,6 +38,7 @@ body.theme-oona {
     --event-bg: #a9d6e5;
     --event-text: #1f2a33;
     --event-own-bg: #87ceeb;
+    --shadow-color: rgba(0, 0, 0, 0.2);
 }
 
 /* Yleiset tyylit, jotka käyttävät muuttujia */
@@ -44,7 +47,7 @@ body {
     font-family: 'Georgia', serif;
     color: var(--text-main);
     margin: 0;
-    padding: 20px;
+    padding: 10px;
     transition: background-color 0.3s ease;
 }
 
@@ -52,7 +55,7 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     display: grid;
-    grid-template-columns: 1fr 300px;
+    grid-template-columns: 1fr 320px;
     gap: 20px;
 }
 
@@ -66,6 +69,7 @@ header {
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
+    gap: 15px;
 }
 #user-info {
     font-size: 0.9em;
@@ -77,46 +81,64 @@ header {
     margin: 0 0 0 10px;
 }
 
-main {
+main, .sivupalkki {
     background-color: var(--bg-container);
-    border-radius: 8px;
-    padding: 15px;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 15px var(--shadow-color);
 }
 
 .sivupalkki {
     background-color: var(--bg-sidebar);
-    border-radius: 8px;
-    padding: 15px;
 }
 
 .kalenteri-ylapalkki h2 {
     color: var(--text-accent);
+    margin: 0;
 }
 
-#kalenteri-grid {
+/* Kalenterin uudet otsikot ja grid-asetelma */
+#kalenteri-paivat-otsikot, #kalenteri-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    /* 1. sarake viikkonumerolle, 7 saraketta päiville */
+    grid-template-columns: 35px repeat(7, 1fr);
     gap: 5px;
+}
+#kalenteri-paivat-otsikot {
+    margin-bottom: 10px;
+}
+.viikonpaiva, .viikko-nro {
+    text-align: center;
+    font-weight: bold;
+    font-size: 0.9em;
+    color: var(--text-accent);
+    opacity: 0.8;
+}
+.viikko-nro {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .paiva {
     background-color: var(--bg-calendar-day);
-    min-height: 100px;
-    padding: 5px;
-    border-radius: 4px;
+    min-height: 110px;
+    padding: 8px;
+    border-radius: 8px;
 }
 .paiva.tyhja {
     background-color: transparent;
 }
 .paiva-numero {
     font-weight: bold;
+    font-size: 0.9em;
 }
 .tapahtuma {
     background-color: var(--event-bg);
     color: var(--event-text);
-    padding: 3px 5px;
-    border-radius: 3px;
-    font-size: 0.8em;
+    padding: 4px 6px;
+    border-radius: 5px;
+    font-size: 0.85em;
     margin-top: 5px;
     white-space: nowrap;
     overflow: hidden;
@@ -131,15 +153,18 @@ main {
     background-color: var(--event-own-bg);
 }
 
+input, select, textarea, button {
+    font-family: 'Georgia', serif;
+}
 input[type="text"], input[type="password"], input[type="datetime-local"], select, textarea {
     width: 100%;
-    padding: 10px;
+    padding: 12px;
     box-sizing: border-box;
     background-color: var(--bg-sidebar);
     color: var(--text-main);
     border: 1px solid var(--bg-container);
-    border-radius: 4px;
-    font-family: 'Georgia', serif;
+    border-radius: 8px;
+    font-size: 1em;
 }
 
 button {
@@ -149,7 +174,7 @@ button {
     border: 1px solid var(--text-accent);
     background-color: transparent;
     color: var(--text-accent);
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 16px;
     transition: background-color 0.2s, color 0.2s;
@@ -161,68 +186,55 @@ button:hover {
 
 /* Kirjautumisikkuna */
 .login-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background-color: var(--bg-main);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
+    display: flex; justify-content: center; align-items: center; z-index: 2000;
 }
 .login-box {
     background-color: var(--bg-sidebar);
-    padding: 30px;
-    border-radius: 8px;
-    text-align: center;
-    width: 90%;
-    max-width: 350px;
+    padding: 30px; border-radius: 12px; text-align: center;
+    width: 90%; max-width: 350px;
     border: 2px solid var(--bg-container);
 }
-#login-error {
-    color: #e74c3c;
-    margin-top: 10px;
-}
+#login-error { color: #e74c3c; margin-top: 10px; }
 
 /* Ponnahdusikkuna (Modal) */
 .hidden { display: none !important; }
 
 .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background-color: rgba(0, 0, 0, 0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
+    display: flex; justify-content: center; align-items: center; z-index: 1000;
 }
 .modal-content {
     background-color: var(--bg-sidebar);
-    padding: 25px;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 500px;
+    padding: 25px; border-radius: 12px;
+    width: 90%; max-width: 500px;
     border: 2px solid var(--text-accent);
 }
-.modal-content h2, #modal-view-content p strong {
-    color: var(--text-accent);
-}
+.modal-content h2, #modal-view-content p strong { color: var(--text-accent); }
 
-.delete-btn {
-    background-color: #e74c3c;
-    border-color: #c0392b;
-    color: white;
-}
+.delete-btn { background-color: #e74c3c; border-color: #c0392b; color: white; }
 .delete-btn:hover { background-color: #c0392b; }
-
-.cancel-btn {
-    background-color: transparent;
-    border-color: #7f8c8d;
-    color: #7f8c8d;
-}
+.cancel-btn { background-color: transparent; border-color: #7f8c8d; color: #7f8c8d; }
 .cancel-btn:hover { background-color: #7f8c8d; color: #F8F8F8; }
+
+/* MOBIILIRESPONSIIVISUUS */
+@media (max-width: 800px) {
+    body { padding: 5px; }
+    .container {
+        grid-template-columns: 1fr; /* Yksi sarake */
+        gap: 15px;
+    }
+    .header-content {
+        flex-direction: column;
+        gap: 10px;
+    }
+    main, .sivupalkki { padding: 15px; }
+    .paiva { min-height: 90px; padding: 5px; }
+    .tapahtuma { font-size: 0.75em; padding: 3px; }
+    #kalenteri-paivat-otsikot, #kalenteri-grid {
+        grid-template-columns: 25px repeat(7, 1fr); /* Kapeampi viikkosarake */
+        gap: 3px;
+    }
+}
