@@ -134,23 +134,21 @@ function avaaTapahtumaIkkuna(key) {
     const tapahtuma = window.kaikkiTapahtumat.find(t => t.key === key);
     if (!tapahtuma) return;
 
-    // Tallenna avoimen tapahtuman ID, jotta muut funktiot löytävät sen
     modalOverlay.dataset.tapahtumaId = key;
 
-    // Täytä lukunäkymän tiedot
     document.getElementById('view-otsikko').textContent = tapahtuma.otsikko;
     document.getElementById('view-kuvaus').textContent = tapahtuma.kuvaus || 'Ei lisätietoja.';
     document.getElementById('view-luoja').textContent = tapahtuma.luoja;
-    const nakyvat nimet = Object.keys(tapahtuma.nakyvyys || {}).filter(k => tapahtuma.nakyvyys[k]).join(', ');
-    document.getElementById('view-nakyvyys').textContent = nakyvat_nimet;
     
-    // Muotoile päivämäärät ja ajat siististi
+    // TÄMÄ RIVI ON KORJATTU
+    const nakyvatNimet = Object.keys(tapahtuma.nakyvyys || {}).filter(k => tapahtuma.nakyvyys[k]).join(', ');
+    document.getElementById('view-nakyvyys').textContent = nakyvatNimet;
+    
     const alkuPvm = new Date(tapahtuma.alku);
     const loppuPvm = new Date(tapahtuma.loppu);
     const options = { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' };
     document.getElementById('view-aika').textContent = `${alkuPvm.toLocaleString('fi-FI', options)} - ${loppuPvm.toLocaleString('fi-FI', options)}`;
 
-    // Täytä muokkauslomake valmiiksi taustalla
     document.getElementById('muokkaa-tapahtuma-id').value = key;
     document.getElementById('muokkaa-tapahtuma-otsikko').value = tapahtuma.otsikko;
     document.getElementById('muokkaa-tapahtuma-kuvaus').value = tapahtuma.kuvaus || '';
@@ -160,7 +158,7 @@ function avaaTapahtumaIkkuna(key) {
        cb.checked = !!tapahtuma.nakyvyys?.[cb.value];
     });
 
-    vaihdaTila('view'); // Varmista, että lukunäkymä on aktiivinen
+    vaihdaTila('view');
     modalOverlay.classList.remove('hidden');
 }
 
@@ -172,7 +170,7 @@ function vaihdaTila(tila) {
     if (tila === 'edit') {
         modalViewContent.classList.add('hidden');
         modalEditContent.classList.remove('hidden');
-    } else { // 'view'
+    } else {
         modalEditContent.classList.add('hidden');
         modalViewContent.classList.remove('hidden');
     }
@@ -188,7 +186,6 @@ function tallennaMuutokset() {
         nakyvyys: Array.from(document.querySelectorAll('input[name="muokkaa-nakyvyys"]:checked')).reduce((acc, cb) => ({ ...acc, [cb.value]: true }), {})
     };
     update(ref(database, `tapahtumat/${key}`), paivitys).then(() => {
-        // Päivitä lukunäkymä heti tallennuksen jälkeen
         avaaTapahtumaIkkuna(key);
         vaihdaTila('view');
     });
