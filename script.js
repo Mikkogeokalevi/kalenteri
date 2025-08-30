@@ -38,6 +38,7 @@ const modalViewContent = document.getElementById('modal-view-content');
 const modalEditContent = document.getElementById('modal-edit-content');
 const avaaLisaysLomakeBtn = document.getElementById('avaa-lisays-lomake-btn');
 const sivupalkki = document.querySelector('.sivupalkki');
+const hakuKentta = document.getElementById('haku-kentta');
 
 // --- Sovelluksen tila ---
 let nykyinenKayttaja = null;
@@ -92,6 +93,10 @@ function lisaaKuuntelijat() {
     });
     
     kalenteriGrid.addEventListener('click', handlePaivaClick);
+
+    hakuKentta.addEventListener('input', () => {
+        naytaTulevatTapahtumat();
+    });
 }
 
 function handlePaivaClick(event) {
@@ -293,7 +298,6 @@ function naytaTapahtumatKalenterissa() {
                 kuvake.className = luokat;
                 kuvake.title = tapahtuma.otsikko;
 
-                // MUUTETTU: Käytetään "ketakoskee"-kenttää alkukirjaimeen
                 if (tapahtuma.ketakoskee) {
                     kuvake.textContent = tapahtuma.ketakoskee.charAt(0).toUpperCase();
                 }
@@ -312,15 +316,34 @@ function naytaTapahtumatKalenterissa() {
 function naytaTulevatTapahtumat() {
     tulevatTapahtumatLista.innerHTML = '';
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
+    
+    const hakutermi = hakuKentta.value.toLowerCase();
+
     const nyt = new Date();
     const today = new Date(nyt.getFullYear(), nyt.getMonth(), nyt.getDate()); 
+    
     const tulevat = window.kaikkiTapahtumat
-        .filter(t => t.nakyvyys?.[nykyinenKayttaja] && new Date(t.alku) >= today)
+        .filter(t => {
+            const nakyvyysJaAikaOk = t.nakyvyys?.[nykyinenKayttaja] && new Date(t.alku) >= today;
+            if (!nakyvyysJaAikaOk) return false;
+
+            if (hakutermi) {
+                const otsikko = t.otsikko ? t.otsikko.toLowerCase() : '';
+                const kuvaus = t.kuvaus ? t.kuvaus.toLowerCase() : '';
+                return otsikko.includes(hakutermi) || kuvaus.includes(hakutermi);
+            }
+            
+            return true;
+        })
         .sort((a, b) => new Date(a.alku) - new Date(b.alku))
         .slice(0, 10);
 
     if (tulevat.length === 0) {
-        tulevatTapahtumatLista.innerHTML = '<p>Ei tulevia tapahtumia.</p>';
+        if (hakutermi) {
+            tulevatTapahtumatLista.innerHTML = '<p>Hakusanalla ei löytynyt tulevia tapahtumia.</p>';
+        } else {
+            tulevatTapahtumatLista.innerHTML = '<p>Ei tulevia tapahtumia.</p>';
+        }
         return;
     }
 
@@ -341,7 +364,6 @@ function naytaTulevatTapahtumat() {
         }
         item.className = luokat;
         
-        // MUUTETTU: Käytetään "ketakoskee"-kenttää alkukirjaimeen
         let alkukirjain = '?';
         if (tapahtuma.ketakoskee) {
             alkukirjain = tapahtuma.ketakoskee.charAt(0).toUpperCase();
