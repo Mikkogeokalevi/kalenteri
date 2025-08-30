@@ -144,7 +144,7 @@ main, .sivupalkki {
     transform: scale(1.05);
 }
 .tapahtuma.oma {
-    background-color: var(--event-own-bg);
+    border: 2px solid gold; /* Korostetaan omaa tapahtumaa reunuksella värin sijaan */
 }
 input, select, textarea, button {
     font-family: 'Georgia', serif;
@@ -265,7 +265,7 @@ button:hover {
     }
 }
 
-/* UUDET LISÄTYT TYYLIT */
+/* UUDET JA PÄIVITETYT TYYLIT */
 
 /* Tänään-palkin tyylit */
 #tanaan-banneri {
@@ -301,13 +301,8 @@ button:hover {
     opacity: 0.6;
 }
 
-/* Tapahtumien värikoodit */
-.tapahtuma.koskee-perhe { background-color: #FFB6C1; /* Vaaleanpunainen */ }
-.tapahtuma.koskee-toni { background-color: var(--event-bg); /* Oletus vihreä */ }
-.tapahtuma.koskee-kaisa { background-color: #E6C6E6; /* Lila */ }
-.tapahtuma.koskee-oona { background-color: #A9D6E5; /* Sininen */ }
-
-/* Korostetaan omaa väriä vielä enemmän */
-.tapahtuma.oma.koskee-toni { background-color: #FFD700; /* Kulta */ }
-.tapahtuma.oma.koskee-kaisa { background-color: #ffb6c1; /* Vaaleanpunainen */ }
-.tapahtuma.oma.koskee-oona { background-color: #87ceeb; /* Taivaansininen */ }
+/* Tapahtumien värikoodit (PÄIVITETTY) */
+.tapahtuma.koskee-perhe { background-color: #f08080; color: #fff; } /* Vaalea koralli */
+.tapahtuma.koskee-toni { background-color: #2e8b57; color: #fff; } /* Merenvihreä */
+.tapahtuma.koskee-kaisa { background-color: #9370db; color: #fff; } /* Keskivioletti */
+.tapahtuma.koskee-oona { background-color: #4682b4; color: #fff; } /* Teräksensininen */
