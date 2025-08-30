@@ -40,7 +40,6 @@ const avaaLisaysLomakeBtn = document.getElementById('avaa-lisays-lomake-btn');
 const sivupalkki = document.querySelector('.sivupalkki');
 const hakuKentta = document.getElementById('haku-kentta');
 
-// UUDET DOM-ELEMENTIT TEHTÄVÄLISTALLE
 const tehtavatContainer = document.getElementById('tehtavat-container');
 const uusiTehtavaTeksti = document.getElementById('uusi-tehtava-teksti');
 const lisaaTehtavaNappi = document.getElementById('lisaa-tehtava-nappi');
@@ -50,7 +49,7 @@ const lisaaTehtavaNappi = document.getElementById('lisaa-tehtava-nappi');
 let nykyinenKayttaja = null;
 let nykyinenPaiva = new Date();
 let unsubscribeFromEvents = null;
-let unsubscribeFromTasks = null; // UUSI
+let unsubscribeFromTasks = null; 
 
 document.addEventListener('DOMContentLoaded', () => {
     checkLoginStatus();
@@ -126,7 +125,6 @@ function lisaaKuuntelijat() {
         toggleLoppuAika(e.target.checked, 'loppu-aika-muokkaa-container');
     });
 
-    // UUSI KUUNTELIJA TEHTÄVÄLISTALLE
     lisaaTehtavaNappi.addEventListener('click', lisaaTehtava);
     uusiTehtavaTeksti.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -174,7 +172,7 @@ function handleLogin(event) {
 function handleLogout() {
     localStorage.removeItem('loggedInUser');
     if (unsubscribeFromEvents) unsubscribeFromEvents();
-    if (unsubscribeFromTasks) unsubscribeFromTasks(); // UUSI
+    if (unsubscribeFromTasks) unsubscribeFromTasks(); 
     nykyinenKayttaja = null;
     mainContainer.classList.add('hidden');
     loginOverlay.classList.remove('hidden');
@@ -197,10 +195,9 @@ function startAppForUser(user) {
 
     piirraKalenteri();
     kuunteleTapahtumia();
-    kuunteleTehtavia(); // UUSI
+    kuunteleTehtavia();
 }
 
-// ... (kaikki vanhat funktiot, kuten applyTheme, getWeekNumber, jne. pysyvät ennallaan)
 function applyTheme(user) {
     document.body.className = '';
     document.body.classList.add(`theme-${user.toLowerCase()}`);
@@ -334,8 +331,6 @@ function kuunteleTapahtumia() {
         naytaTulevatTapahtumat();
     });
 }
-
-// ... (kaikki tapahtumien näyttämiseen ja muokkaamiseen liittyvät funktiot pysyvät ennallaan)
 
 function naytaTapahtumatKalenterissa() {
     document.querySelectorAll('.tapahtumat-container').forEach(c => c.innerHTML = '');
@@ -584,7 +579,7 @@ function kopioiTapahtuma() {
 }
 
 
-// --- UUDET FUNKTIOT TEHTÄVÄLISTALLE ---
+// --- TEHTÄVÄLISTAN FUNKTIOT ---
 
 function kuunteleTehtavia() {
     if (unsubscribeFromTasks) unsubscribeFromTasks();
@@ -594,6 +589,7 @@ function kuunteleTehtavia() {
     });
 }
 
+// TÄMÄ FUNKTIO ON MUUTETTU
 function piirraTehtavalista(snapshot) {
     tehtavatContainer.innerHTML = '';
     const tehtavat = [];
@@ -601,7 +597,6 @@ function piirraTehtavalista(snapshot) {
         tehtavat.push({ key: child.key, ...child.val() });
     });
 
-    // Järjestä niin, että tekemättömät tulevat ensin
     tehtavat.sort((a, b) => a.tehty - b.tehty);
 
     if (tehtavat.length === 0) {
@@ -621,9 +616,30 @@ function piirraTehtavalista(snapshot) {
         checkbox.checked = tehtava.tehty;
         checkbox.addEventListener('change', () => paivitaTehtavanTila(tehtava.key, checkbox.checked));
 
+        // UUSI OSA: Luodaan div-elementti tekstille ja metatiedoille
+        const tiedotContainer = document.createElement('div');
+        tiedotContainer.className = 'tehtava-tiedot';
+
         const teksti = document.createElement('p');
         teksti.className = 'tehtava-teksti';
         teksti.textContent = tehtava.teksti;
+        
+        // UUSI OSA: Luodaan metatietojen elementti
+        const meta = document.createElement('small');
+        meta.className = 'tehtava-meta';
+        
+        let metaTeksti = '';
+        if (tehtava.luoja) {
+            metaTeksti += `Lisännyt ${tehtava.luoja}`;
+        }
+        if (tehtava.lisattyAika) {
+            const pvm = new Date(tehtava.lisattyAika).toLocaleDateString('fi-FI');
+            metaTeksti += ` - ${pvm}`;
+        }
+        meta.textContent = metaTeksti;
+
+        tiedotContainer.appendChild(teksti);
+        tiedotContainer.appendChild(meta);
 
         const poistaNappi = document.createElement('button');
         poistaNappi.className = 'poista-tehtava-nappi';
@@ -631,11 +647,12 @@ function piirraTehtavalista(snapshot) {
         poistaNappi.addEventListener('click', () => poistaTehtava(tehtava.key));
         
         item.appendChild(checkbox);
-        item.appendChild(teksti);
+        item.appendChild(tiedotContainer);
         item.appendChild(poistaNappi);
         tehtavatContainer.appendChild(item);
     });
 }
+
 
 function lisaaTehtava() {
     const teksti = uusiTehtavaTeksti.value.trim();
@@ -645,7 +662,7 @@ function lisaaTehtava() {
         teksti: teksti,
         tehty: false,
         luoja: nykyinenKayttaja,
-        lisattyAika: serverTimestamp() // Käyttää Firebasen omaa aikaleimaa
+        lisattyAika: serverTimestamp()
     };
 
     push(ref(database, 'tehtavalista'), uusiTehtava).then(() => {
