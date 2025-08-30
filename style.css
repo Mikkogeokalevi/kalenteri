@@ -128,7 +128,6 @@ main, .sivupalkki {
 .tapahtuma {
     position: relative; /* Tarvitaan luoja-tunnisteen asemointiin */
     padding-right: 15px; /* Tehdään tilaa tunnisteelle */
-    background-color: var(--event-bg);
     color: var(--event-text);
     padding: 4px 6px;
     border-radius: 5px;
@@ -205,7 +204,7 @@ button:hover {
 .cancel-btn { background-color: transparent; border-color: #7f8c8d; color: #7f8c8d; }
 .cancel-btn:hover { background-color: #7f8c8d; color: #F8F8F8; }
 
-/* TYYLIT LISTANÄKYMÄLLE */
+/* TULEVIEN TAPAHTUMIEN LISTAN UUDET JA PÄIVITETYT TYYLIT */
 .tulevat-tapahtumat {
     background-color: var(--bg-sidebar);
     padding: 15px 20px;
@@ -218,25 +217,42 @@ button:hover {
     color: var(--text-accent);
 }
 .tuleva-tapahtuma-item {
-    display: flex;
-    justify-content: space-between;
+    display: flex; /* Asettaa elementit vierekkäin */
+    align-items: center; /* Tasaa elementit pystysuunnassa keskelle */
     padding: 10px;
-    background-color: var(--bg-container);
     border-radius: 8px;
     margin-bottom: 8px;
     cursor: pointer;
     transition: transform 0.2s ease;
+    background-color: var(--bg-container); /* Oletusväri, jos värikoodia ei ole */
 }
 .tuleva-tapahtuma-item:hover {
     transform: scale(1.02);
 }
-.tapahtuma-item-aika {
-    flex-shrink: 0;
-    margin-right: 15px;
+.tapahtuma-item-luoja {
+    flex-shrink: 0; /* Estää laatikon kutistumisen */
+    width: 32px;
+    height: 32px;
+    border-radius: 5px;
+    background-color: rgba(0, 0, 0, 0.2);
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-weight: bold;
+    font-size: 1.1em;
+    margin-right: 12px;
+}
+.tapahtuma-item-tiedot {
+    flex-grow: 1;
+    overflow: hidden; /* Varmistaa, että ellipsis toimii */
+}
+.tapahtuma-item-aika {
+    font-weight: bold;
+    font-size: 0.9em;
 }
 .tapahtuma-item-otsikko {
-    flex-grow: 1;
+    font-size: 1em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -265,7 +281,7 @@ button:hover {
     }
 }
 
-/* UUDET JA PÄIVITETYT TYYLIT */
+/* KAIKKI UUDET JA PÄIVITETYT TYYLIT */
 
 /* Tänään-palkin tyylit */
 #tanaan-banneri {
@@ -301,8 +317,24 @@ button:hover {
     opacity: 0.6;
 }
 
-/* Tapahtumien värikoodit (PÄIVITETTY) */
-.tapahtuma.koskee-perhe { background-color: #f08080; color: #fff; } /* Vaalea koralli */
-.tapahtuma.koskee-toni { background-color: #2e8b57; color: #fff; } /* Merenvihreä */
-.tapahtuma.koskee-kaisa { background-color: #9370db; color: #fff; } /* Keskivioletti */
-.tapahtuma.koskee-oona { background-color: #4682b4; color: #fff; } /* Teräksensininen */
+/* TAPAHTUMIEN VÄRIKOODIT (KALENTERI & TULEVAT-LISTA) */
+.tapahtuma.koskee-perhe,
+.tuleva-tapahtuma-item.koskee-perhe { 
+    background-color: #f08080; /* Vaalea koralli */
+    color: #fff; 
+}
+.tapahtuma.koskee-toni,
+.tuleva-tapahtuma-item.koskee-toni { 
+    background-color: #2e8b57; /* Merenvihreä */
+    color: #fff; 
+}
+.tapahtuma.koskee-kaisa,
+.tuleva-tapahtuma-item.koskee-kaisa { 
+    background-color: #9370db; /* Keskivioletti */
+    color: #fff; 
+}
+.tapahtuma.koskee-oona,
+.tuleva-tapahtuma-item.koskee-oona { 
+    background-color: #4682b4; /* Teräksensininen */
+    color: #fff; 
+}
