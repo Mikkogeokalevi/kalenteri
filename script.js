@@ -249,6 +249,7 @@ function naytaTapahtumatKalenterissa() {
     });
 }
 
+// TÄMÄ FUNKTIO ON PÄIVITETTY LUOMAAN UUSI RAKENNE
 function naytaTulevatTapahtumat() {
     tulevatTapahtumatLista.innerHTML = '';
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
@@ -269,11 +270,21 @@ function naytaTulevatTapahtumat() {
         const paiva = alku.toLocaleDateString('fi-FI', { weekday: 'short', day: 'numeric', month: 'numeric' });
         const aika = alku.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
         const item = document.createElement('div');
-        item.className = 'tuleva-tapahtuma-item';
         
+        // Lisätään luokat värejä varten
+        let luokat = 'tuleva-tapahtuma-item';
+        if (tapahtuma.ketakoskee) {
+            luokat += ` koskee-${tapahtuma.ketakoskee.toLowerCase()}`;
+        }
+        item.className = luokat;
+        
+        // Luodaan uusi, monipuolisempi HTML-rakenne
         item.innerHTML = `
-            <div class="tapahtuma-item-aika">${paiva} ${aika}</div>
-            <div class="tapahtuma-item-otsikko">${tapahtuma.otsikko}</div>
+            <div class="tapahtuma-item-luoja">${tapahtuma.luoja ? tapahtuma.luoja.charAt(0) : '?'}</div>
+            <div class="tapahtuma-item-tiedot">
+                <div class="tapahtuma-item-aika">${paiva} ${aika}</div>
+                <div class="tapahtuma-item-otsikko">${tapahtuma.otsikko}</div>
+            </div>
         `;
         
         item.addEventListener('click', () => avaaTapahtumaIkkuna(tapahtuma.key));
@@ -300,12 +311,10 @@ function avaaTapahtumaIkkuna(key) {
     document.getElementById('muokkaa-tapahtuma-alku').value = tapahtuma.alku;
     document.getElementById('muokkaa-tapahtuma-loppu').value = tapahtuma.loppu;
     
-    // Asetetaan "Näkyy kenelle" valinnat
     document.querySelectorAll('input[name="muokkaa-nakyvyys"]').forEach(cb => {
        cb.checked = !!tapahtuma.nakyvyys?.[cb.value];
     });
 
-    // Asetetaan "Ketä koskee" valinta
     const ketakoskeeValue = tapahtuma.ketakoskee || 'perhe';
     document.querySelector(`input[name="muokkaa-ketakoskee"][value="${ketakoskeeValue}"]`).checked = true;
 
