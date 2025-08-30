@@ -37,11 +37,14 @@
                 <label for="tapahtuma-otsikko">Tapahtuma:</label>
                 <input type="text" id="tapahtuma-otsikko" required>
 
-                <label for="tapahtuma-pvm">Päivämäärä:</label>
-                <input type="date" id="tapahtuma-pvm" required>
+                <label for="tapahtuma-kuvaus">Lisätiedot:</label>
+                <textarea id="tapahtuma-kuvaus" rows="3"></textarea>
 
-                <label for="tapahtuma-aika">Aika (vapaaehtoinen):</label>
-                <input type="time" id="tapahtuma-aika">
+                <label for="tapahtuma-alku">Alkaa:</label>
+                <input type="datetime-local" id="tapahtuma-alku" required>
+
+                <label for="tapahtuma-loppu">Loppuu:</label>
+                <input type="datetime-local" id="tapahtuma-loppu" required>
                 
                 <fieldset>
                     <legend>Näkyy kenelle:</legend>
@@ -57,6 +60,43 @@
         </aside>
 
     </div>
+
+    <div id="muokkaus-modal-overlay" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>Muokkaa tapahtumaa</h2>
+            <form id="muokkaa-tapahtuma-lomake">
+                <input type="hidden" id="muokkaa-tapahtuma-id">
+                
+                <label for="muokkaa-tapahtuma-otsikko">Tapahtuma:</label>
+                <input type="text" id="muokkaa-tapahtuma-otsikko" required>
+
+                <label for="muokkaa-tapahtuma-kuvaus">Lisätiedot:</label>
+                <textarea id="muokkaa-tapahtuma-kuvaus" rows="3"></textarea>
+
+                <label for="muokkaa-tapahtuma-alku">Alkaa:</label>
+                <input type="datetime-local" id="muokkaa-tapahtuma-alku" required>
+
+                <label for="muokkaa-tapahtuma-loppu">Loppuu:</label>
+                <input type="datetime-local" id="muokkaa-tapahtuma-loppu" required>
+                
+                 <fieldset>
+                    <legend>Näkyy kenelle:</legend>
+                    <div class="nakyvyys-valinnat" id="muokkaa-nakyvyys">
+                        <label><input type="checkbox" name="muokkaa-nakyvyys" value="Toni"> Toni</label>
+                        <label><input type="checkbox" name="muokkaa-nakyvyys" value="Kaisa"> Kaisa</label>
+                        <label><input type="checkbox" name="muokkaa-nakyvyys" value="Oona"> Oona</label>
+                    </div>
+                </fieldset>
+                
+                <div class="modal-buttons">
+                    <button type="button" id="tallenna-muutokset-btn">Tallenna</button>
+                    <button type="button" id="poista-tapahtuma-btn" class="delete-btn">Poista</button>
+                    <button type="button" id="peruuta-btn" class="cancel-btn">Peruuta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 
     <script type="module" src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"></script>
