@@ -56,10 +56,14 @@
                     </div>
 
                     <div id="aika-valinnat">
-                        <label for="tapahtuma-alku">Alkaa:</label>
-                        <input type="datetime-local" id="tapahtuma-alku" required>
-                        <label for="tapahtuma-loppu">Loppuu:</label>
-                        <input type="datetime-local" id="tapahtuma-loppu" required>
+                        <div>
+                            <label for="tapahtuma-alku">Alkaa / Päivämäärä:</label>
+                            <input type="datetime-local" id="tapahtuma-alku" required>
+                        </div>
+                        <div id="loppu-aika-lisaa-container">
+                            <label for="tapahtuma-loppu">Loppuu:</label>
+                            <input type="datetime-local" id="tapahtuma-loppu" required>
+                        </div>
                     </div>
 
                     <label for="tapahtuma-linkki">Linkki (esim. Google Maps, Teams):</label>
@@ -134,13 +138,17 @@
                     </div>
                     
                     <div id="muokkaa-aika-valinnat">
-                        <label for="muokkaa-tapahtuma-alku">Alkaa:</label>
-                        <input type="datetime-local" id="muokkaa-tapahtuma-alku" required>
-                        <label for="muokkaa-tapahtuma-loppu">Loppuu:</label>
-                        <input type="datetime-local" id="muokkaa-tapahtuma-loppu" required>
+                        <div>
+                            <label for="muokkaa-tapahtuma-alku">Alkaa / Päivämäärä:</label>
+                            <input type="datetime-local" id="muokkaa-tapahtuma-alku" required>
+                        </div>
+                        <div id="loppu-aika-muokkaa-container">
+                            <label for="muokkaa-tapahtuma-loppu">Loppuu:</label>
+                            <input type="datetime-local" id="muokkaa-tapahtuma-loppu" required>
+                        </div>
                     </div>
 
-                     <label for="muokkaa-tapahtuma-linkki">Linkki:</label>
+                    <label for="muokkaa-tapahtuma-linkki">Linkki:</label>
                     <input type="url" id="muokkaa-tapahtuma-linkki" placeholder="https://...">
 
                     <fieldset>
