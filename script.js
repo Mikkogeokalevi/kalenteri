@@ -15,20 +15,31 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
+// HUOM: Salasanat ovat tässä vain yksinkertaista perhekäyttöä varten.
+// Tämä ei ole turvallinen tapa tallentaa salasanoja oikeissa sovelluksissa.
+const PASSWORDS = {
+    Toni: '26425',
+    Kaisa: '050583',
+    Oona: '210314'
+};
+
 // --- DOM-elementit ---
-const kayttajaValitsin = document.getElementById('kayttaja');
+const loginOverlay = document.getElementById('login-overlay');
+const loginForm = document.getElementById('login-form');
+const loginError = document.getElementById('login-error');
+const mainContainer = document.getElementById('main-container');
+const currentUserName = document.getElementById('current-user-name');
+const logoutBtn = document.getElementById('logout-btn');
+
 const kalenteriGrid = document.getElementById('kalenteri-grid');
 const kuukausiOtsikko = document.getElementById('kuukausi-otsikko');
 const edellinenBtn = document.getElementById('edellinen-kk');
 const seuraavaBtn = document.getElementById('seuraava-kk');
-const lomake = document.getElementById('lisaa-tapahtuma-lomake');
+const lisaaLomake = document.getElementById('lisaa-tapahtuma-lomake');
 
-// Tapahtumaikkunan elementit
 const modalOverlay = document.getElementById('tapahtuma-modal-overlay');
 const modalViewContent = document.getElementById('modal-view-content');
 const modalEditContent = document.getElementById('modal-edit-content');
-
-// Nappien kuuntelijat
 const muokkaaBtn = document.getElementById('muokkaa-btn');
 const suljeBtn = document.getElementById('sulje-btn');
 const tallennaBtn = document.getElementById('tallenna-muutokset-btn');
@@ -36,20 +47,18 @@ const poistaBtn = document.getElementById('poista-tapahtuma-btn');
 const peruutaMuokkausBtn = document.getElementById('peruuta-muokkaus-btn');
 
 // --- Sovelluksen tila ---
-let nykyinenKayttaja = kayttajaValitsin.value;
+let nykyinenKayttaja = null;
 let nykyinenPaiva = new Date();
 
+// --- Päälogiikka ---
 document.addEventListener('DOMContentLoaded', () => {
-    piirraKalenteri();
     lisaaKuuntelijat();
-    kuunteleTapahtumia();
 });
 
 function lisaaKuuntelijat() {
-    kayttajaValitsin.addEventListener('change', (e) => {
-        nykyinenKayttaja = e.target.value;
-        piirraKalenteri();
-    });
+    loginForm.addEventListener('submit', handleLogin);
+    logoutBtn.addEventListener('click', handleLogout);
+    
     edellinenBtn.addEventListener('click', () => {
         nykyinenPaiva.setMonth(nykyinenPaiva.getMonth() - 1);
         piirraKalenteri();
@@ -58,15 +67,12 @@ function lisaaKuuntelijat() {
         nykyinenPaiva.setMonth(nykyinenPaiva.getMonth() + 1);
         piirraKalenteri();
     });
-    lomake.addEventListener('submit', (e) => {
+    lisaaLomake.addEventListener('submit', (e) => {
         e.preventDefault();
         lisaaTapahtuma();
     });
 
-    // Ikkunan kuuntelijat
-    modalOverlay.addEventListener('click', (e) => {
-        if (e.target === modalOverlay) suljeTapahtumaIkkuna();
-    });
+    modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) suljeTapahtumaIkkuna(); });
     suljeBtn.addEventListener('click', suljeTapahtumaIkkuna);
     peruutaMuokkausBtn.addEventListener('click', () => vaihdaTila('view'));
     muokkaaBtn.addEventListener('click', () => vaihdaTila('edit'));
@@ -74,7 +80,41 @@ function lisaaKuuntelijat() {
     poistaBtn.addEventListener('click', poistaTapahtuma);
 }
 
+function handleLogin(event) {
+    event.preventDefault();
+    const user = document.getElementById('login-user').value;
+    const pass = document.getElementById('login-password').value;
+
+    if (PASSWORDS[user] === pass) {
+        nykyinenKayttaja = user;
+        loginOverlay.classList.add('hidden');
+        mainContainer.classList.remove('hidden');
+        loginError.classList.add('hidden');
+        document.getElementById('login-password').value = '';
+        currentUserName.textContent = nykyinenKayttaja;
+        
+        applyTheme(nykyinenKayttaja);
+        piirraKalenteri();
+        kuunteleTapahtumia();
+    } else {
+        loginError.classList.remove('hidden');
+    }
+}
+
+function handleLogout() {
+    nykyinenKayttaja = null;
+    mainContainer.classList.add('hidden');
+    loginOverlay.classList.remove('hidden');
+    document.body.className = ''; // Poista teemaluokat
+}
+
+function applyTheme(user) {
+    document.body.className = ''; // Nollaa vanhat teemat
+    document.body.classList.add(`theme-${user.toLowerCase()}`);
+}
+
 function piirraKalenteri() {
+    // ... (Tämä funktio ja muut alla olevat pysyvät lähes ennallaan)
     kalenteriGrid.innerHTML = '';
     const vuosi = nykyinenPaiva.getFullYear();
     const kuukausi = nykyinenPaiva.getMonth();
@@ -100,11 +140,16 @@ function lisaaTapahtuma() {
         nakyvyys: Array.from(document.querySelectorAll('input[name="nakyvyys"]:checked')).reduce((acc, cb) => ({ ...acc, [cb.value]: true }), {})
     };
     if (!uusiTapahtuma.otsikko || !uusiTapahtuma.alku || !uusiTapahtuma.loppu) return alert('Täytä vähintään otsikko, alkamis- ja loppumisaika.');
-    push(ref(database, 'tapahtumat'), uusiTapahtuma).then(() => lomake.reset());
+    push(ref(database, 'tapahtumat'), uusiTapahtuma).then(() => lisaaLomake.reset());
 }
 
+let unsubscribeFromEvents = null;
 function kuunteleTapahtumia() {
-    onValue(ref(database, 'tapahtumat'), (snapshot) => {
+    if (unsubscribeFromEvents) {
+        unsubscribeFromEvents(); // Lopeta vanha kuuntelija, jos sellainen on
+    }
+    const tapahtumatRef = ref(database, 'tapahtumat');
+    unsubscribeFromEvents = onValue(tapahtumatRef, (snapshot) => {
         window.kaikkiTapahtumat = [];
         snapshot.forEach((child) => window.kaikkiTapahtumat.push({ key: child.key, ...child.val() }));
         naytaTapahtumatKalenterissa();
@@ -113,7 +158,7 @@ function kuunteleTapahtumia() {
 
 function naytaTapahtumatKalenterissa() {
     document.querySelectorAll('.tapahtumat-container').forEach(c => c.innerHTML = '');
-    if (!window.kaikkiTapahtumat) return;
+    if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
     window.kaikkiTapahtumat.forEach(tapahtuma => {
         if (tapahtuma.nakyvyys?.[nykyinenKayttaja] && tapahtuma.alku) {
             const paivaElementti = document.querySelector(`.paiva[data-paivamaara="${tapahtuma.alku.substring(0, 10)}"]`);
@@ -128,19 +173,14 @@ function naytaTapahtumatKalenterissa() {
     });
 }
 
-// --- Tapahtumaikkunan funktiot ---
-
 function avaaTapahtumaIkkuna(key) {
     const tapahtuma = window.kaikkiTapahtumat.find(t => t.key === key);
     if (!tapahtuma) return;
 
     modalOverlay.dataset.tapahtumaId = key;
-
     document.getElementById('view-otsikko').textContent = tapahtuma.otsikko;
     document.getElementById('view-kuvaus').textContent = tapahtuma.kuvaus || 'Ei lisätietoja.';
     document.getElementById('view-luoja').textContent = tapahtuma.luoja;
-    
-    // TÄMÄ RIVI ON KORJATTU
     const nakyvatNimet = Object.keys(tapahtuma.nakyvyys || {}).filter(k => tapahtuma.nakyvyys[k]).join(', ');
     document.getElementById('view-nakyvyys').textContent = nakyvatNimet;
     
