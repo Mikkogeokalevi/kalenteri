@@ -119,12 +119,15 @@ main, .sivupalkki {
 }
 .paiva.tyhja {
     background-color: transparent;
+    opacity: 0.5;
 }
 .paiva-numero {
     font-weight: bold;
     font-size: 0.9em;
 }
 .tapahtuma {
+    position: relative; /* Tarvitaan luoja-tunnisteen asemointiin */
+    padding-right: 15px; /* Tehdään tilaa tunnisteelle */
     background-color: var(--event-bg);
     color: var(--event-text);
     padding: 4px 6px;
@@ -202,7 +205,7 @@ button:hover {
 .cancel-btn { background-color: transparent; border-color: #7f8c8d; color: #7f8c8d; }
 .cancel-btn:hover { background-color: #7f8c8d; color: #F8F8F8; }
 
-/* UUDET TYYLIT LISTANÄKYMÄLLE */
+/* TYYLIT LISTANÄKYMÄLLE */
 .tulevat-tapahtumat {
     background-color: var(--bg-sidebar);
     padding: 15px 20px;
@@ -261,3 +264,50 @@ button:hover {
         gap: 3px;
     }
 }
+
+/* UUDET LISÄTYT TYYLIT */
+
+/* Tänään-palkin tyylit */
+#tanaan-banneri {
+    text-align: center;
+    padding: 10px;
+    background-color: var(--bg-sidebar);
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 1.1em;
+    color: var(--text-accent);
+}
+
+/* Kalenterin kuluvan päivän korostus */
+.paiva.tanaan .paiva-numero {
+    background-color: var(--text-accent);
+    color: var(--bg-main);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: -2px; /* Pieni säätö kohdistukseen */
+}
+
+/* Tekijän tunniste tapahtuman sisällä */
+.tapahtuma-luoja {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    font-size: 0.8em;
+    font-weight: bold;
+    opacity: 0.6;
+}
+
+/* Tapahtumien värikoodit */
+.tapahtuma.koskee-perhe { background-color: #FFB6C1; /* Vaaleanpunainen */ }
+.tapahtuma.koskee-toni { background-color: var(--event-bg); /* Oletus vihreä */ }
+.tapahtuma.koskee-kaisa { background-color: #E6C6E6; /* Lila */ }
+.tapahtuma.koskee-oona { background-color: #A9D6E5; /* Sininen */ }
+
+/* Korostetaan omaa väriä vielä enemmän */
+.tapahtuma.oma.koskee-toni { background-color: #FFD700; /* Kulta */ }
+.tapahtuma.oma.koskee-kaisa { background-color: #ffb6c1; /* Vaaleanpunainen */ }
+.tapahtuma.oma.koskee-oona { background-color: #87ceeb; /* Taivaansininen */ }
