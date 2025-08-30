@@ -17,6 +17,13 @@ const PASSWORDS = {
     Oona: '210314'
 };
 
+const KAYTTAJA_VARIT = {
+    Toni: '#2e8b57',
+    Kaisa: '#9370db',
+    Oona: '#4682b4',
+    perhe: '#f08080'
+};
+
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
@@ -117,10 +124,9 @@ function lisaaKuuntelijat() {
     
     kalenteriGrid.addEventListener('click', handlePaivaClick);
 
-    // MUUTETTU HAKUKENTÄN KUUNTELIJA
     hakuKentta.addEventListener('input', () => {
-        naytaTulevatTapahtumat(); // Päivittää edelleen tulevien listan
-        korostaHakuOsumatKalenterissa(); // UUSI: Korostaa osumat kalenterista
+        naytaTulevatTapahtumat();
+        korostaHakuOsumatKalenterissa();
     });
 
     document.getElementById('tapahtuma-koko-paiva').addEventListener('change', (e) => {
@@ -139,6 +145,21 @@ function lisaaKuuntelijat() {
 
     tehtavalistaToggle.addEventListener('click', () => {
         tehtavalistaSisalto.classList.toggle('hidden');
+    });
+
+    document.querySelectorAll('input[name="lisaa-ketakoskee"], input[name="muokkaa-ketakoskee"]').forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+            const form = e.target.closest('form');
+            const name = e.target.name;
+            const perheBox = form.querySelector(`input[name="${name}"][value="perhe"]`);
+            const personBoxes = Array.from(form.querySelectorAll(`input[name="${name}"]:not([value="perhe"])`));
+
+            if (e.target.value === 'perhe') {
+                personBoxes.forEach(box => box.checked = e.target.checked);
+            } else {
+                perheBox.checked = personBoxes.every(box => box.checked);
+            }
+        });
     });
 }
 
@@ -290,7 +311,7 @@ function piirraKalenteri() {
         }
     }
     naytaTapahtumatKalenterissa();
-    korostaHakuOsumatKalenterissa(); // UUSI KUTSU
+    korostaHakuOsumatKalenterissa();
 }
 
 function lisaaTapahtuma() {
@@ -308,6 +329,13 @@ function lisaaTapahtuma() {
         loppuAika = document.getElementById('tapahtuma-loppu').value;
     }
 
+    const koskeeValinnat = Array.from(document.querySelectorAll('input[name="lisaa-ketakoskee"]:checked'))
+                                 .map(cb => cb.value)
+                                 .filter(value => value !== 'perhe');
+    if (koskeeValinnat.length === 0 && document.querySelector('input[name="lisaa-ketakoskee"][value="perhe"]:checked')) {
+        koskeeValinnat.push('perhe');
+    }
+
     const uusi = {
         otsikko: document.getElementById('tapahtuma-otsikko').value,
         kuvaus: document.getElementById('tapahtuma-kuvaus').value,
@@ -316,10 +344,10 @@ function lisaaTapahtuma() {
         kokoPaiva: kokoPaivaCheckbox.checked,
         linkki: document.getElementById('tapahtuma-linkki').value,
         luoja: nykyinenKayttaja,
-        ketakoskee: document.querySelector('input[name="ketakoskee"]:checked').value,
+        ketakoskee: koskeeValinnat,
         nakyvyys: Array.from(document.querySelectorAll('input[name="nakyvyys"]:checked')).reduce((a, c) => ({ ...a, [c.value]: true }), {})
     };
-    if (!uusi.otsikko || !uusi.alku || !uusi.loppu) return alert('Täytä vähintään otsikko ja päivämäärä.');
+    if (!uusi.otsikko || !uusi.alku || !uusi.loppu || koskeeValinnat.length === 0) return alert('Täytä vähintään otsikko, päivämäärä ja ketä tapahtuma koskee.');
     
     push(ref(database, 'tapahtumat'), uusi).then(() => {
         lisaaLomake.reset();
@@ -339,7 +367,35 @@ function kuunteleTapahtumia() {
         });
         naytaTapahtumatKalenterissa();
         naytaTulevatTapahtumat();
+        korostaHakuOsumatKalenterissa();
     });
+}
+
+function luoKoskeeTiedot(ketakoskee) {
+    if (!Array.isArray(ketakoskee) || ketakoskee.length === 0) {
+        const nimi = typeof ketakoskee === 'string' ? ketakoskee : 'perhe';
+        return {
+            initialit: nimi.charAt(0).toUpperCase(),
+            vari: KAYTTAJA_VARIT[nimi] || KAYTTAJA_VARIT['perhe']
+        };
+    }
+
+    if (ketakoskee.includes('perhe') || ketakoskee.length >= 3) {
+        return { initialit: 'P', vari: KAYTTAJA_VARIT.perhe };
+    }
+
+    const sortedNames = ketakoskee.sort();
+    const initialit = sortedNames.map(nimi => nimi.charAt(0).toUpperCase()).join('');
+    
+    let vari;
+    if (sortedNames.length === 1) {
+        vari = KAYTTAJA_VARIT[sortedNames[0]] || KAYTTAJA_VARIT.perhe;
+    } else {
+        const varit = sortedNames.map(nimi => KAYTTAJA_VARIT[nimi] || '#333');
+        vari = `linear-gradient(45deg, ${varit.join(', ')})`;
+    }
+
+    return { initialit, vari };
 }
 
 function naytaTapahtumatKalenterissa() {
@@ -351,17 +407,12 @@ function naytaTapahtumatKalenterissa() {
             const paivaEl = document.querySelector(`.paiva[data-paivamaara="${tapahtuma.alku.substring(0, 10)}"]`);
             if (paivaEl) {
                 const kuvake = document.createElement('div');
-                
-                let luokat = 'tapahtuma-kuvake';
-                if (tapahtuma.ketakoskee) {
-                    luokat += ` koskee-${tapahtuma.ketakoskee.toLowerCase()}`;
-                }
-                kuvake.className = luokat;
+                kuvake.className = 'tapahtuma-kuvake';
                 kuvake.title = tapahtuma.otsikko;
 
-                if (tapahtuma.ketakoskee) {
-                    kuvake.textContent = tapahtuma.ketakoskee.charAt(0).toUpperCase();
-                }
+                const { initialit, vari } = luoKoskeeTiedot(tapahtuma.ketakoskee);
+                kuvake.textContent = initialit;
+                kuvake.style.background = vari;
                 
                 kuvake.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -423,19 +474,12 @@ function naytaTulevatTapahtumat() {
         }
         
         const item = document.createElement('div');
-        let luokat = 'tuleva-tapahtuma-item';
-        if (tapahtuma.ketakoskee) {
-            luokat += ` koskee-${tapahtuma.ketakoskee.toLowerCase()}`;
-        }
-        item.className = luokat;
+        item.className = 'tuleva-tapahtuma-item';
         
-        let alkukirjain = '?';
-        if (tapahtuma.ketakoskee) {
-            alkukirjain = tapahtuma.ketakoskee.charAt(0).toUpperCase();
-        }
+        const { initialit, vari } = luoKoskeeTiedot(tapahtuma.ketakoskee);
         
         item.innerHTML = `
-            <div class="tapahtuma-item-luoja">${alkukirjain}</div>
+            <div class="tapahtuma-item-luoja" style="background: ${vari};">${initialit}</div>
             <div class="tapahtuma-item-tiedot">
                 <div class="tapahtuma-item-aika">${paiva} ${aikaTeksti}</div>
                 <div class="tapahtuma-item-otsikko">${tapahtuma.otsikko}</div>
@@ -447,9 +491,7 @@ function naytaTulevatTapahtumat() {
     });
 }
 
-// UUSI FUNKTIO
 function korostaHakuOsumatKalenterissa() {
-    // Poistetaan ensin vanhat korostukset
     document.querySelectorAll('.paiva.haku-osuma').forEach(el => el.classList.remove('haku-osuma'));
 
     const hakutermi = hakuKentta.value.toLowerCase().trim();
@@ -458,7 +500,6 @@ function korostaHakuOsumatKalenterissa() {
     }
 
     const osumat = window.kaikkiTapahtumat.filter(tapahtuma => {
-        // Etsitään kaikista tapahtumista, riippumatta päivämäärästä
         if (!tapahtuma.nakyvyys?.[nykyinenKayttaja]) return false;
         
         const otsikko = (tapahtuma.otsikko || '').toLowerCase();
@@ -521,8 +562,20 @@ function avaaTapahtumaIkkuna(key) {
        cb.checked = !!tapahtuma.nakyvyys?.[cb.value];
     });
 
-    const ketakoskeeValue = tapahtuma.ketakoskee || 'perhe';
-    document.querySelector(`input[name="muokkaa-ketakoskee"][value="${ketakoskeeValue}"]`).checked = true;
+    const ketakoskee = Array.isArray(tapahtuma.ketakoskee) ? tapahtuma.ketakoskee : [String(tapahtuma.ketakoskee)];
+
+    document.querySelectorAll('input[name="muokkaa-ketakoskee"]').forEach(cb => {
+        cb.checked = ketakoskee.includes(cb.value);
+    });
+
+    const perheBox = document.querySelector('input[name="muokkaa-ketakoskee"][value="perhe"]');
+    const personBoxes = Array.from(document.querySelectorAll('input[name="muokkaa-ketakoskee"]:not([value="perhe"])'));
+    if (ketakoskee.includes('perhe')) {
+        perheBox.checked = true;
+        personBoxes.forEach(box => box.checked = true);
+    } else {
+        perheBox.checked = personBoxes.every(box => box.checked);
+    }
 
     vaihdaTila('view');
     modalOverlay.classList.remove('hidden');
@@ -558,6 +611,14 @@ function tallennaMuutokset() {
         alkuAika = alkuInput.value;
         loppuAika = document.getElementById('muokkaa-tapahtuma-loppu').value;
     }
+    
+    const koskeeValinnat = Array.from(document.querySelectorAll('input[name="muokkaa-ketakoskee"]:checked'))
+                                 .map(cb => cb.value)
+                                 .filter(value => value !== 'perhe');
+    if (koskeeValinnat.length === 0 && document.querySelector('input[name="muokkaa-ketakoskee"][value="perhe"]:checked')) {
+        koskeeValinnat.push('perhe');
+    }
+
 
     const paivitys = {
         otsikko: document.getElementById('muokkaa-tapahtuma-otsikko').value,
@@ -567,7 +628,7 @@ function tallennaMuutokset() {
         kokoPaiva: kokoPaivaCheckbox.checked,
         linkki: document.getElementById('muokkaa-tapahtuma-linkki').value,
         nakyvyys: Array.from(document.querySelectorAll('input[name="muokkaa-nakyvyys"]:checked')).reduce((a, c) => ({ ...a, [c.value]: true }), {}),
-        ketakoskee: document.querySelector('input[name="muokkaa-ketakoskee"]:checked').value,
+        ketakoskee: koskeeValinnat,
         luoja: vanhaTapahtuma.luoja
     };
     update(ref(database, `tapahtumat/${key}`), paivitys).then(() => {
