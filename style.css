@@ -85,7 +85,7 @@ main, .sivupalkki {
     background-color: var(--bg-sidebar);
 }
 .kalenteri-ylapalkki {
-    margin-top: 20px; /* Lisätty väliä listanäkymään */
+    margin-top: 20px;
 }
 .kalenteri-ylapalkki h2 {
     color: var(--text-accent);
@@ -112,24 +112,18 @@ main, .sivupalkki {
     justify-content: center;
 }
 
-/* MUUTETUT TYYLIT ALKAVAT TÄSTÄ */
 .paiva {
     background-color: var(--bg-calendar-day);
-    min-height: 110px; /* Varmistetaan riittävä minimikorkeus */
-    height: 110px; /* Asetetaan kiinteä korkeus */
-    padding: 8px;
+    min-height: 60px; /* Pienennetään korkeutta mobiilia varten */
+    padding: 4px;
     border-radius: 8px;
-    display: flex; /* Mahdollistaa sisällön paremman hallinnan */
-    flex-direction: column; /* Asetetaan päivän numero ja tapahtumat allekkain */
 }
 .tapahtumat-container {
-    flex-grow: 1; /* Antaa tämän elementin täyttää kaiken jäljellä olevan tilan */
-    overflow-y: auto; /* TÄMÄ ON TÄRKEIN: lisää pystysuoran vierityksen tarvittaessa */
-    scrollbar-width: thin; /* Siistitään vierityspalkkia selaimissa, jotka tukevat tätä */
-    scrollbar-color: var(--text-accent) var(--bg-sidebar);
+    display: flex; /* Asetellaan kuvakkeet vierekkäin */
+    flex-wrap: wrap; /* Kuvakkeet rivittyvät, jos niitä on monta */
+    gap: 3px; /* Pieni väli kuvakkeiden väliin */
+    margin-top: 4px;
 }
-/* MUUTETUT TYYLIT LOPPUVAT TÄHÄN */
-
 .paiva.tyhja {
     background-color: transparent;
     opacity: 0.5;
@@ -137,28 +131,9 @@ main, .sivupalkki {
 .paiva-numero {
     font-weight: bold;
     font-size: 0.9em;
-    margin-bottom: 4px; /* Pieni väli päivän numeron ja tapahtumien väliin */
+    margin-bottom: 4px;
 }
-.tapahtuma {
-    position: relative; 
-    padding-right: 15px; 
-    color: var(--event-text);
-    padding: 4px 6px;
-    border-radius: 5px;
-    font-size: 0.85em;
-    margin-top: 5px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    cursor: pointer;
-    transition: transform 0.2s ease;
-}
-.tapahtuma:hover {
-    transform: scale(1.05);
-}
-.tapahtuma.oma {
-    border: 2px solid gold; /* Korostetaan omaa tapahtumaa reunuksella värin sijaan */
-}
+/* Poistetaan vanha .tapahtuma-luokka, koska se ei ole enää käytössä kalenterissa */
 input, select, textarea, button {
     font-family: 'Georgia', serif;
 }
@@ -288,11 +263,9 @@ button:hover {
     }
     main, .sivupalkki { padding: 15px; }
     .paiva { 
-        min-height: 100px;
-        height: 100px;
-        padding: 5px; 
+        min-height: 70px; /* Pienennetään korkeutta entisestään kapealla näytöllä */
+        padding: 4px; 
     }
-    .tapahtuma { font-size: 0.75em; padding: 3px; }
     #kalenteri-paivat-otsikot, #kalenteri-grid {
         grid-template-columns: 25px repeat(7, 1fr);
         gap: 3px;
@@ -322,36 +295,45 @@ button:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: -2px; 
+    margin: -2px auto 0 auto;
 }
 
-/* Tekijän tunniste tapahtuman sisällä */
-.tapahtuma-luoja {
-    position: absolute;
-    top: 2px;
-    right: 4px;
+/* UUSI TAPAHTUMAKUVAKE KALENTERISSA */
+.tapahtuma-kuvake {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 0.8em;
     font-weight: bold;
-    opacity: 0.6;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+.tapahtuma-kuvake:hover {
+    transform: scale(1.2);
 }
 
-/* TAPAHTUMIEN VÄRIKOODIT (KALENTERI & TULEVAT-LISTA) */
-.tapahtuma.koskee-perhe,
+
+/* TAPAHTUMIEN VÄRIKOODIT (KUVAKE & TULEVAT-LISTA) */
+.tapahtuma-kuvake.koskee-perhe,
 .tuleva-tapahtuma-item.koskee-perhe { 
     background-color: #f08080; /* Vaalea koralli */
     color: #fff; 
 }
-.tapahtuma.koskee-toni,
+.tapahtuma-kuvake.koskee-toni,
 .tuleva-tapahtuma-item.koskee-toni { 
     background-color: #2e8b57; /* Merenvihreä */
     color: #fff; 
 }
-.tapahtuma.koskee-kaisa,
+.tapahtuma-kuvake.koskee-kaisa,
 .tuleva-tapahtuma-item.koskee-kaisa { 
     background-color: #9370db; /* Keskivioletti */
     color: #fff; 
 }
-.tapahtuma.koskee-oona,
+.tapahtuma-kuvake.koskee-oona,
 .tuleva-tapahtuma-item.koskee-oona { 
     background-color: #4682b4; /* Teräksensininen */
     color: #fff; 
