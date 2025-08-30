@@ -8,7 +8,22 @@
 </head>
 <body>
     <div id="login-overlay" class="login-overlay">
+        <div class="login-box">
+            <h2>Perheen Kalenteri</h2>
+            <form id="login-form">
+                <label for="login-user">Valitse käyttäjä:</label>
+                <select id="login-user">
+                    <option value="Toni">Toni</option>
+                    <option value="Kaisa">Kaisa</option>
+                    <option value="Oona">Oona</option>
+                </select>
+                <label for="login-password">Salasana:</label>
+                <input type="password" id="login-password" required>
+                <button type="submit">Kirjaudu sisään</button>
+                <p id="login-error" class="hidden">Väärä salasana. Yritä uudelleen.</p>
+            </form>
         </div>
+    </div>
 
     <div id="main-container" class="container hidden">
         <header>
@@ -34,17 +49,10 @@
                     <input type="text" id="tapahtuma-otsikko" required>
                     <label for="tapahtuma-kuvaus">Lisätiedot:</label>
                     <textarea id="tapahtuma-kuvaus" rows="3"></textarea>
-                    
-                    <label for="tapahtuma-linkki">Linkki (esim. http://...):</label>
-                    <input type="url" id="tapahtuma-linkki" placeholder="https://esimerkki.fi">
-                    <label class="checkbox-label"><input type="checkbox" id="koko-paiva-checkbox"> Koko päivän tapahtuma</label>
-
-                    <div id="aika-valinnat">
-                        <label for="tapahtuma-alku">Alkaa:</label>
-                        <input type="datetime-local" id="tapahtuma-alku" required>
-                        <label for="tapahtuma-loppu">Loppuu:</label>
-                        <input type="datetime-local" id="tapahtuma-loppu" required>
-                    </div>
+                    <label for="tapahtuma-alku">Alkaa:</label>
+                    <input type="datetime-local" id="tapahtuma-alku" required>
+                    <label for="tapahtuma-loppu">Loppuu:</label>
+                    <input type="datetime-local" id="tapahtuma-loppu" required>
                     
                     <fieldset>
                         <legend>Ketä koskee:</legend>
@@ -69,13 +77,20 @@
             </aside>
 
             <div class="kalenteri-ylapalkki">
-                </div>
+                <button id="edellinen-kk">&lt;</button>
+                <h2 id="kuukausi-otsikko">Elokuu 2025</h2>
+                <button id="seuraava-kk">&gt;</button>
+            </div>
             <div id="kalenteri-paivat-otsikot"></div>
             <div id="kalenteri-grid"></div>
         </main>
 
         <footer>
-            </footer>
+            <div id="user-info">
+                Kirjautunut: <strong id="current-user-name"></strong>
+                <button id="logout-btn">Kirjaudu ulos</button>
+            </div>
+        </footer>
     </div>
 
     <div id="tapahtuma-modal-overlay" class="modal-overlay hidden">
@@ -84,11 +99,13 @@
                 <h2 id="view-otsikko"></h2>
                 <p><strong>Aika:</strong> <span id="view-aika"></span></p>
                 <p id="view-kuvaus-container"><strong>Lisätiedot:</strong> <span id="view-kuvaus"></span></p>
-                <p id="view-linkki-container" class="hidden"><strong>Linkki:</strong> <a id="view-linkki" href="#" target="_blank" rel="noopener noreferrer">Avaa linkki</a></p>
                 <p><strong>Näkyvyys:</strong> <span id="view-nakyvyys"></span></p>
                 <p><em>Luonut: <span id="view-luoja"></span></em></p>
                 <div class="modal-buttons">
-                    </div>
+                    <button type="button" id="kopioi-btn">Kopioi 🗓️</button>
+                    <button type="button" id="muokkaa-btn">Muokkaa ✏️</button>
+                    <button type="button" id="sulje-btn" class="cancel-btn">Sulje</button>
+                </div>
             </div>
             <div id="modal-edit-content" class="hidden">
                 <h2>Muokkaa tapahtumaa</h2>
@@ -98,24 +115,34 @@
                     <input type="text" id="muokkaa-tapahtuma-otsikko" required>
                     <label for="muokkaa-tapahtuma-kuvaus">Lisätiedot:</label>
                     <textarea id="muokkaa-tapahtuma-kuvaus" rows="3"></textarea>
-
-                    <label for="muokkaa-tapahtuma-linkki">Linkki:</label>
-                    <input type="url" id="muokkaa-tapahtuma-linkki">
-                    <label class="checkbox-label"><input type="checkbox" id="muokkaa-koko-paiva-checkbox"> Koko päivän tapahtuma</label>
+                    <label for="muokkaa-tapahtuma-alku">Alkaa:</label>
+                    <input type="datetime-local" id="muokkaa-tapahtuma-alku" required>
+                    <label for="muokkaa-tapahtuma-loppu">Loppuu:</label>
+                    <input type="datetime-local" id="muokkaa-tapahtuma-loppu" required>
                     
-                    <div id="muokkaa-aika-valinnat">
-                        <label for="muokkaa-tapahtuma-alku">Alkaa:</label>
-                        <input type="datetime-local" id="muokkaa-tapahtuma-alku" required>
-                        <label for="muokkaa-tapahtuma-loppu">Loppuu:</label>
-                        <input type="datetime-local" id="muokkaa-tapahtuma-loppu" required>
-                    </div>
+                    <fieldset>
+                        <legend>Ketä koskee:</legend>
+                        <div class="ketakoskee-valinnat" id="muokkaa-ketakoskee">
+                            <label><input type="radio" name="muokkaa-ketakoskee" value="perhe"> Koko perhe</label>
+                            <label><input type="radio" name="muokkaa-ketakoskee" value="Toni"> Vain Toni</label>
+                            <label><input type="radio" name="muokkaa-ketakoskee" value="Kaisa"> Vain Kaisa</label>
+                            <label><input type="radio" name="muokkaa-ketakoskee" value="Oona"> Vain Oona</label>
+                        </div>
+                    </fieldset>
 
                     <fieldset>
-                        </fieldset>
-                    <fieldset>
-                        </fieldset>
-                    <div class="modal-buttons">
+                        <legend>Näkyy kenelle:</legend>
+                        <div class="nakyvyys-valinnat" id="muokkaa-nakyvyys">
+                            <label><input type="checkbox" name="muokkaa-nakyvyys" value="Toni"> Toni</label>
+                            <label><input type="checkbox" name="muokkaa-nakyvyys" value="Kaisa"> Kaisa</label>
+                            <label><input type="checkbox" name="muokkaa-nakyvyys" value="Oona"> Oona</label>
                         </div>
+                    </fieldset>
+                    <div class="modal-buttons">
+                        <button type="button" id="tallenna-muutokset-btn">Tallenna</button>
+                        <button type="button" id="poista-tapahtuma-btn" class="delete-btn">Poista</button>
+                        <button type="button" id="peruuta-muokkaus-btn" class="cancel-btn">Peruuta</button>
+                    </div>
                 </form>
             </div>
         </div>
