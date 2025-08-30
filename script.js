@@ -2,6 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
+// ... (firebaseConfig ja PASSWORDS pysyvät ennallaan)
 const firebaseConfig = {
   apiKey: "AIzaSyCZIupycr2puYrPK2KajAW7PcThW9Pjhb0",
   authDomain: "perhekalenteri-projekti.firebaseapp.com",
@@ -12,16 +13,15 @@ const firebaseConfig = {
   appId: "1:588536838615:web:148de0581bbd46c42c7392"
 };
 
-const app = initializeApp(firebaseConfig);
-const database = getDatabase(app);
-
-// HUOM: Salasanat ovat tässä vain yksinkertaista perhekäyttöä varten.
-// Tämä ei ole turvallinen tapa tallentaa salasanoja oikeissa sovelluksissa.
 const PASSWORDS = {
     Toni: '26425',
     Kaisa: '050583',
     Oona: '210314'
 };
+// ...
+
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
 
 // --- DOM-elementit ---
 const loginOverlay = document.getElementById('login-overlay');
@@ -31,6 +31,7 @@ const mainContainer = document.getElementById('main-container');
 const currentUserName = document.getElementById('current-user-name');
 const logoutBtn = document.getElementById('logout-btn');
 
+const kalenteriPaivatOtsikot = document.getElementById('kalenteri-paivat-otsikot');
 const kalenteriGrid = document.getElementById('kalenteri-grid');
 const kuukausiOtsikko = document.getElementById('kuukausi-otsikko');
 const edellinenBtn = document.getElementById('edellinen-kk');
@@ -109,27 +110,63 @@ function handleLogout() {
 }
 
 function applyTheme(user) {
-    document.body.className = ''; // Nollaa vanhat teemat
+    document.body.className = '';
     document.body.classList.add(`theme-${user.toLowerCase()}`);
 }
 
+// UUSI APUFUNKTIO VIIKKONUMERON LASKEMISEEN (ISO 8601 standardi)
+function getWeekNumber(d) {
+    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return weekNo;
+}
+
 function piirraKalenteri() {
-    // ... (Tämä funktio ja muut alla olevat pysyvät lähes ennallaan)
     kalenteriGrid.innerHTML = '';
+    kalenteriPaivatOtsikot.innerHTML = '';
+    
+    // Lisää viikonpäivien otsikot
+    kalenteriPaivatOtsikot.insertAdjacentHTML('beforeend', '<div class="viikonpaiva"></div>'); // Tyhjä tila viikkonumerolle
+    const paivat = ['Ma', 'Ti', 'Ke', 'To', 'Pe', 'La', 'Su'];
+    paivat.forEach(paiva => {
+        kalenteriPaivatOtsikot.insertAdjacentHTML('beforeend', `<div class="viikonpaiva">${paiva}</div>`);
+    });
+
     const vuosi = nykyinenPaiva.getFullYear();
     const kuukausi = nykyinenPaiva.getMonth();
     kuukausiOtsikko.textContent = `${nykyinenPaiva.toLocaleString('fi-FI', { month: 'long' })} ${vuosi}`;
+    
     const kuukaudenEkaPaiva = new Date(vuosi, kuukausi, 1);
     const paiviaKuukaudessa = new Date(vuosi, kuukausi + 1, 0).getDate();
-    let viikonpaivaIndeksi = kuukaudenEkaPaiva.getDay() || 7;
-    for (let i = 1; i < viikonpaivaIndeksi; i++) kalenteriGrid.insertAdjacentHTML('beforeend', '<div class="paiva tyhja"></div>');
+    let viikonpaivaIndeksi = kuukaudenEkaPaiva.getDay() || 7; // Ma=1, Su=7
+    
+    // Lisää tyhjät päivät ja ensimmäinen viikkonumero
+    for (let i = 1; i < viikonpaivaIndeksi; i++) {
+        kalenteriGrid.insertAdjacentHTML('beforeend', '<div class="paiva tyhja"></div>');
+    }
+    
+    // Lisää kaikki kuukauden päivät
     for (let i = 1; i <= paiviaKuukaudessa; i++) {
+        const tamaPaiva = new Date(vuosi, kuukausi, i);
+        // Lisää viikkonumero aina maanantaisin
+        if (tamaPaiva.getDay() === 1 || (i === 1 && viikonpaivaIndeksi > 1)) {
+            kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="viikko-nro">${getWeekNumber(tamaPaiva)}</div>`);
+        }
+        if (i === 1 && viikonpaivaIndeksi === 1) { // Jos kuukausi alkaa maanantaista
+             kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="viikko-nro">${getWeekNumber(tamaPaiva)}</div>`);
+        }
+        
         const paivamaara = `${vuosi}-${String(kuukausi + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
         kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="paiva" data-paivamaara="${paivamaara}"><div class="paiva-numero">${i}</div><div class="tapahtumat-container"></div></div>`);
     }
+
     naytaTapahtumatKalenterissa();
 }
 
+// Kaikki muut funktiot (lisaaTapahtuma, kuunteleTapahtumia jne.) pysyvät ennallaan.
+// ...
 function lisaaTapahtuma() {
     const uusiTapahtuma = {
         otsikko: document.getElementById('tapahtuma-otsikko').value,
@@ -146,7 +183,7 @@ function lisaaTapahtuma() {
 let unsubscribeFromEvents = null;
 function kuunteleTapahtumia() {
     if (unsubscribeFromEvents) {
-        unsubscribeFromEvents(); // Lopeta vanha kuuntelija, jos sellainen on
+        unsubscribeFromEvents();
     }
     const tapahtumatRef = ref(database, 'tapahtumat');
     unsubscribeFromEvents = onValue(tapahtumatRef, (snapshot) => {
