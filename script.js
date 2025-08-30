@@ -374,33 +374,21 @@ function kuunteleTapahtumia() {
 function luoKoskeeTiedot(ketakoskee) {
     if (!Array.isArray(ketakoskee) || ketakoskee.length === 0) {
         const nimi = typeof ketakoskee === 'string' ? ketakoskee : 'perhe';
-        return {
-            initialit: nimi.charAt(0).toUpperCase(),
-            type: 'class',
-            value: `koskee-${nimi.toLowerCase()}`
-        };
+        return { initialit: nimi.charAt(0).toUpperCase(), type: 'class', value: `koskee-${nimi.toLowerCase()}` };
     }
     if (ketakoskee.includes('perhe') || ketakoskee.length >= 3) {
         return { initialit: 'P', type: 'class', value: 'koskee-perhe' };
     }
     if (ketakoskee.length === 1) {
         const nimi = ketakoskee[0];
-        return {
-            initialit: nimi.charAt(0).toUpperCase(),
-            type: 'class',
-            value: `koskee-${nimi.toLowerCase()}`
-        };
+        return { initialit: nimi.charAt(0).toUpperCase(), type: 'class', value: `koskee-${nimi.toLowerCase()}` };
     }
     
     const sortedNames = ketakoskee.sort();
     const initialit = sortedNames.map(nimi => nimi.charAt(0).toUpperCase()).join('');
     const varit = sortedNames.map(nimi => KAYTTAJA_VARIT[nimi] || '#333');
     
-    return {
-        initialit: initialit,
-        type: 'style',
-        value: `linear-gradient(45deg, ${varit.join(', ')})`
-    };
+    return { initialit: initialit, type: 'style', value: `linear-gradient(45deg, ${varit.join(', ')})` };
 }
 
 
@@ -417,7 +405,7 @@ function naytaTapahtumatKalenterissa() {
                 
                 const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
                 kuvake.textContent = tiedot.initialit;
-                kuvake.className = 'tapahtuma-kuvake'; // Nollaa luokat ensin
+                kuvake.className = 'tapahtuma-kuvake';
                 
                 if(tiedot.type === 'class') {
                     kuvake.classList.add(tiedot.value);
@@ -485,19 +473,17 @@ function naytaTulevatTapahtumat() {
         }
         
         const item = document.createElement('div');
-        const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
-        
-        let luojaDiv;
-        if (tiedot.type === 'class') {
-            item.classList.add('tuleva-tapahtuma-item', tiedot.value);
-            luojaDiv = `<div class="tapahtuma-item-luoja">${tiedot.initialit}</div>`;
-        } else {
-            item.classList.add('tuleva-tapahtuma-item');
-            luojaDiv = `<div class="tapahtuma-item-luoja" style="background: ${tiedot.value};">${tiedot.initialit}</div>`;
-        }
+        item.className = 'tuleva-tapahtuma-item';
 
+        const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
+        if (tiedot.type === 'class') {
+            item.classList.add(tiedot.value);
+        } else {
+            item.style.background = tiedot.value;
+        }
+        
         item.innerHTML = `
-            ${luojaDiv}
+            <div class="tapahtuma-item-luoja">${tiedot.initialit}</div>
             <div class="tapahtuma-item-tiedot">
                 <div class="tapahtuma-item-aika">${paiva} ${aikaTeksti}</div>
                 <div class="tapahtuma-item-otsikko">${tapahtuma.otsikko}</div>
@@ -546,6 +532,15 @@ function avaaTapahtumaIkkuna(key) {
     document.getElementById('view-luoja').textContent = tapahtuma.luoja;
     const nakyvatNimet = Object.keys(tapahtuma.nakyvyys || {}).filter(k => tapahtuma.nakyvyys[k]).join(', ');
     document.getElementById('view-nakyvyys').textContent = nakyvatNimet;
+
+    const koskeeSpan = document.getElementById('view-koskee');
+    const koskeeTieto = Array.isArray(tapahtuma.ketakoskee) ? tapahtuma.ketakoskee : [String(tapahtuma.ketakoskee)];
+    if (koskeeTieto.includes('perhe') || koskeeTieto.length >= 3) {
+        koskeeSpan.textContent = 'Koko perhe';
+    } else {
+        koskeeSpan.textContent = koskeeTieto.join(', ');
+    }
+
 
     if (tapahtuma.kokoPaiva) {
         const pvm = new Date(tapahtuma.alku).toLocaleDateString('fi-FI', { day: 'numeric', month: 'long', year: 'numeric' });
