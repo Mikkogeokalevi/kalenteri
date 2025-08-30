@@ -1,10 +1,7 @@
 // script.js
-
-// Tuo tarvittavat funktiot Firebase-kirjastoista
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
-// Sinun web-sovelluksesi Firebase-konfiguraatio
 const firebaseConfig = {
   apiKey: "AIzaSyCZIupycr2puYrPK2KajAW7PcThW9Pjhb0",
   authDomain: "perhekalenteri-projekti.firebaseapp.com",
@@ -15,10 +12,8 @@ const firebaseConfig = {
   appId: "1:588536838615:web:148de0581bbd46c42c7392"
 };
 
-// Alusta Firebase
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
-const tapahtumatRef = ref(database, 'tapahtumat');
 
 // --- DOM-elementit ---
 const kayttajaValitsin = document.getElementById('kayttaja');
@@ -28,26 +23,29 @@ const edellinenBtn = document.getElementById('edellinen-kk');
 const seuraavaBtn = document.getElementById('seuraava-kk');
 const lomake = document.getElementById('lisaa-tapahtuma-lomake');
 
+// Muokkausikkunan elementit
+const modalOverlay = document.getElementById('muokkaus-modal-overlay');
+const muokkausLomake = document.getElementById('muokkaa-tapahtuma-lomake');
+const tallennaBtn = document.getElementById('tallenna-muutokset-btn');
+const poistaBtn = document.getElementById('poista-tapahtuma-btn');
+const peruutaBtn = document.getElementById('peruuta-btn');
+
 // --- Sovelluksen tila ---
 let nykyinenKayttaja = kayttajaValitsin.value;
-let nykyinenPaiva = new Date(); // Käytetään tätä kuukauden ja vuoden seuraamiseen
+let nykyinenPaiva = new Date();
 
-// --- Pääfunktio, joka käynnistyy latauksessa ---
 document.addEventListener('DOMContentLoaded', () => {
     piirraKalenteri();
     lisaaKuuntelijat();
     kuunteleTapahtumia();
 });
 
-
 function lisaaKuuntelijat() {
-    // Vaihda käyttäjää
     kayttajaValitsin.addEventListener('change', (e) => {
         nykyinenKayttaja = e.target.value;
-        piirraKalenteri(); // Piirrä kalenteri uudelleen uudelle käyttäjälle
+        piirraKalenteri();
     });
 
-    // Selaa kuukausia
     edellinenBtn.addEventListener('click', () => {
         nykyinenPaiva.setMonth(nykyinenPaiva.getMonth() - 1);
         piirraKalenteri();
@@ -57,95 +55,78 @@ function lisaaKuuntelijat() {
         piirraKalenteri();
     });
 
-    // Lisää uusi tapahtuma
     lomake.addEventListener('submit', (e) => {
         e.preventDefault();
         lisaaTapahtuma();
     });
+
+    // Muokkausikkunan kuuntelijat
+    peruutaBtn.addEventListener('click', suljeMuokkausIkkuna);
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) {
+            suljeMuokkausIkkuna();
+        }
+    });
+    tallennaBtn.addEventListener('click', tallennaMuutokset);
+    poistaBtn.addEventListener('click', poistaTapahtuma);
 }
 
 function piirraKalenteri() {
-    kalenteriGrid.innerHTML = ''; // Tyhjennä vanha kalenteri
+    kalenteriGrid.innerHTML = '';
     const vuosi = nykyinenPaiva.getFullYear();
     const kuukausi = nykyinenPaiva.getMonth();
-
     kuukausiOtsikko.textContent = `${nykyinenPaiva.toLocaleString('fi-FI', { month: 'long' })} ${vuosi}`;
 
     const kuukaudenEkaPaiva = new Date(vuosi, kuukausi, 1);
     const kuukaudenVikaPaiva = new Date(vuosi, kuukausi + 1, 0);
     const paiviaKuukaudessa = kuukaudenVikaPaiva.getDate();
     
-    // Viikonpäivä (0=su, 1=ma, ..., 6=la). Muutetaan suomalaisittain.
     let viikonpaivaIndeksi = kuukaudenEkaPaiva.getDay();
-    if (viikonpaivaIndeksi === 0) viikonpaivaIndeksi = 7; // Su -> 7
+    if (viikonpaivaIndeksi === 0) viikonpaivaIndeksi = 7;
     
-    // Lisää tyhjät päivät ennen kuukauden ensimmäistä päivää
     for (let i = 1; i < viikonpaivaIndeksi; i++) {
-        const tyhjaPaiva = document.createElement('div');
-        tyhjaPaiva.classList.add('paiva', 'tyhja');
-        kalenteriGrid.appendChild(tyhjaPaiva);
+        kalenteriGrid.insertAdjacentHTML('beforeend', '<div class="paiva tyhja"></div>');
     }
 
-    // Lisää kaikki kuukauden päivät
     for (let i = 1; i <= paiviaKuukaudessa; i++) {
-        const paivaElementti = document.createElement('div');
-        paivaElementti.classList.add('paiva');
-        paivaElementti.dataset.paivamaara = `${vuosi}-${String(kuukausi + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-        
-        const numeroElementti = document.createElement('div');
-        numeroElementti.classList.add('paiva-numero');
-        numeroElementti.textContent = i;
-        paivaElementti.appendChild(numeroElementti);
-        
-        const tapahtumatContainer = document.createElement('div');
-        tapahtumatContainer.classList.add('tapahtumat-container');
-        paivaElementti.appendChild(tapahtumatContainer);
-
-        kalenteriGrid.appendChild(paivaElementti);
+        const paivamaara = `${vuosi}-${String(kuukausi + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+        const paivaElementti = `
+            <div class="paiva" data-paivamaara="${paivamaara}">
+                <div class="paiva-numero">${i}</div>
+                <div class="tapahtumat-container"></div>
+            </div>`;
+        kalenteriGrid.insertAdjacentHTML('beforeend', paivaElementti);
     }
 
     naytaTapahtumatKalenterissa();
 }
 
 function lisaaTapahtuma() {
-    const otsikko = document.getElementById('tapahtuma-otsikko').value;
-    const paivamaara = document.getElementById('tapahtuma-pvm').value;
-    const aika = document.getElementById('tapahtuma-aika').value;
-
-    if (!otsikko || !paivamaara) {
-        alert('Tapahtuman nimi ja päivämäärä vaaditaan!');
-        return;
-    }
-    
-    const nakyvyysValinnat = document.querySelectorAll('input[name="nakyvyys"]:checked');
-    const nakyvyys = {};
-    ['Toni', 'Kaisa', 'Oona'].forEach(nimi => {
-        nakyvyys[nimi] = Array.from(nakyvyysValinnat).some(checkbox => checkbox.value === nimi);
-    });
-
     const uusiTapahtuma = {
-        otsikko: otsikko,
-        paivamaara: paivamaara,
-        aika: aika,
+        otsikko: document.getElementById('tapahtuma-otsikko').value,
+        kuvaus: document.getElementById('tapahtuma-kuvaus').value,
+        alku: document.getElementById('tapahtuma-alku').value,
+        loppu: document.getElementById('tapahtuma-loppu').value,
         luoja: nykyinenKayttaja,
-        nakyvyys: nakyvyys
+        nakyvyys: {}
     };
 
-    push(tapahtumatRef, uusiTapahtuma)
-        .then(() => {
-            lomake.reset();
-            // Aseta checkboxit takaisin valituiksi
-             document.querySelectorAll('input[name="nakyvyys"]').forEach(cb => cb.checked = true);
-        })
-        .catch((error) => {
-            console.error("Virhe tallennuksessa: ", error);
-            alert("Tapahtuman lisääminen epäonnistui.");
-        });
+    document.querySelectorAll('input[name="nakyvyys"]:checked').forEach(checkbox => {
+        uusiTapahtuma.nakyvyys[checkbox.value] = true;
+    });
+
+    if (!uusiTapahtuma.otsikko || !uusiTapahtuma.alku || !uusiTapahtuma.loppu) {
+        alert('Täytä vähintään otsikko, alkamis- ja loppumisaika.');
+        return;
+    }
+
+    const tapahtumatRef = ref(database, 'tapahtumat');
+    push(tapahtumatRef, uusiTapahtuma).then(() => lomake.reset());
 }
 
 function kuunteleTapahtumia() {
+    const tapahtumatRef = ref(database, 'tapahtumat');
     onValue(tapahtumatRef, (snapshot) => {
-        // Tallenna kaikki tapahtumat välimuistiin, jotta emme hae niitä jatkuvasti
         window.kaikkiTapahtumat = [];
         snapshot.forEach((childSnapshot) => {
             window.kaikkiTapahtumat.push({
@@ -153,33 +134,88 @@ function kuunteleTapahtumia() {
                 ...childSnapshot.val()
             });
         });
-        // Päivitä näkymä heti kun data muuttuu
         naytaTapahtumatKalenterissa();
     });
 }
 
 function naytaTapahtumatKalenterissa() {
-    // Poista vanhat tapahtumat näkyvistä
-    document.querySelectorAll('.tapahtuma').forEach(el => el.remove());
+    document.querySelectorAll('.tapahtumat-container').forEach(c => c.innerHTML = '');
 
     if (!window.kaikkiTapahtumat) return;
 
     window.kaikkiTapahtumat.forEach(tapahtuma => {
-        // Tarkista näkyvyys nykyiselle käyttäjälle
         if (tapahtuma.nakyvyys && tapahtuma.nakyvyys[nykyinenKayttaja]) {
-            const paivaElementti = document.querySelector(`.paiva[data-paivamaara="${tapahtuma.paivamaara}"]`);
+            const tapahtumanPaiva = tapahtuma.alku.substring(0, 10);
+            const paivaElementti = document.querySelector(`.paiva[data-paivamaara="${tapahtumanPaiva}"]`);
             if (paivaElementti) {
                 const tapahtumaElementti = document.createElement('div');
                 tapahtumaElementti.classList.add('tapahtuma');
                 tapahtumaElementti.textContent = tapahtuma.otsikko;
-
-                // Korosta tapahtumia, jotka käyttäjä on itse luonut
+                tapahtumaElementti.dataset.id = tapahtuma.key;
                 if (tapahtuma.luoja === nykyinenKayttaja) {
                     tapahtumaElementti.classList.add('oma');
                 }
+                
+                // Lisää kuuntelija, joka avaa muokkausikkunan
+                tapahtumaElementti.addEventListener('click', () => avaaMuokkausIkkuna(tapahtuma.key));
 
                 paivaElementti.querySelector('.tapahtumat-container').appendChild(tapahtumaElementti);
             }
         }
     });
+}
+
+// --- Muokkausikkunan funktiot ---
+
+function avaaMuokkausIkkuna(key) {
+    const tapahtuma = window.kaikkiTapahtumat.find(t => t.key === key);
+    if (!tapahtuma) return;
+
+    // Täytä lomakkeen kentät
+    document.getElementById('muokkaa-tapahtuma-id').value = key;
+    document.getElementById('muokkaa-tapahtuma-otsikko').value = tapahtuma.otsikko;
+    document.getElementById('muokkaa-tapahtuma-kuvaus').value = tapahtuma.kuvaus || '';
+    document.getElementById('muokkaa-tapahtuma-alku').value = tapahtuma.alku;
+    document.getElementById('muokkaa-tapahtuma-loppu').value = tapahtuma.loppu;
+    
+    // Aseta näkyvyys-checkboxit
+    document.querySelectorAll('input[name="muokkaa-nakyvyys"]').forEach(checkbox => {
+       checkbox.checked = !!(tapahtuma.nakyvyys && tapahtuma.nakyvyys[checkbox.value]);
+    });
+
+    modalOverlay.classList.remove('hidden');
+}
+
+function suljeMuokkausIkkuna() {
+    modalOverlay.classList.add('hidden');
+}
+
+function tallennaMuutokset() {
+    const key = document.getElementById('muokkaa-tapahtuma-id').value;
+    const paivitettyTapahtuma = {
+        otsikko: document.getElementById('muokkaa-tapahtuma-otsikko').value,
+        kuvaus: document.getElementById('muokkaa-tapahtuma-kuvaus').value,
+        alku: document.getElementById('muokkaa-tapahtuma-alku').value,
+        loppu: document.getElementById('muokkaa-tapahtuma-loppu').value,
+        nakyvyys: {}
+    };
+
+    document.querySelectorAll('input[name="muokkaa-nakyvyys"]:checked').forEach(checkbox => {
+        paivitettyTapahtuma.nakyvyys[checkbox.value] = true;
+    });
+
+    const tapahtumaRef = ref(database, `tapahtumat/${key}`);
+    update(tapahtumaRef, paivitettyTapahtuma).then(() => {
+        suljeMuokkausIkkuna();
+    });
+}
+
+function poistaTapahtuma() {
+    const key = document.getElementById('muokkaa-tapahtuma-id').value;
+    if (confirm('Haluatko varmasti poistaa tämän tapahtuman?')) {
+        const tapahtumaRef = ref(database, `tapahtumat/${key}`);
+        remove(tapahtumaRef).then(() => {
+            suljeMuokkausIkkuna();
+        });
+    }
 }
