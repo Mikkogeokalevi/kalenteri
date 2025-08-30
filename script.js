@@ -376,27 +376,33 @@ function luoKoskeeTiedot(ketakoskee) {
         const nimi = typeof ketakoskee === 'string' ? ketakoskee : 'perhe';
         return {
             initialit: nimi.charAt(0).toUpperCase(),
-            vari: KAYTTAJA_VARIT[nimi] || KAYTTAJA_VARIT['perhe']
+            type: 'class',
+            value: `koskee-${nimi.toLowerCase()}`
         };
     }
-
     if (ketakoskee.includes('perhe') || ketakoskee.length >= 3) {
-        return { initialit: 'P', vari: KAYTTAJA_VARIT.perhe };
+        return { initialit: 'P', type: 'class', value: 'koskee-perhe' };
     }
-
+    if (ketakoskee.length === 1) {
+        const nimi = ketakoskee[0];
+        return {
+            initialit: nimi.charAt(0).toUpperCase(),
+            type: 'class',
+            value: `koskee-${nimi.toLowerCase()}`
+        };
+    }
+    
     const sortedNames = ketakoskee.sort();
     const initialit = sortedNames.map(nimi => nimi.charAt(0).toUpperCase()).join('');
+    const varit = sortedNames.map(nimi => KAYTTAJA_VARIT[nimi] || '#333');
     
-    let vari;
-    if (sortedNames.length === 1) {
-        vari = KAYTTAJA_VARIT[sortedNames[0]] || KAYTTAJA_VARIT.perhe;
-    } else {
-        const varit = sortedNames.map(nimi => KAYTTAJA_VARIT[nimi] || '#333');
-        vari = `linear-gradient(45deg, ${varit.join(', ')})`;
-    }
-
-    return { initialit, vari };
+    return {
+        initialit: initialit,
+        type: 'style',
+        value: `linear-gradient(45deg, ${varit.join(', ')})`
+    };
 }
+
 
 function naytaTapahtumatKalenterissa() {
     document.querySelectorAll('.tapahtumat-container').forEach(c => c.innerHTML = '');
@@ -407,12 +413,17 @@ function naytaTapahtumatKalenterissa() {
             const paivaEl = document.querySelector(`.paiva[data-paivamaara="${tapahtuma.alku.substring(0, 10)}"]`);
             if (paivaEl) {
                 const kuvake = document.createElement('div');
-                kuvake.className = 'tapahtuma-kuvake';
                 kuvake.title = tapahtuma.otsikko;
-
-                const { initialit, vari } = luoKoskeeTiedot(tapahtuma.ketakoskee);
-                kuvake.textContent = initialit;
-                kuvake.style.background = vari;
+                
+                const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
+                kuvake.textContent = tiedot.initialit;
+                kuvake.className = 'tapahtuma-kuvake'; // Nollaa luokat ensin
+                
+                if(tiedot.type === 'class') {
+                    kuvake.classList.add(tiedot.value);
+                } else {
+                    kuvake.style.background = tiedot.value;
+                }
                 
                 kuvake.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -474,12 +485,19 @@ function naytaTulevatTapahtumat() {
         }
         
         const item = document.createElement('div');
-        item.className = 'tuleva-tapahtuma-item';
+        const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
         
-        const { initialit, vari } = luoKoskeeTiedot(tapahtuma.ketakoskee);
-        
+        let luojaDiv;
+        if (tiedot.type === 'class') {
+            item.classList.add('tuleva-tapahtuma-item', tiedot.value);
+            luojaDiv = `<div class="tapahtuma-item-luoja">${tiedot.initialit}</div>`;
+        } else {
+            item.classList.add('tuleva-tapahtuma-item');
+            luojaDiv = `<div class="tapahtuma-item-luoja" style="background: ${tiedot.value};">${tiedot.initialit}</div>`;
+        }
+
         item.innerHTML = `
-            <div class="tapahtuma-item-luoja" style="background: ${vari};">${initialit}</div>
+            ${luojaDiv}
             <div class="tapahtuma-item-tiedot">
                 <div class="tapahtuma-item-aika">${paiva} ${aikaTeksti}</div>
                 <div class="tapahtuma-item-otsikko">${tapahtuma.otsikko}</div>
