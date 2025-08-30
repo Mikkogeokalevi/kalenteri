@@ -123,6 +123,10 @@ button:hover {
 }
 
 /* Ponnahdusikkuna (Modal) */
+.hidden {
+    display: none !important;
+}
+
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -134,9 +138,6 @@ button:hover {
     justify-content: center;
     align-items: center;
     z-index: 1000;
-}
-.modal-overlay.hidden {
-    display: none;
 }
 .modal-content {
     background-color: #2A381C;
@@ -156,6 +157,19 @@ button:hover {
     gap: 10px;
     margin-top: 20px;
 }
+/* Lukunäkymän tyylit */
+#modal-view-content p {
+    margin: 10px 0;
+    line-height: 1.5;
+}
+#modal-view-content p strong {
+    color: #90EE90;
+}
+#modal-view-content p em {
+    font-size: 0.9em;
+    color: #ccc;
+}
+
 .delete-btn {
     background-color: #e74c3c;
     border-color: #c0392b;
