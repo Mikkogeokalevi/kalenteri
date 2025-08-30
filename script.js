@@ -91,33 +91,22 @@ function lisaaKuuntelijat() {
         loppuInput.min = this.value;
     });
     
-    // LISÄTTY KUUNTELIJA KALENTERIRUUDUKOLLE
     kalenteriGrid.addEventListener('click', handlePaivaClick);
 }
 
-// UUSI FUNKTIO PÄIVÄN KLIKKAAMISEN KÄSITTELYYN
 function handlePaivaClick(event) {
-    // Etsitään, klikattiinko päivä-elementtiä tai sen lasta
     const paivaEl = event.target.closest('.paiva');
-
-    // Jos ei klikattu päivää tai klikattiin tyhjää päivää, ei tehdä mitään
     if (!paivaEl || paivaEl.classList.contains('tyhja')) {
         return;
     }
-    
-    // Jos klikkaus kohdistui tapahtumakuvakkeeseen, annetaan sen oman logiikan hoitaa asia
     if (event.target.closest('.tapahtuma-kuvake')) {
         return;
     }
-
-    // Haetaan päivämäärä data-attribuutista
     const pvmString = paivaEl.dataset.paivamaara;
     if (!pvmString) return;
 
-    // Avataan lomake
     sivupalkki.classList.remove('hidden');
 
-    // Täytetään päivämäärä ja oletuskellonaika (esim. 09:00)
     const alkuInput = document.getElementById('tapahtuma-alku');
     const loppuInput = document.getElementById('tapahtuma-loppu');
     const oletusAika = "T09:00";
@@ -126,7 +115,6 @@ function handlePaivaClick(event) {
     loppuInput.value = pvmString + oletusAika;
     loppuInput.min = alkuInput.value;
 
-    // Asetetaan kursori otsikkokenttään, jotta käyttäjä voi heti kirjoittaa
     document.getElementById('tapahtuma-otsikko').focus();
 }
 
@@ -305,8 +293,9 @@ function naytaTapahtumatKalenterissa() {
                 kuvake.className = luokat;
                 kuvake.title = tapahtuma.otsikko;
 
-                if (tapahtuma.luoja) {
-                    kuvake.textContent = tapahtuma.luoja.charAt(0);
+                // MUUTETTU: Käytetään "ketakoskee"-kenttää alkukirjaimeen
+                if (tapahtuma.ketakoskee) {
+                    kuvake.textContent = tapahtuma.ketakoskee.charAt(0).toUpperCase();
                 }
                 
                 kuvake.addEventListener('click', (e) => {
@@ -344,7 +333,6 @@ function naytaTulevatTapahtumat() {
         const loppuAika = loppu.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
 
         const aikaTeksti = `${alkuAika} - ${loppuAika}`;
-
         const item = document.createElement('div');
         
         let luokat = 'tuleva-tapahtuma-item';
@@ -353,8 +341,14 @@ function naytaTulevatTapahtumat() {
         }
         item.className = luokat;
         
+        // MUUTETTU: Käytetään "ketakoskee"-kenttää alkukirjaimeen
+        let alkukirjain = '?';
+        if (tapahtuma.ketakoskee) {
+            alkukirjain = tapahtuma.ketakoskee.charAt(0).toUpperCase();
+        }
+        
         item.innerHTML = `
-            <div class="tapahtuma-item-luoja">${tapahtuma.luoja ? tapahtuma.luoja.charAt(0) : '?'}</div>
+            <div class="tapahtuma-item-luoja">${alkukirjain}</div>
             <div class="tapahtuma-item-tiedot">
                 <div class="tapahtuma-item-aika">${paiva} ${aikaTeksti}</div>
                 <div class="tapahtuma-item-otsikko">${tapahtuma.otsikko}</div>
