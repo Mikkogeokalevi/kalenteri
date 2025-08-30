@@ -41,6 +41,40 @@
 
             <button id="avaa-lisays-lomake-btn" class="lisaa-nappi">Lisää uusi tapahtuma +</button>
 
+            <aside class="sivupalkki hidden">
+                <h3>Lisää uusi tapahtuma</h3>
+                <form id="lisaa-tapahtuma-lomake">
+                    <label for="tapahtuma-otsikko">Tapahtuma:</label>
+                    <input type="text" id="tapahtuma-otsikko" required>
+                    <label for="tapahtuma-kuvaus">Lisätiedot:</label>
+                    <textarea id="tapahtuma-kuvaus" rows="3"></textarea>
+                    <label for="tapahtuma-alku">Alkaa:</label>
+                    <input type="datetime-local" id="tapahtuma-alku" required>
+                    <label for="tapahtuma-loppu">Loppuu:</label>
+                    <input type="datetime-local" id="tapahtuma-loppu" required>
+                    
+                    <fieldset>
+                        <legend>Ketä koskee:</legend>
+                        <div class="ketakoskee-valinnat">
+                            <label><input type="radio" name="ketakoskee" value="perhe" checked> Koko perhe</label>
+                            <label><input type="radio" name="ketakoskee" value="Toni"> Vain Toni</label>
+                            <label><input type="radio" name="ketakoskee" value="Kaisa"> Vain Kaisa</label>
+                            <label><input type="radio" name="ketakoskee" value="Oona"> Vain Oona</label>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Näkyy kenelle:</legend>
+                        <div class="nakyvyys-valinnat">
+                            <label><input type="checkbox" name="nakyvyys" value="Toni" checked> Toni</label>
+                            <label><input type="checkbox" name="nakyvyys" value="Kaisa" checked> Kaisa</label>
+                            <label><input type="checkbox" name="nakyvyys" value="Oona" checked> Oona</label>
+                        </div>
+                    </fieldset>
+                    <button type="submit">Lisää kalenteriin</button>
+                </form>
+            </aside>
+
             <div class="kalenteri-ylapalkki">
                 <button id="edellinen-kk">&lt;</button>
                 <h2 id="kuukausi-otsikko">Elokuu 2025</h2>
@@ -49,40 +83,6 @@
             <div id="kalenteri-paivat-otsikot"></div>
             <div id="kalenteri-grid"></div>
         </main>
-
-        <aside class="sivupalkki hidden">
-            <h3>Lisää uusi tapahtuma</h3>
-            <form id="lisaa-tapahtuma-lomake">
-                <label for="tapahtuma-otsikko">Tapahtuma:</label>
-                <input type="text" id="tapahtuma-otsikko" required>
-                <label for="tapahtuma-kuvaus">Lisätiedot:</label>
-                <textarea id="tapahtuma-kuvaus" rows="3"></textarea>
-                <label for="tapahtuma-alku">Alkaa:</label>
-                <input type="datetime-local" id="tapahtuma-alku" required>
-                <label for="tapahtuma-loppu">Loppuu:</label>
-                <input type="datetime-local" id="tapahtuma-loppu" required>
-                
-                <fieldset>
-                    <legend>Ketä koskee:</legend>
-                    <div class="ketakoskee-valinnat">
-                        <label><input type="radio" name="ketakoskee" value="perhe" checked> Koko perhe</label>
-                        <label><input type="radio" name="ketakoskee" value="Toni"> Vain Toni</label>
-                        <label><input type="radio" name="ketakoskee" value="Kaisa"> Vain Kaisa</label>
-                        <label><input type="radio" name="ketakoskee" value="Oona"> Vain Oona</label>
-                    </div>
-                </fieldset>
-
-                <fieldset>
-                    <legend>Näkyy kenelle:</legend>
-                    <div class="nakyvyys-valinnat">
-                        <label><input type="checkbox" name="nakyvyys" value="Toni" checked> Toni</label>
-                        <label><input type="checkbox" name="nakyvyys" value="Kaisa" checked> Kaisa</label>
-                        <label><input type="checkbox" name="nakyvyys" value="Oona" checked> Oona</label>
-                    </div>
-                </fieldset>
-                <button type="submit">Lisää kalenteriin</button>
-            </form>
-        </aside>
 
         <footer>
             <div id="user-info">
