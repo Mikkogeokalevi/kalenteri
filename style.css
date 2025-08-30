@@ -1,4 +1,4 @@
-/* CSS Muuttujat teemoille */ 
+/* CSS Muuttujat teemoille */
 :root {
     --bg-main: #1a2015;
     --bg-container: #3D4F2B;
@@ -112,9 +112,10 @@ main, .sivupalkki, footer {
 input, select, textarea, button {
     font-family: 'Georgia', serif;
 }
-input[type="text"], input[type="password"], input[type="datetime-local"], input[type="search"], select, textarea {
+input[type="text"], input[type="password"], input[type="datetime-local"], input[type="search"], select, textarea, input[type="url"] {
     width: 100%;
     padding: 12px;
+    margin-bottom: 10px;
     box-sizing: border-box;
     background-color: var(--bg-sidebar);
     color: var(--text-main);
@@ -354,4 +355,29 @@ footer {
 #haku-kentta:focus {
     outline: none;
     border-color: var(--text-accent);
+}
+
+/* UUDET TYYLIT KOKO PÄIVÄN TAPAHTUMALLE JA LINKILLE */
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    background-color: var(--bg-sidebar);
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.checkbox-container label {
+    margin-right: auto;
+}
+
+input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+#view-linkki {
+    color: var(--text-accent);
+    text-decoration: underline;
 }
