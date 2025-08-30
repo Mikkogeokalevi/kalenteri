@@ -20,7 +20,7 @@ const PASSWORDS = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-// --- DOM-eleme ntit ---
+// --- DOM-elementit ---
 const loginOverlay = document.getElementById('login-overlay');
 const loginForm = document.getElementById('login-form');
 const mainContainer = document.getElementById('main-container');
@@ -54,6 +54,20 @@ function checkLoginStatus() {
     const rememberedUser = localStorage.getItem('loggedInUser');
     if (rememberedUser && PASSWORDS[rememberedUser]) {
         startAppForUser(rememberedUser);
+    }
+}
+
+function toggleAikaValinnat(checkboxId, containerId) {
+    const checkbox = document.getElementById(checkboxId);
+    const container = document.getElementById(containerId);
+    const inputs = container.querySelectorAll('input[type="datetime-local"]');
+
+    if (checkbox.checked) {
+        container.classList.add('hidden');
+        inputs.forEach(input => input.required = false);
+    } else {
+        container.classList.remove('hidden');
+        inputs.forEach(input => input.required = true);
     }
 }
 
@@ -96,6 +110,14 @@ function lisaaKuuntelijat() {
 
     hakuKentta.addEventListener('input', () => {
         naytaTulevatTapahtumat();
+    });
+
+    // UUDET KUUNTELIJAT
+    document.getElementById('tapahtuma-koko-paiva').addEventListener('change', () => {
+        toggleAikaValinnat('tapahtuma-koko-paiva', 'aika-valinnat');
+    });
+    document.getElementById('muokkaa-tapahtuma-koko-paiva').addEventListener('change', () => {
+        toggleAikaValinnat('muokkaa-tapahtuma-koko-paiva', 'muokkaa-aika-valinnat');
     });
 }
 
@@ -250,11 +272,27 @@ function piirraKalenteri() {
 }
 
 function lisaaTapahtuma() {
+    const kokoPaivaCheckbox = document.getElementById('tapahtuma-koko-paiva');
+    const alkuInput = document.getElementById('tapahtuma-alku');
+    let alkuAika, loppuAika;
+
+    if (kokoPaivaCheckbox.checked) {
+        const paivamaara = alkuInput.value.substring(0, 10);
+        if(!paivamaara) return alert('Valitse päivämäärä ensin, tai poista "Koko päivän" valinta.');
+        alkuAika = `${paivamaara}T00:00`;
+        loppuAika = `${paivamaara}T23:59`;
+    } else {
+        alkuAika = alkuInput.value;
+        loppuAika = document.getElementById('tapahtuma-loppu').value;
+    }
+
     const uusi = {
         otsikko: document.getElementById('tapahtuma-otsikko').value,
         kuvaus: document.getElementById('tapahtuma-kuvaus').value,
-        alku: document.getElementById('tapahtuma-alku').value,
-        loppu: document.getElementById('tapahtuma-loppu').value,
+        alku: alkuAika,
+        loppu: loppuAika,
+        kokoPaiva: kokoPaivaCheckbox.checked,
+        linkki: document.getElementById('tapahtuma-linkki').value,
         luoja: nykyinenKayttaja,
         ketakoskee: document.querySelector('input[name="ketakoskee"]:checked').value,
         nakyvyys: Array.from(document.querySelectorAll('input[name="nakyvyys"]:checked')).reduce((a, c) => ({ ...a, [c.value]: true }), {})
@@ -264,6 +302,7 @@ function lisaaTapahtuma() {
     push(ref(database, 'tapahtumat'), uusi).then(() => {
         lisaaLomake.reset();
         sivupalkki.classList.add('hidden');
+        toggleAikaValinnat('tapahtuma-koko-paiva', 'aika-valinnat'); // Palauttaa näkymän
         naytaIlmoitus('Tapahtuma lisätty onnistuneesti!');
     });
 }
@@ -349,15 +388,19 @@ function naytaTulevatTapahtumat() {
 
     tulevat.forEach(tapahtuma => {
         const alku = new Date(tapahtuma.alku);
-        const loppu = new Date(tapahtuma.loppu);
-
         const paiva = alku.toLocaleDateString('fi-FI', { weekday: 'short', day: 'numeric', month: 'numeric' });
-        const alkuAika = alku.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
-        const loppuAika = loppu.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
-
-        const aikaTeksti = `${alkuAika} - ${loppuAika}`;
-        const item = document.createElement('div');
         
+        let aikaTeksti;
+        if (tapahtuma.kokoPaiva) {
+            aikaTeksti = "Koko päivän";
+        } else {
+            const loppu = new Date(tapahtuma.loppu);
+            const alkuAika = alku.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+            const loppuAika = loppu.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+            aikaTeksti = `${alkuAika} - ${loppuAika}`;
+        }
+        
+        const item = document.createElement('div');
         let luokat = 'tuleva-tapahtuma-item';
         if (tapahtuma.ketakoskee) {
             luokat += ` koskee-${tapahtuma.ketakoskee.toLowerCase()}`;
@@ -385,22 +428,46 @@ function naytaTulevatTapahtumat() {
 function avaaTapahtumaIkkuna(key) {
     const tapahtuma = window.kaikkiTapahtumat.find(t => t.key === key);
     if (!tapahtuma) return;
+
     modalOverlay.dataset.tapahtumaId = key;
+    
+    // Näkymän täyttö
     document.getElementById('view-otsikko').textContent = tapahtuma.otsikko;
     document.getElementById('view-kuvaus').textContent = tapahtuma.kuvaus || 'Ei lisätietoja.';
     document.getElementById('view-luoja').textContent = tapahtuma.luoja;
     const nakyvatNimet = Object.keys(tapahtuma.nakyvyys || {}).filter(k => tapahtuma.nakyvyys[k]).join(', ');
     document.getElementById('view-nakyvyys').textContent = nakyvatNimet;
-    const alkuPvm = new Date(tapahtuma.alku);
-    const loppuPvm = new Date(tapahtuma.loppu);
-    const options = { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' };
-    document.getElementById('view-aika').textContent = `${alkuPvm.toLocaleString('fi-FI', options)} - ${loppuPvm.toLocaleString('fi-FI', options)}`;
+
+    if (tapahtuma.kokoPaiva) {
+        const pvm = new Date(tapahtuma.alku).toLocaleDateString('fi-FI', { day: 'numeric', month: 'long', year: 'numeric' });
+        document.getElementById('view-aika').textContent = `${pvm} (Koko päivän)`;
+    } else {
+        const alkuPvm = new Date(tapahtuma.alku);
+        const loppuPvm = new Date(tapahtuma.loppu);
+        const options = { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+        document.getElementById('view-aika').textContent = `${alkuPvm.toLocaleString('fi-FI', options)} - ${loppuPvm.toLocaleString('fi-FI', options)}`;
+    }
+    
+    const linkkiContainer = document.getElementById('view-linkki-container');
+    if (tapahtuma.linkki) {
+        document.getElementById('view-linkki').href = tapahtuma.linkki;
+        linkkiContainer.classList.remove('hidden');
+    } else {
+        linkkiContainer.classList.add('hidden');
+    }
+    
+    // Muokkauslomakkeen täyttö
     document.getElementById('muokkaa-tapahtuma-id').value = key;
     document.getElementById('muokkaa-tapahtuma-otsikko').value = tapahtuma.otsikko;
     document.getElementById('muokkaa-tapahtuma-kuvaus').value = tapahtuma.kuvaus || '';
     document.getElementById('muokkaa-tapahtuma-alku').value = tapahtuma.alku;
     document.getElementById('muokkaa-tapahtuma-loppu').value = tapahtuma.loppu;
+    document.getElementById('muokkaa-tapahtuma-linkki').value = tapahtuma.linkki || '';
     
+    const muokkaaKokoPaivaCheckbox = document.getElementById('muokkaa-tapahtuma-koko-paiva');
+    muokkaaKokoPaivaCheckbox.checked = !!tapahtuma.kokoPaiva;
+    toggleAikaValinnat('muokkaa-tapahtuma-koko-paiva', 'muokkaa-aika-valinnat');
+
     document.querySelectorAll('input[name="muokkaa-nakyvyys"]').forEach(cb => {
        cb.checked = !!tapahtuma.nakyvyys?.[cb.value];
     });
@@ -429,18 +496,39 @@ function vaihdaTila(tila) {
 function tallennaMuutokset() {
     const key = modalOverlay.dataset.tapahtumaId;
     const vanhaTapahtuma = window.kaikkiTapahtumat.find(t => t.key === key);
+    
+    const kokoPaivaCheckbox = document.getElementById('muokkaa-tapahtuma-koko-paiva');
+    const alkuInput = document.getElementById('muokkaa-tapahtuma-alku');
+    let alkuAika, loppuAika;
+
+    if (kokoPaivaCheckbox.checked) {
+        const paivamaara = alkuInput.value.substring(0, 10);
+        alkuAika = `${paivamaara}T00:00`;
+        loppuAika = `${paivamaara}T23:59`;
+    } else {
+        alkuAika = alkuInput.value;
+        loppuAika = document.getElementById('muokkaa-tapahtuma-loppu').value;
+    }
 
     const paivitys = {
         otsikko: document.getElementById('muokkaa-tapahtuma-otsikko').value,
         kuvaus: document.getElementById('muokkaa-tapahtuma-kuvaus').value,
-        alku: document.getElementById('muokkaa-tapahtuma-alku').value,
-        loppu: document.getElementById('muokkaa-tapahtuma-loppu').value,
+        alku: alkuAika,
+        loppu: loppuAika,
+        kokoPaiva: kokoPaivaCheckbox.checked,
+        linkki: document.getElementById('muokkaa-tapahtuma-linkki').value,
         nakyvyys: Array.from(document.querySelectorAll('input[name="muokkaa-nakyvyys"]:checked')).reduce((a, c) => ({ ...a, [c.value]: true }), {}),
         ketakoskee: document.querySelector('input[name="muokkaa-ketakoskee"]:checked').value,
         luoja: vanhaTapahtuma.luoja
     };
     update(ref(database, `tapahtumat/${key}`), paivitys).then(() => {
-        vaihdaTila('view');
+        // Päivitetään heti näkymä ilman erillistä datan uudelleenlatausta
+        const tapahtuma = window.kaikkiTapahtumat.find(t => t.key === key);
+        if (tapahtuma) {
+            Object.assign(tapahtuma, paivitys);
+        }
+        avaaTapahtumaIkkuna(key); // Avaa uudelleen päivitetyillä tiedoilla
+        vaihdaTila('view'); // Varmistaa, että palataan katselutilaan
     });
 }
 
@@ -468,8 +556,9 @@ function kopioiTapahtuma() {
     const uusiTapahtuma = { ...tapahtuma };
     delete uusiTapahtuma.key; 
 
-    uusiTapahtuma.alku = `${uusiPvm}T${tapahtuma.alku.substring(11)}`;
-    uusiTapahtuma.loppu = `${uusiPvm}T${tapahtuma.loppu.substring(11)}`;
+    uusiTapahtuma.alku = `${uusiPvm}${tapahtuma.alku.substring(10)}`;
+    uusiTapahtuma.loppu = `${uusiPvm}${tapahtuma.loppu.substring(10)}`;
+
 
     push(ref(database, 'tapahtumat'), uusiTapahtuma).then(() => {
         naytaIlmoitus(`Tapahtuma kopioitu päivälle ${uusiPvm}.`);
