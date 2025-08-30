@@ -1,4 +1,3 @@
-// script.js (DEBUG-versio)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
@@ -28,14 +27,12 @@ const loginError = document.getElementById('login-error');
 const mainContainer = document.getElementById('main-container');
 const currentUserName = document.getElementById('current-user-name');
 const logoutBtn = document.getElementById('logout-btn');
-
 const kalenteriPaivatOtsikot = document.getElementById('kalenteri-paivat-otsikot');
 const kalenteriGrid = document.getElementById('kalenteri-grid');
 const kuukausiOtsikko = document.getElementById('kuukausi-otsikko');
 const edellinenBtn = document.getElementById('edellinen-kk');
 const seuraavaBtn = document.getElementById('seuraava-kk');
 const lisaaLomake = document.getElementById('lisaa-tapahtuma-lomake');
-
 const modalOverlay = document.getElementById('tapahtuma-modal-overlay');
 const modalViewContent = document.getElementById('modal-view-content');
 const modalEditContent = document.getElementById('modal-edit-content');
@@ -48,6 +45,7 @@ const peruutaMuokkausBtn = document.getElementById('peruuta-muokkaus-btn');
 // --- Sovelluksen tila ---
 let nykyinenKayttaja = null;
 let nykyinenPaiva = new Date();
+let unsubscribeFromEvents = null;
 
 // --- Päälogiikka ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -65,7 +63,6 @@ function checkLoginStatus() {
 function lisaaKuuntelijat() {
     loginForm.addEventListener('submit', handleLogin);
     logoutBtn.addEventListener('click', handleLogout);
-    
     edellinenBtn.addEventListener('click', () => {
         nykyinenPaiva.setMonth(nykyinenPaiva.getMonth() - 1);
         piirraKalenteri();
@@ -78,7 +75,6 @@ function lisaaKuuntelijat() {
         e.preventDefault();
         lisaaTapahtuma();
     });
-
     modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) suljeTapahtumaIkkuna(); });
     suljeBtn.addEventListener('click', suljeTapahtumaIkkuna);
     peruutaMuokkausBtn.addEventListener('click', () => vaihdaTila('view'));
@@ -91,7 +87,6 @@ function handleLogin(event) {
     event.preventDefault();
     const user = document.getElementById('login-user').value;
     const pass = document.getElementById('login-password').value;
-
     if (PASSWORDS[user] === pass) {
         localStorage.setItem('loggedInUser', user);
         startAppForUser(user);
@@ -102,6 +97,9 @@ function handleLogin(event) {
 
 function handleLogout() {
     localStorage.removeItem('loggedInUser');
+    if (unsubscribeFromEvents) {
+        unsubscribeFromEvents(); // Sulje vanha kuuntelija
+    }
     nykyinenKayttaja = null;
     mainContainer.classList.add('hidden');
     loginOverlay.classList.remove('hidden');
@@ -177,21 +175,14 @@ function lisaaTapahtuma() {
     push(ref(database, 'tapahtumat'), uusiTapahtuma).then(() => lisaaLomake.reset());
 }
 
-let unsubscribeFromEvents = null;
 function kuunteleTapahtumia() {
     if (unsubscribeFromEvents) {
         unsubscribeFromEvents();
     }
     const tapahtumatRef = ref(database, 'tapahtumat');
     unsubscribeFromEvents = onValue(tapahtumatRef, (snapshot) => {
-        // --- ETSIVÄ 1 ---
-        console.log('--- Tietoa päivittyi Firebasessa ---');
-        
         window.kaikkiTapahtumat = [];
         snapshot.forEach((child) => window.kaikkiTapahtumat.push({ key: child.key, ...child.val() }));
-        
-        console.log(`Löytyi yhteensä ${window.kaikkiTapahtumat.length} tapahtumaa.`);
-        
         naytaTapahtumatKalenterissa();
     });
 }
@@ -199,10 +190,6 @@ function kuunteleTapahtumia() {
 function naytaTapahtumatKalenterissa() {
     document.querySelectorAll('.tapahtumat-container').forEach(c => c.innerHTML = '');
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
-    
-    // --- ETSIVÄ 2 ---
-    console.log(`Päivitetään näkymä käyttäjälle: ${nykyinenKayttaja}. Käydään läpi ${window.kaikkiTapahtumat.length} tapahtumaa.`);
-
     window.kaikkiTapahtumat.forEach(tapahtuma => {
         if (tapahtuma.nakyvyys?.[nykyinenKayttaja] && tapahtuma.alku) {
             const paivaElementti = document.querySelector(`.paiva[data-paivamaara="${tapahtuma.alku.substring(0, 10)}"]`);
@@ -217,7 +204,6 @@ function naytaTapahtumatKalenterissa() {
     });
 }
 
-// ... loput funktiot (avaaTapahtumaIkkuna jne.) pysyvät ennallaan ...
 function avaaTapahtumaIkkuna(key) {
     const tapahtuma = window.kaikkiTapahtumat.find(t => t.key === key);
     if (!tapahtuma) return;
