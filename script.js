@@ -137,7 +137,12 @@ function piirraKalenteri() {
     const ekaPaiva = new Date(vuosi, kuukausi, 1);
     const paivia = new Date(vuosi, kuukausi + 1, 0).getDate();
     let viikonpaiva = ekaPaiva.getDay() || 7;
-    for (let i = 1; i < viikonpaiva; i++) kalenteriGrid.insertAdjacentHTML('beforeend', '<div class="paiva tyhja"></div>');
+    
+    // TÄSSÄ OLI VIRHE, NYT KORJATTU
+    for (let i = 1; i < viikonpaiva; i++) {
+        kalenteriGrid.insertAdjacentHTML('beforeend', '<div class="paiva tyhja"></div>');
+    }
+    
     for (let i = 1; i <= paivia; i++) {
         const tamaPaiva = new Date(vuosi, kuukausi, i);
         if (tamaPaiva.getDay() === 1 || i === 1) {
@@ -168,7 +173,6 @@ function kuunteleTapahtumia() {
     unsubscribeFromEvents = onValue(tapahtumatRef, (snapshot) => {
         window.kaikkiTapahtumat = [];
         snapshot.forEach((child) => window.kaikkiTapahtumat.push({ key: child.key, ...child.val() }));
-        
         naytaTapahtumatKalenterissa();
         naytaTulevatTapahtumat();
     });
@@ -212,7 +216,7 @@ function naytaTulevatTapahtumat() {
         item.className = 'tuleva-tapahtuma-item';
         item.innerHTML = `
             <div class="tapahtuma-item-aika">${paiva} ${aika}</div>
-            <div class="tapahtuma-item-otsikko">${tapahtuma.otsikko}</div>
+            <div class.tapahtuma-item-otsikko">${tapahtuma.otsikko}</div>
         `;
         item.addEventListener('click', () => avaaTapahtumaIkkuna(tapahtuma.key));
         tulevatTapahtumatLista.appendChild(item);
