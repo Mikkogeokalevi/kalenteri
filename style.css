@@ -1,9 +1,51 @@
+/* CSS Muuttujat teemoille */
+:root {
+    /* Oletusteema (Toni - Vihreä) */
+    --bg-main: #1a2015;
+    --bg-container: #3D4F2B;
+    --bg-sidebar: #2A381C;
+    --bg-calendar-day: #4a5c3a;
+    --text-main: #F8F8F8;
+    --text-accent: #90EE90;
+    --event-bg: #90EE90;
+    --event-text: #1a2015;
+    --event-own-bg: #FFD700;
+}
+
+body.theme-kaisa {
+    /* Kaisa - Lila teema */
+    --bg-main: #2b202b;
+    --bg-container: #4c3b4c;
+    --bg-sidebar: #382c38;
+    --bg-calendar-day: #5f4c5f;
+    --text-main: #f5e6f5;
+    --text-accent: #e6c6e6;
+    --event-bg: #e6c6e6;
+    --event-text: #2b202b;
+    --event-own-bg: #ffb6c1;
+}
+
+body.theme-oona {
+    /* Oona - Sininen teema */
+    --bg-main: #1f2a33;
+    --bg-container: #364958;
+    --bg-sidebar: #2c3a47;
+    --bg-calendar-day: #486071;
+    --text-main: #e0e8ef;
+    --text-accent: #a9d6e5;
+    --event-bg: #a9d6e5;
+    --event-text: #1f2a33;
+    --event-own-bg: #87ceeb;
+}
+
+/* Yleiset tyylit, jotka käyttävät muuttujia */
 body {
-    background-color: #1a2015;
+    background-color: var(--bg-main);
     font-family: 'Georgia', serif;
-    color: #F8F8F8;
+    color: var(--text-main);
     margin: 0;
     padding: 20px;
+    transition: background-color 0.3s ease;
 }
 
 .container {
@@ -16,33 +58,39 @@ body {
 
 header {
     grid-column: 1 / -1;
-    text-align: center;
-    border-bottom: 2px solid #3D4F2B;
+    border-bottom: 2px solid var(--bg-container);
     padding-bottom: 15px;
+}
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+#user-info {
+    font-size: 0.9em;
+}
+#logout-btn {
+    width: auto;
+    padding: 5px 10px;
+    font-size: 0.9em;
+    margin: 0 0 0 10px;
 }
 
 main {
-    background-color: #3D4F2B;
+    background-color: var(--bg-container);
     border-radius: 8px;
     padding: 15px;
 }
 
 .sivupalkki {
-    background-color: #2A381C;
+    background-color: var(--bg-sidebar);
     border-radius: 8px;
     padding: 15px;
 }
 
-/* Kalenteri */
-.kalenteri-ylapalkki {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-}
 .kalenteri-ylapalkki h2 {
-    margin: 0;
-    color: #90EE90;
+    color: var(--text-accent);
 }
 
 #kalenteri-grid {
@@ -52,7 +100,7 @@ main {
 }
 
 .paiva {
-    background-color: #4a5c3a;
+    background-color: var(--bg-calendar-day);
     min-height: 100px;
     padding: 5px;
     border-radius: 4px;
@@ -64,8 +112,8 @@ main {
     font-weight: bold;
 }
 .tapahtuma {
-    background-color: #90EE90;
-    color: #1a2015;
+    background-color: var(--event-bg);
+    color: var(--event-text);
     padding: 3px 5px;
     border-radius: 3px;
     font-size: 0.8em;
@@ -80,52 +128,66 @@ main {
     transform: scale(1.05);
 }
 .tapahtuma.oma {
-    background-color: #FFD700;
+    background-color: var(--event-own-bg);
 }
 
-/* Lomake */
-form label, form legend {
-    display: block;
-    margin-top: 10px;
-    margin-bottom: 5px;
-}
-input[type="text"], input[type="date"], input[type="time"], input[type="datetime-local"], select, textarea {
+input[type="text"], input[type="password"], input[type="datetime-local"], select, textarea {
     width: 100%;
     padding: 10px;
     box-sizing: border-box;
-    background-color: #2A381C;
-    color: #F8F8F8;
-    border: 1px solid #556B2F;
+    background-color: var(--bg-sidebar);
+    color: var(--text-main);
+    border: 1px solid var(--bg-container);
     border-radius: 4px;
     font-family: 'Georgia', serif;
 }
-textarea {
-    resize: vertical;
-}
+
 button {
     width: 100%;
     padding: 12px;
     margin-top: 20px;
-    border: 1px solid #90EE90;
+    border: 1px solid var(--text-accent);
     background-color: transparent;
-    color: #90EE90;
+    color: var(--text-accent);
     border-radius: 4px;
     cursor: pointer;
     font-size: 16px;
+    transition: background-color 0.2s, color 0.2s;
 }
 button:hover {
-    background-color: #90EE90;
-    color: #1a2015;
+    background-color: var(--text-accent);
+    color: var(--bg-main);
 }
-.nakyvyys-valinnat label {
-    display: inline-block;
-    margin-right: 15px;
+
+/* Kirjautumisikkuna */
+.login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-main);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+.login-box {
+    background-color: var(--bg-sidebar);
+    padding: 30px;
+    border-radius: 8px;
+    text-align: center;
+    width: 90%;
+    max-width: 350px;
+    border: 2px solid var(--bg-container);
+}
+#login-error {
+    color: #e74c3c;
+    margin-top: 10px;
 }
 
 /* Ponnahdusikkuna (Modal) */
-.hidden {
-    display: none !important;
-}
+.hidden { display: none !important; }
 
 .modal-overlay {
     position: fixed;
@@ -140,34 +202,15 @@ button:hover {
     z-index: 1000;
 }
 .modal-content {
-    background-color: #2A381C;
+    background-color: var(--bg-sidebar);
     padding: 25px;
     border-radius: 8px;
     width: 90%;
     max-width: 500px;
-    border: 2px solid #90EE90;
+    border: 2px solid var(--text-accent);
 }
-.modal-content h2 {
-    margin-top: 0;
-    text-align: center;
-    color: #90EE90;
-}
-.modal-buttons {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-}
-/* Lukunäkymän tyylit */
-#modal-view-content p {
-    margin: 10px 0;
-    line-height: 1.5;
-}
-#modal-view-content p strong {
-    color: #90EE90;
-}
-#modal-view-content p em {
-    font-size: 0.9em;
-    color: #ccc;
+.modal-content h2, #modal-view-content p strong {
+    color: var(--text-accent);
 }
 
 .delete-btn {
@@ -175,15 +218,11 @@ button:hover {
     border-color: #c0392b;
     color: white;
 }
-.delete-btn:hover {
-    background-color: #c0392b;
-}
+.delete-btn:hover { background-color: #c0392b; }
+
 .cancel-btn {
     background-color: transparent;
     border-color: #7f8c8d;
     color: #7f8c8d;
 }
-.cancel-btn:hover {
-    background-color: #7f8c8d;
-    color: #F8F8F8;
-}
+.cancel-btn:hover { background-color: #7f8c8d; color: #F8F8F8; }
