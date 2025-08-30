@@ -2,7 +2,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
-// ... (firebaseConfig ja PASSWORDS pysyvät ennallaan)
 const firebaseConfig = {
   apiKey: "AIzaSyCZIupycr2puYrPK2KajAW7PcThW9Pjhb0",
   authDomain: "perhekalenteri-projekti.firebaseapp.com",
@@ -18,7 +17,6 @@ const PASSWORDS = {
     Kaisa: '050583',
     Oona: '210314'
 };
-// ...
 
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
@@ -53,8 +51,17 @@ let nykyinenPaiva = new Date();
 
 // --- Päälogiikka ---
 document.addEventListener('DOMContentLoaded', () => {
+    checkLoginStatus(); // MUUTOS: Tarkista kirjautumistilanne heti latauksen jälkeen
     lisaaKuuntelijat();
 });
+
+// UUSI FUNKTIO: Tarkistaa onko käyttäjä jo kirjautunut aiemmin
+function checkLoginStatus() {
+    const rememberedUser = localStorage.getItem('loggedInUser');
+    if (rememberedUser && PASSWORDS[rememberedUser]) {
+        startAppForUser(rememberedUser);
+    }
+}
 
 function lisaaKuuntelijat() {
     loginForm.addEventListener('submit', handleLogin);
@@ -87,26 +94,37 @@ function handleLogin(event) {
     const pass = document.getElementById('login-password').value;
 
     if (PASSWORDS[user] === pass) {
-        nykyinenKayttaja = user;
-        loginOverlay.classList.add('hidden');
-        mainContainer.classList.remove('hidden');
-        loginError.classList.add('hidden');
-        document.getElementById('login-password').value = '';
-        currentUserName.textContent = nykyinenKayttaja;
-        
-        applyTheme(nykyinenKayttaja);
-        piirraKalenteri();
-        kuunteleTapahtumia();
+        // MUUTOS: Tallenna onnistunut kirjautuminen selaimen muistiin
+        localStorage.setItem('loggedInUser', user);
+        startAppForUser(user);
     } else {
         loginError.classList.remove('hidden');
     }
 }
 
 function handleLogout() {
+    // MUUTOS: Poista käyttäjä selaimen muistista uloskirjautuessa
+    localStorage.removeItem('loggedInUser');
+    
     nykyinenKayttaja = null;
     mainContainer.classList.add('hidden');
     loginOverlay.classList.remove('hidden');
-    document.body.className = ''; // Poista teemaluokat
+    document.body.className = '';
+}
+
+// UUSI APUFUNKTIO: Käynnistää sovelluksen näkymän tietylle käyttäjälle
+function startAppForUser(user) {
+    nykyinenKayttaja = user;
+    
+    loginOverlay.classList.add('hidden');
+    mainContainer.classList.remove('hidden');
+    loginError.classList.add('hidden');
+    document.getElementById('login-password').value = '';
+    currentUserName.textContent = nykyinenKayttaja;
+    
+    applyTheme(nykyinenKayttaja);
+    piirraKalenteri();
+    kuunteleTapahtumia();
 }
 
 function applyTheme(user) {
@@ -114,7 +132,6 @@ function applyTheme(user) {
     document.body.classList.add(`theme-${user.toLowerCase()}`);
 }
 
-// UUSI APUFUNKTIO VIIKKONUMERON LASKEMISEEN (ISO 8601 standardi)
 function getWeekNumber(d) {
     d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -127,8 +144,7 @@ function piirraKalenteri() {
     kalenteriGrid.innerHTML = '';
     kalenteriPaivatOtsikot.innerHTML = '';
     
-    // Lisää viikonpäivien otsikot
-    kalenteriPaivatOtsikot.insertAdjacentHTML('beforeend', '<div class="viikonpaiva"></div>'); // Tyhjä tila viikkonumerolle
+    kalenteriPaivatOtsikot.insertAdjacentHTML('beforeend', '<div class="viikonpaiva"></div>');
     const paivat = ['Ma', 'Ti', 'Ke', 'To', 'Pe', 'La', 'Su'];
     paivat.forEach(paiva => {
         kalenteriPaivatOtsikot.insertAdjacentHTML('beforeend', `<div class="viikonpaiva">${paiva}</div>`);
@@ -140,21 +156,18 @@ function piirraKalenteri() {
     
     const kuukaudenEkaPaiva = new Date(vuosi, kuukausi, 1);
     const paiviaKuukaudessa = new Date(vuosi, kuukausi + 1, 0).getDate();
-    let viikonpaivaIndeksi = kuukaudenEkaPaiva.getDay() || 7; // Ma=1, Su=7
+    let viikonpaivaIndeksi = kuukaudenEkaPaiva.getDay() || 7;
     
-    // Lisää tyhjät päivät ja ensimmäinen viikkonumero
     for (let i = 1; i < viikonpaivaIndeksi; i++) {
         kalenteriGrid.insertAdjacentHTML('beforeend', '<div class="paiva tyhja"></div>');
     }
     
-    // Lisää kaikki kuukauden päivät
     for (let i = 1; i <= paiviaKuukaudessa; i++) {
         const tamaPaiva = new Date(vuosi, kuukausi, i);
-        // Lisää viikkonumero aina maanantaisin
         if (tamaPaiva.getDay() === 1 || (i === 1 && viikonpaivaIndeksi > 1)) {
             kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="viikko-nro">${getWeekNumber(tamaPaiva)}</div>`);
         }
-        if (i === 1 && viikonpaivaIndeksi === 1) { // Jos kuukausi alkaa maanantaista
+        if (i === 1 && viikonpaivaIndeksi === 1) {
              kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="viikko-nro">${getWeekNumber(tamaPaiva)}</div>`);
         }
         
@@ -226,7 +239,7 @@ function avaaTapahtumaIkkuna(key) {
     const options = { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' };
     document.getElementById('view-aika').textContent = `${alkuPvm.toLocaleString('fi-FI', options)} - ${loppuPvm.toLocaleString('fi-FI', options)}`;
 
-    document.getElementById('muokkaa-tapahtuma-id').value = key;
+    document.getElementById('muokkaa-tapahtuma-id').value = key.
     document.getElementById('muokkaa-tapahtuma-otsikko').value = tapahtuma.otsikko;
     document.getElementById('muokkaa-tapahtuma-kuvaus').value = tapahtuma.kuvaus || '';
     document.getElementById('muokkaa-tapahtuma-alku').value = tapahtuma.alku;
