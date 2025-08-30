@@ -117,8 +117,10 @@ function lisaaKuuntelijat() {
     
     kalenteriGrid.addEventListener('click', handlePaivaClick);
 
+    // MUUTETTU HAKUKENTÄN KUUNTELIJA
     hakuKentta.addEventListener('input', () => {
-        naytaTulevatTapahtumat();
+        naytaTulevatTapahtumat(); // Päivittää edelleen tulevien listan
+        korostaHakuOsumatKalenterissa(); // UUSI: Korostaa osumat kalenterista
     });
 
     document.getElementById('tapahtuma-koko-paiva').addEventListener('change', (e) => {
@@ -288,6 +290,7 @@ function piirraKalenteri() {
         }
     }
     naytaTapahtumatKalenterissa();
+    korostaHakuOsumatKalenterissa(); // UUSI KUTSU
 }
 
 function lisaaTapahtuma() {
@@ -443,6 +446,35 @@ function naytaTulevatTapahtumat() {
         tulevatTapahtumatLista.appendChild(item);
     });
 }
+
+// UUSI FUNKTIO
+function korostaHakuOsumatKalenterissa() {
+    // Poistetaan ensin vanhat korostukset
+    document.querySelectorAll('.paiva.haku-osuma').forEach(el => el.classList.remove('haku-osuma'));
+
+    const hakutermi = hakuKentta.value.toLowerCase().trim();
+    if (hakutermi === '' || !window.kaikkiTapahtumat) {
+        return;
+    }
+
+    const osumat = window.kaikkiTapahtumat.filter(tapahtuma => {
+        // Etsitään kaikista tapahtumista, riippumatta päivämäärästä
+        if (!tapahtuma.nakyvyys?.[nykyinenKayttaja]) return false;
+        
+        const otsikko = (tapahtuma.otsikko || '').toLowerCase();
+        const kuvaus = (tapahtuma.kuvaus || '').toLowerCase();
+        return otsikko.includes(hakutermi) || kuvaus.includes(hakutermi);
+    });
+
+    osumat.forEach(tapahtuma => {
+        const pvmString = tapahtuma.alku.substring(0, 10);
+        const paivaEl = document.querySelector(`.paiva[data-paivamaara="${pvmString}"]`);
+        if (paivaEl) {
+            paivaEl.classList.add('haku-osuma');
+        }
+    });
+}
+
 
 function avaaTapahtumaIkkuna(key) {
     const tapahtuma = window.kaikkiTapahtumat.find(t => t.key === key);
