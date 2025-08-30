@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
+// Sinun vahvistamasi Firebase-konfiguraatio
 const firebaseConfig = {
   apiKey: "AIzaSyCZIupycr2puYrPK2KajAW7PcThW9Pjhb0",
   authDomain: "perhekalenteri-projekti.firebaseapp.com",
@@ -20,7 +21,7 @@ const PASSWORDS = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-// --- DOM-elementit 22---
+// --- DOM-elementit ---
 const loginOverlay = document.getElementById('login-overlay');
 const loginForm = document.getElementById('login-form');
 const mainContainer = document.getElementById('main-container');
@@ -176,28 +177,16 @@ function kuunteleTapahtumia() {
 function naytaTapahtumatKalenterissa() {
     document.querySelectorAll('.tapahtumat-container').forEach(c => c.innerHTML = '');
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
-    
-    // --- UUSI DEBUG-LOKI ---
-    console.log(`--- Piirretään kalenteria, ${window.kaikkiTapahtumat.length} tapahtumaa yhteensä ---`);
-
     window.kaikkiTapahtumat.forEach(tapahtuma => {
-        console.log(`Käsitellään: "${tapahtuma.otsikko}" alkamisaika: ${tapahtuma.alku}`);
         if (tapahtuma.nakyvyys?.[nykyinenKayttaja] && tapahtuma.alku) {
-            const paivamaara = tapahtuma.alku.substring(0, 10);
-            const paivaEl = document.querySelector(`.paiva[data-paivamaara="${paivamaara}"]`);
-            
+            const paivaEl = document.querySelector(`.paiva[data-paivamaara="${tapahtuma.alku.substring(0, 10)}"]`);
             if (paivaEl) {
-                console.log(` -> LÖYDETTIIN paikka kalenterista päivälle ${paivamaara}. Lisätään.`);
                 const tapahtumaEl = document.createElement('div');
                 tapahtumaEl.className = `tapahtuma ${tapahtuma.luoja === nykyinenKayttaja ? 'oma' : ''}`;
                 tapahtumaEl.textContent = tapahtuma.otsikko;
                 tapahtumaEl.addEventListener('click', () => avaaTapahtumaIkkuna(tapahtuma.key));
                 paivaEl.querySelector('.tapahtumat-container').appendChild(tapahtumaEl);
-            } else {
-                console.log(` -> EI LÖYDETTY paikkaa kalenterista päivälle ${paivamaara}.`);
             }
-        } else {
-            console.log(` -> Ohitettiin, koska näkyvyys tai alkuaika puuttui.`);
         }
     });
 }
@@ -205,25 +194,20 @@ function naytaTapahtumatKalenterissa() {
 function naytaTulevatTapahtumat() {
     tulevatTapahtumatLista.innerHTML = '';
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
-
     const nyt = new Date();
     const today = new Date(nyt.getFullYear(), nyt.getMonth(), nyt.getDate());
-
     const tulevat = window.kaikkiTapahtumat
         .filter(t => t.nakyvyys?.[nykyinenKayttaja] && new Date(t.alku) >= today)
         .sort((a, b) => new Date(a.alku) - new Date(b.alku))
         .slice(0, 5);
-
     if (tulevat.length === 0) {
         tulevatTapahtumatLista.innerHTML = '<p>Ei tulevia tapahtumia.</p>';
         return;
     }
-
     tulevat.forEach(tapahtuma => {
         const alku = new Date(tapahtuma.alku);
         const paiva = alku.toLocaleDateString('fi-FI', { weekday: 'short', day: 'numeric', month: 'numeric' });
         const aika = alku.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
-
         const item = document.createElement('div');
         item.className = 'tuleva-tapahtuma-item';
         item.innerHTML = `
