@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perheen Kalenteri</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Perheen Kalenteri</h1>
+            <div class="kayttaja-valitsin">
+                <label for="kayttaja">Kuka olet?</label>
+                <select id="kayttaja">
+                    <option value="Toni">Toni</option>
+                    <option value="Kaisa">Kaisa</option>
+                    <option value="Oona">Oona</option>
+                </select>
+            </div>
+        </header>
+
+        <main>
+            <div class="kalenteri-ylapalkki">
+                <button id="edellinen-kk">&lt;</button>
+                <h2 id="kuukausi-otsikko">Elokuu 2025</h2>
+                <button id="seuraava-kk">&gt;</button>
+            </div>
+            <div id="kalenteri-grid">
+                </div>
+        </main>
+
+        <aside class="sivupalkki">
+            <h3>Lisää uusi tapahtuma</h3>
+            <form id="lisaa-tapahtuma-lomake">
+                <label for="tapahtuma-otsikko">Tapahtuma:</label>
+                <input type="text" id="tapahtuma-otsikko" required>
+
+                <label for="tapahtuma-pvm">Päivämäärä:</label>
+                <input type="date" id="tapahtuma-pvm" required>
+
+                <label for="tapahtuma-aika">Aika (vapaaehtoinen):</label>
+                <input type="time" id="tapahtuma-aika">
+                
+                <fieldset>
+                    <legend>Näkyy kenelle:</legend>
+                    <div class="nakyvyys-valinnat">
+                        <label><input type="checkbox" name="nakyvyys" value="Toni" checked> Toni</label>
+                        <label><input type="checkbox" name="nakyvyys" value="Kaisa" checked> Kaisa</label>
+                        <label><input type="checkbox" name="nakyvyys" value="Oona" checked> Oona</label>
+                    </div>
+                </fieldset>
+
+                <button type="submit">Lisää kalenteriin</button>
+            </form>
+        </aside>
+
+    </div>
+
+    <script type="module" src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"></script>
+    
+    <script type="module" src="script.js"></script>
+</body>
+</html>
