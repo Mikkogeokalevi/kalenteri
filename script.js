@@ -57,19 +57,20 @@ function checkLoginStatus() {
     }
 }
 
-function toggleAikaValinnat(checkboxId, containerId) {
-    const checkbox = document.getElementById(checkboxId);
+// MUUTETTU FUNKTIO
+function toggleLoppuAika(isChecked, containerId) {
     const container = document.getElementById(containerId);
-    const inputs = container.querySelectorAll('input[type="datetime-local"]');
-
-    if (checkbox.checked) {
+    const input = container.querySelector('input[type="datetime-local"]');
+    
+    if (isChecked) {
         container.classList.add('hidden');
-        inputs.forEach(input => input.required = false);
+        input.required = false;
     } else {
         container.classList.remove('hidden');
-        inputs.forEach(input => input.required = true);
+        input.required = true;
     }
 }
+
 
 function lisaaKuuntelijat() {
     loginForm.addEventListener('submit', handleLogin);
@@ -112,12 +113,12 @@ function lisaaKuuntelijat() {
         naytaTulevatTapahtumat();
     });
 
-    // UUDET KUUNTELIJAT
-    document.getElementById('tapahtuma-koko-paiva').addEventListener('change', () => {
-        toggleAikaValinnat('tapahtuma-koko-paiva', 'aika-valinnat');
+    // MUUTETUT KUUNTELIJAT
+    document.getElementById('tapahtuma-koko-paiva').addEventListener('change', (e) => {
+        toggleLoppuAika(e.target.checked, 'loppu-aika-lisaa-container');
     });
-    document.getElementById('muokkaa-tapahtuma-koko-paiva').addEventListener('change', () => {
-        toggleAikaValinnat('muokkaa-tapahtuma-koko-paiva', 'muokkaa-aika-valinnat');
+    document.getElementById('muokkaa-tapahtuma-koko-paiva').addEventListener('change', (e) => {
+        toggleLoppuAika(e.target.checked, 'loppu-aika-muokkaa-container');
     });
 }
 
@@ -297,12 +298,12 @@ function lisaaTapahtuma() {
         ketakoskee: document.querySelector('input[name="ketakoskee"]:checked').value,
         nakyvyys: Array.from(document.querySelectorAll('input[name="nakyvyys"]:checked')).reduce((a, c) => ({ ...a, [c.value]: true }), {})
     };
-    if (!uusi.otsikko || !uusi.alku || !uusi.loppu) return alert('Täytä vähintään otsikko, alkamis- ja loppumisaika.');
+    if (!uusi.otsikko || !uusi.alku || !uusi.loppu) return alert('Täytä vähintään otsikko ja päivämäärä.');
     
     push(ref(database, 'tapahtumat'), uusi).then(() => {
         lisaaLomake.reset();
         sivupalkki.classList.add('hidden');
-        toggleAikaValinnat('tapahtuma-koko-paiva', 'aika-valinnat'); // Palauttaa näkymän
+        toggleLoppuAika(false, 'loppu-aika-lisaa-container'); // Palauttaa näkymän
         naytaIlmoitus('Tapahtuma lisätty onnistuneesti!');
     });
 }
@@ -466,7 +467,8 @@ function avaaTapahtumaIkkuna(key) {
     
     const muokkaaKokoPaivaCheckbox = document.getElementById('muokkaa-tapahtuma-koko-paiva');
     muokkaaKokoPaivaCheckbox.checked = !!tapahtuma.kokoPaiva;
-    toggleAikaValinnat('muokkaa-tapahtuma-koko-paiva', 'muokkaa-aika-valinnat');
+    // Asetetaan "Loppuu"-kentän näkyvyys oikein heti ikkunan avautuessa
+    toggleLoppuAika(muokkaaKokoPaivaCheckbox.checked, 'loppu-aika-muokkaa-container');
 
     document.querySelectorAll('input[name="muokkaa-nakyvyys"]').forEach(cb => {
        cb.checked = !!tapahtuma.nakyvyys?.[cb.value];
@@ -522,13 +524,12 @@ function tallennaMuutokset() {
         luoja: vanhaTapahtuma.luoja
     };
     update(ref(database, `tapahtumat/${key}`), paivitys).then(() => {
-        // Päivitetään heti näkymä ilman erillistä datan uudelleenlatausta
         const tapahtuma = window.kaikkiTapahtumat.find(t => t.key === key);
         if (tapahtuma) {
             Object.assign(tapahtuma, paivitys);
         }
-        avaaTapahtumaIkkuna(key); // Avaa uudelleen päivitetyillä tiedoilla
-        vaihdaTila('view'); // Varmistaa, että palataan katselutilaan
+        avaaTapahtumaIkkuna(key);
+        vaihdaTila('view');
     });
 }
 
