@@ -92,7 +92,7 @@ function handleLogin(event) {
 function handleLogout() {
     localStorage.removeItem('loggedInUser');
     if (unsubscribeFromEvents) {
-        unsubscribeFromEvents(); 
+        unsubscribeFromEvents();
     }
     nykyinenKayttaja = null;
     mainContainer.classList.add('hidden');
@@ -108,7 +108,8 @@ function startAppForUser(user) {
     document.getElementById('login-password').value = '';
     currentUserName.textContent = nykyinenKayttaja;
     applyTheme(nykyinenKayttaja);
-    kuunteleTapahtumia();
+    piirraKalenteri(); // Piirretään kalenteripohja kerran
+    kuunteleTapahtumia(); // Käynnistetään kuuntelija
 }
 
 function applyTheme(user) {
@@ -144,6 +145,7 @@ function piirraKalenteri() {
         const pvm = `${vuosi}-${String(kuukausi + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
         kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="paiva" data-paivamaara="${pvm}"><div class="paiva-numero">${i}</div><div class="tapahtumat-container"></div></div>`);
     }
+    // TÄRKEÄÄ: kutsutaan naytaTapahtumatKalenterissa, jotta vanhat tapahtumat näkyvät heti kuukautta vaihtaessa
     naytaTapahtumatKalenterissa();
 }
 
@@ -164,14 +166,12 @@ function kuunteleTapahtumia() {
     if (unsubscribeFromEvents) unsubscribeFromEvents();
     const tapahtumatRef = ref(database, 'tapahtumat');
     unsubscribeFromEvents = onValue(tapahtumatRef, (snapshot) => {
-        // --- LOPULLINEN ETSIVÄ ---
-        console.log("--- Raakadata Firebaselta ---");
-        console.log(snapshot.val()); // Tulostetaan koko saatu dataobjekti
-
         window.kaikkiTapahtumat = [];
         snapshot.forEach((child) => window.kaikkiTapahtumat.push({ key: child.key, ...child.val() }));
         
-        piirraKalenteri();
+        // **KORJAUS**: Kutsutaan suoraan funktioita, jotka päivittävät tapahtumat olemassaolevaan pohjaan.
+        // EI piirretä koko kalenteria uudelleen.
+        naytaTapahtumatKalenterissa();
         naytaTulevatTapahtumat();
     });
 }
@@ -198,7 +198,6 @@ function naytaTulevatTapahtumat() {
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
 
     const nyt = new Date();
-    // Varmistetaan, että verrataan vain päivämääriä, ei kellonaikaa, jotta saman päivän tapahtumat näkyvät
     const today = new Date(nyt.getFullYear(), nyt.getMonth(), nyt.getDate());
 
     const tulevat = window.kaikkiTapahtumat
