@@ -357,7 +357,6 @@ footer {
     border-color: var(--text-accent);
 }
 
-/* UUDET TYYLIT KOKO PÄIVÄN TAPAHTUMALLE JA LINKILLE */
 .checkbox-container {
     display: flex;
     align-items: center;
@@ -380,4 +379,74 @@ input[type="checkbox"] {
 #view-linkki {
     color: var(--text-accent);
     text-decoration: underline;
+}
+
+/* UUDET TYYLIT TEHTÄVÄLISTALLE */
+.tehtavalista {
+    background-color: var(--bg-sidebar);
+    padding: 15px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.tehtavalista h3 {
+    margin-top: 0;
+    text-align: center;
+    color: var(--text-accent);
+}
+
+.tehtava-item {
+    display: flex;
+    align-items: center;
+    background-color: var(--bg-container);
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: opacity 0.3s ease;
+}
+
+.tehtava-item.tehty {
+    opacity: 0.6;
+}
+
+.tehtava-item.tehty .tehtava-teksti {
+    text-decoration: line-through;
+}
+
+.tehtava-item input[type="checkbox"] {
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.tehtava-teksti {
+    flex-grow: 1;
+    margin: 0;
+}
+
+.poista-tehtava-nappi {
+    width: auto;
+    padding: 4px 8px;
+    margin: 0 0 0 10px;
+    background-color: transparent;
+    border: 1px solid #e74c3c;
+    color: #e74c3c;
+    font-size: 0.8em;
+    font-weight: bold;
+    border-radius: 5px;
+}
+.poista-tehtava-nappi:hover {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.lisaa-tehtava-lomake {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+#lisaa-tehtava-nappi {
+    width: auto;
+    flex-shrink: 0;
+    margin-top: 0;
 }
