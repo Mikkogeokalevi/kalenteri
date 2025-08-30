@@ -20,7 +20,7 @@ const PASSWORDS = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-// --- DOM-elementit ---
+// --- DOM-elementit 22---
 const loginOverlay = document.getElementById('login-overlay');
 const loginForm = document.getElementById('login-form');
 const mainContainer = document.getElementById('main-container');
@@ -108,8 +108,8 @@ function startAppForUser(user) {
     document.getElementById('login-password').value = '';
     currentUserName.textContent = nykyinenKayttaja;
     applyTheme(nykyinenKayttaja);
-    piirraKalenteri(); // Piirretään kalenteripohja kerran
-    kuunteleTapahtumia(); // Käynnistetään kuuntelija
+    piirraKalenteri();
+    kuunteleTapahtumia();
 }
 
 function applyTheme(user) {
@@ -145,7 +145,6 @@ function piirraKalenteri() {
         const pvm = `${vuosi}-${String(kuukausi + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
         kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="paiva" data-paivamaara="${pvm}"><div class="paiva-numero">${i}</div><div class="tapahtumat-container"></div></div>`);
     }
-    // TÄRKEÄÄ: kutsutaan naytaTapahtumatKalenterissa, jotta vanhat tapahtumat näkyvät heti kuukautta vaihtaessa
     naytaTapahtumatKalenterissa();
 }
 
@@ -169,8 +168,6 @@ function kuunteleTapahtumia() {
         window.kaikkiTapahtumat = [];
         snapshot.forEach((child) => window.kaikkiTapahtumat.push({ key: child.key, ...child.val() }));
         
-        // **KORJAUS**: Kutsutaan suoraan funktioita, jotka päivittävät tapahtumat olemassaolevaan pohjaan.
-        // EI piirretä koko kalenteria uudelleen.
         naytaTapahtumatKalenterissa();
         naytaTulevatTapahtumat();
     });
@@ -179,16 +176,28 @@ function kuunteleTapahtumia() {
 function naytaTapahtumatKalenterissa() {
     document.querySelectorAll('.tapahtumat-container').forEach(c => c.innerHTML = '');
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
+    
+    // --- UUSI DEBUG-LOKI ---
+    console.log(`--- Piirretään kalenteria, ${window.kaikkiTapahtumat.length} tapahtumaa yhteensä ---`);
+
     window.kaikkiTapahtumat.forEach(tapahtuma => {
+        console.log(`Käsitellään: "${tapahtuma.otsikko}" alkamisaika: ${tapahtuma.alku}`);
         if (tapahtuma.nakyvyys?.[nykyinenKayttaja] && tapahtuma.alku) {
-            const paivaEl = document.querySelector(`.paiva[data-paivamaara="${tapahtuma.alku.substring(0, 10)}"]`);
+            const paivamaara = tapahtuma.alku.substring(0, 10);
+            const paivaEl = document.querySelector(`.paiva[data-paivamaara="${paivamaara}"]`);
+            
             if (paivaEl) {
+                console.log(` -> LÖYDETTIIN paikka kalenterista päivälle ${paivamaara}. Lisätään.`);
                 const tapahtumaEl = document.createElement('div');
                 tapahtumaEl.className = `tapahtuma ${tapahtuma.luoja === nykyinenKayttaja ? 'oma' : ''}`;
                 tapahtumaEl.textContent = tapahtuma.otsikko;
                 tapahtumaEl.addEventListener('click', () => avaaTapahtumaIkkuna(tapahtuma.key));
                 paivaEl.querySelector('.tapahtumat-container').appendChild(tapahtumaEl);
+            } else {
+                console.log(` -> EI LÖYDETTY paikkaa kalenterista päivälle ${paivamaara}.`);
             }
+        } else {
+            console.log(` -> Ohitettiin, koska näkyvyys tai alkuaika puuttui.`);
         }
     });
 }
