@@ -389,11 +389,33 @@ input[type="checkbox"] {
     margin-bottom: 20px;
 }
 
-.tehtavalista h3 {
-    margin-top: 0;
-    text-align: center;
+.tehtavalista-otsikko {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.tehtavalista-otsikko h3 {
+    margin: 0;
     color: var(--text-accent);
 }
+
+.tehtava-laskuri {
+    background-color: var(--bg-container);
+    color: var(--text-accent);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+#tehtavalista-sisalto {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--bg-container);
+}
+
 
 .tehtava-item {
     display: flex;
@@ -418,7 +440,6 @@ input[type="checkbox"] {
     flex-shrink: 0;
 }
 
-/* MUUTETUT JA UUDET TYYLIT */
 .tehtava-tiedot {
     flex-grow: 1;
 }
