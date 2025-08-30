@@ -482,3 +482,11 @@ input[type="checkbox"] {
     flex-shrink: 0;
     margin-top: 0;
 }
+
+/* UUSI TYYLI HAKUTULOSTEN KOROSTAMISEEN */
+.paiva.haku-osuma {
+    border: 2px solid var(--text-accent);
+    box-shadow: 0 0 8px var(--text-accent);
+    transform: scale(1.03);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
