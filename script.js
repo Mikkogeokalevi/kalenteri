@@ -20,39 +20,49 @@ const PASSWORDS = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-// --- DOM-elementit ---
-const loginOverlay = document.getElementById('login-overlay');
-const loginForm = document.getElementById('login-form');
-const mainContainer = document.getElementById('main-container');
-const currentUserName = document.getElementById('current-user-name');
-const logoutBtn = document.getElementById('logout-btn');
-const tulevatTapahtumatLista = document.getElementById('tulevat-tapahtumat-lista');
-const kalenteriPaivatOtsikot = document.getElementById('kalenteri-paivat-otsikot');
-const kalenteriGrid = document.getElementById('kalenteri-grid');
-const kuukausiOtsikko = document.getElementById('kuukausi-otsikko');
-const edellinenBtn = document.getElementById('edellinen-kk');
-const seuraavaBtn = document.getElementById('seuraava-kk');
-const lisaaLomake = document.getElementById('lisaa-tapahtuma-lomake');
-const modalOverlay = document.getElementById('tapahtuma-modal-overlay');
-const modalViewContent = document.getElementById('modal-view-content');
-const modalEditContent = document.getElementById('modal-edit-content');
-const avaaLisaysLomakeBtn = document.getElementById('avaa-lisays-lomake-btn');
-const sivupalkki = document.querySelector('.sivupalkki');
-const hakuKentta = document.getElementById('haku-kentta');
-const kokoPaivaCheckbox = document.getElementById('koko-paiva-checkbox');
-const aikaValinnat = document.getElementById('aika-valinnat');
-const muokkaaKokoPaivaCheckbox = document.getElementById('muokkaa-koko-paiva-checkbox');
-const muokkaaAikaValinnat = document.getElementById('muokkaa-aika-valinnat');
+// --- MUUTTUJAT ---
+// Määritellään muuttujat tässä, mutta haetaan elementit vasta kun DOM on latautunut
+let loginOverlay, loginForm, mainContainer, currentUserName, logoutBtn,
+    tulevatTapahtumatLista, kalenteriPaivatOtsikot, kalenteriGrid, kuukausiOtsikko,
+    edellinenBtn, seuraavaBtn, lisaaLomake, modalOverlay, modalViewContent,
+    modalEditContent, avaaLisaysLomakeBtn, sivupalkki, hakuKentta,
+    kokoPaivaCheckbox, aikaValinnat, muokkaaKokoPaivaCheckbox, muokkaaAikaValinnat;
 
-// --- Sovelluksen tila ---
 let nykyinenKayttaja = null;
 let nykyinenPaiva = new Date();
 let unsubscribeFromEvents = null;
 
+// KOKO SOVELLUKSEN KÄYNNISTYS, KUN SIVU ON LADATTU
 document.addEventListener('DOMContentLoaded', () => {
+    // Haetaan kaikki DOM-elementit kerralla
+    loginOverlay = document.getElementById('login-overlay');
+    loginForm = document.getElementById('login-form');
+    mainContainer = document.getElementById('main-container');
+    currentUserName = document.getElementById('current-user-name');
+    logoutBtn = document.getElementById('logout-btn');
+    tulevatTapahtumatLista = document.getElementById('tulevat-tapahtumat-lista');
+    kalenteriPaivatOtsikot = document.getElementById('kalenteri-paivat-otsikot');
+    kalenteriGrid = document.getElementById('kalenteri-grid');
+    kuukausiOtsikko = document.getElementById('kuukausi-otsikko');
+    edellinenBtn = document.getElementById('edellinen-kk');
+    seuraavaBtn = document.getElementById('seuraava-kk');
+    lisaaLomake = document.getElementById('lisaa-tapahtuma-lomake');
+    modalOverlay = document.getElementById('tapahtuma-modal-overlay');
+    modalViewContent = document.getElementById('modal-view-content');
+    modalEditContent = document.getElementById('modal-edit-content');
+    avaaLisaysLomakeBtn = document.getElementById('avaa-lisays-lomake-btn');
+    sivupalkki = document.querySelector('.sivupalkki');
+    hakuKentta = document.getElementById('haku-kentta');
+    kokoPaivaCheckbox = document.getElementById('koko-paiva-checkbox');
+    aikaValinnat = document.getElementById('aika-valinnat');
+    muokkaaKokoPaivaCheckbox = document.getElementById('muokkaa-koko-paiva-checkbox');
+    muokkaaAikaValinnat = document.getElementById('muokkaa-aika-valinnat');
+
+    // Käynnistetään sovelluksen toiminnot
     checkLoginStatus();
     lisaaKuuntelijat();
 });
+
 
 function checkLoginStatus() {
     const rememberedUser = localStorage.getItem('loggedInUser');
