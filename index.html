@@ -115,6 +115,17 @@
                     <input type="datetime-local" id="muokkaa-tapahtuma-alku" required>
                     <label for="muokkaa-tapahtuma-loppu">Loppuu:</label>
                     <input type="datetime-local" id="muokkaa-tapahtuma-loppu" required>
+                    
+                    <fieldset>
+                        <legend>Ketä koskee:</legend>
+                        <div class="ketakoskee-valinnat" id="muokkaa-ketakoskee">
+                            <label><input type="radio" name="muokkaa-ketakoskee" value="perhe"> Koko perhe</label>
+                            <label><input type="radio" name="muokkaa-ketakoskee" value="Toni"> Vain Toni</label>
+                            <label><input type="radio" name="muokkaa-ketakoskee" value="Kaisa"> Vain Kaisa</label>
+                            <label><input type="radio" name="muokkaa-ketakoskee" value="Oona"> Vain Oona</label>
+                        </div>
+                    </fieldset>
+
                     <fieldset>
                         <legend>Näkyy kenelle:</legend>
                         <div class="nakyvyys-valinnat" id="muokkaa-nakyvyys">
