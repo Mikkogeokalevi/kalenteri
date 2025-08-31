@@ -576,23 +576,24 @@ input[type="checkbox"] {
     background-color: transparent;
 }
 
-/* UUDET TYYLIT SUODATINPAINIKKEILLE */
+/* KORJATUT TYYLIT SUODATINPAINIKKEILLE */
 .filter-buttons {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     margin-bottom: 15px;
-    flex-wrap: wrap; /* Varmistaa, että napit rivittyvät pienellä näytöllä */
 }
 
 .filter-btn {
-    width: auto;
-    padding: 6px 12px;
+    width: auto; /* Estää 100% leveyden perimisen */
+    flex-grow: 1; /* Jakaa tilan tasaisesti nappien kesken */
+    padding: 8px 5px; /* Hieman tiiviimpi pehmuste */
     margin: 0;
-    font-size: 0.9em;
+    font-size: 0.8em; /* Pienempi fontti, jotta tekstit mahtuvat paremmin */
     border: 1px solid var(--bg-container);
     background-color: var(--bg-container);
     color: var(--text-main);
     opacity: 0.7;
+    white-space: nowrap; /* Estää tekstin rivittymisen */
 }
 
 .filter-btn.active {
