@@ -350,7 +350,7 @@ function naytaTapahtumatKalenterissa() {
 
     const nakyvatTapahtumat = window.kaikkiTapahtumat.filter(t => t.nakyvyys?.[nykyinenKayttaja] && t.alku);
 
-    // 1. Piirrä palkit (monipäiväiset ja koko päivän tapahtumat)
+    // 1. Piirrä palkit
     nakyvatTapahtumat.forEach(tapahtuma => {
         const alkuPvm = new Date(tapahtuma.alku);
         const loppuPvm = new Date(tapahtuma.loppu);
@@ -363,25 +363,21 @@ function naytaTapahtumatKalenterissa() {
             while (currentDate <= loppuAikaNolla) {
                 const pvmString = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
                 const paivaEl = document.querySelector(`.paiva[data-paivamaara="${pvmString}"]`);
-
                 if (paivaEl) {
                     const palkki = document.createElement('div');
                     palkki.className = 'tapahtuma-palkki';
                     palkki.title = tapahtuma.otsikko;
-                    
                     const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
                     if (tiedot.type === 'class') {
                         palkki.style.backgroundColor = KAYTTAJA_VARIT[tiedot.value.replace('koskee-', '')] || KAYTTAJA_VARIT.perhe;
                     } else {
                         palkki.style.background = tiedot.value;
                     }
-                    
                     if (currentDate.getTime() === alkuAikaNolla) {
                          palkki.textContent = tiedot.initialit;
                     } else {
-                        palkki.innerHTML = '&gt;'; // Jatkumismerkki
+                        palkki.innerHTML = '&gt;';
                     }
-
                     palkki.addEventListener('click', (e) => {
                         e.stopPropagation();
                         avaaTapahtumaIkkuna(tapahtuma.key);
@@ -393,7 +389,7 @@ function naytaTapahtumatKalenterissa() {
         }
     });
 
-    // 2. Piirrä kuvakkeet (yksittäiset, kellonajalliset tapahtumat)
+    // 2. Piirrä kuvakkeet
     nakyvatTapahtumat.forEach(tapahtuma => {
         const alkuPvm = new Date(tapahtuma.alku);
         const loppuPvm = new Date(tapahtuma.loppu);
@@ -430,11 +426,11 @@ function naytaTulevatTapahtumat() {
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
     
     const hakutermi = hakuKentta.value.toLowerCase();
-    const nyt = new Date();
-    const today = new Date(nyt.getFullYear(), nyt.getMonth(), nyt.getDate());
+    const nyt = new Date(); // Käytetään tarkkaa kellonaikaa
     
     const tulevat = window.kaikkiTapahtumat.filter(t => {
-        const nakyvyysJaAikaOk = t.nakyvyys?.[nykyinenKayttaja] && new Date(t.loppu) >= today;
+        // Tapahtuma näytetään, jos sen LOPPUMISAIKA on myöhemmin kuin NYT
+        const nakyvyysJaAikaOk = t.nakyvyys?.[nykyinenKayttaja] && new Date(t.loppu) >= nyt;
         if (!nakyvyysJaAikaOk) return false;
 
         if (hakutermi) {
