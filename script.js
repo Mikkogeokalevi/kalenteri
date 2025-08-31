@@ -23,7 +23,7 @@ const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
 
-// --- DOM-elementit ---
+// --- DOM-eleAmentit ---
 const loginOverlay = document.getElementById('login-overlay');
 const loginForm = document.getElementById('login-form');
 const mainContainer = document.getElementById('main-container');
