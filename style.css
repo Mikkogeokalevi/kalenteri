@@ -30,7 +30,7 @@ body {
     color: var(--text-main);
     margin: 0;
     padding: 10px;
-    transition: background-color: 0.3s ease;
+    transition: background-color 0.3s ease;
 }
 .container {
     max-width: 900px;
@@ -101,6 +101,8 @@ main, .sivupalkki, footer {
     flex-direction: column;
     gap: 3px;
     margin-top: 4px;
+    /* UUSI: Järjestä monipäiväiset tapahtumat ensin */
+    align-items: flex-start; /* Tämän voi tarvittaessa säätää keskittämään */
 }
 .paiva.tyhja {
     background-color: transparent;
@@ -323,7 +325,7 @@ footer {
     color: white;
     cursor: pointer;
     transition: transform 0.2s ease;
-    align-self: center;
+    align-self: center; /* Keskittää kuvakkeen */
 }
 .tapahtuma-kuvake:hover {
     transform: scale(1.2);
@@ -502,8 +504,8 @@ input[type="checkbox"] {
 }
 
 .tapahtuma-palkki {
-    font-size: 0.9em;
-    padding: 2px 5px;
+    font-size: 0.8em; /* Hieman pienempi fontti, jos on vain tunnus */
+    padding: 3px 5px; /* Palkki hieman paksumpi ja tilaa ympärillä */
     border-radius: 4px;
     color: white;
     margin-bottom: 2px;
@@ -513,4 +515,6 @@ input[type="checkbox"] {
     cursor: pointer;
     text-align: center;
     font-weight: bold;
+    width: 100%; /* Palkki venyy koko päivän leveyteen */
+    box-sizing: border-box; /* Padding ja border eivät kasvata leveyttä */
 }
