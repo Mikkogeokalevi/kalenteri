@@ -360,6 +360,7 @@ function naytaTapahtumatKalenterissa() {
 
         if (onMonipaivainenTaiKokoPaiva) {
             let currentDate = new Date(alkuAikaNolla);
+            const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee); // Haetaan tiedot kerran
             while (currentDate <= loppuAikaNolla) {
                 const pvmString = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
                 const paivaEl = document.querySelector(`.paiva[data-paivamaara="${pvmString}"]`);
@@ -367,17 +368,19 @@ function naytaTapahtumatKalenterissa() {
                     const palkki = document.createElement('div');
                     palkki.className = 'tapahtuma-palkki';
                     palkki.title = tapahtuma.otsikko;
-                    const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
+                    
                     if (tiedot.type === 'class') {
                         palkki.style.backgroundColor = KAYTTAJA_VARIT[tiedot.value.replace('koskee-', '')] || KAYTTAJA_VARIT.perhe;
                     } else {
                         palkki.style.background = tiedot.value;
                     }
+                    
                     if (currentDate.getTime() === alkuAikaNolla) {
                          palkki.textContent = tiedot.initialit;
                     } else {
                         palkki.innerHTML = '&gt;';
                     }
+
                     palkki.addEventListener('click', (e) => {
                         e.stopPropagation();
                         avaaTapahtumaIkkuna(tapahtuma.key);
@@ -613,7 +616,7 @@ function tallennaMuutokset() {
 function poistaTapahtuma() {
     const key = modalOverlay.dataset.tapahtumaId;
     if (confirm('Haluatko varmasti poistaa tämän tehtävän?')) {
-        remove(ref(database, `tapahtumat/${key}`)).then(() => suljeTapahtumaIkkuna());
+        remove(ref(database, `tapahtumat/${key}`));
     }
 }
 
