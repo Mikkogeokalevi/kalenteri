@@ -30,7 +30,8 @@ let loginOverlay, loginForm, mainContainer, currentUserName, logoutBtn, tulevatT
     sivupalkki, hakuKentta, tehtavatContainer, uusiTehtavaTeksti, lisaaTehtavaNappi,
     tehtavalistaToggle, tehtavalistaSisalto, avoimetTehtavatLaskuri, avaaMenneetModalBtn,
     menneetTapahtumatModal, suljeMenneetModalBtn, menneetHakuKentta, menneetTapahtumatLista,
-    edellinenSivuBtn, seuraavaSivuBtn, sivuInfo, tulevatSuodatin;
+    edellinenSivuBtn, seuraavaSivuBtn, sivuInfo, tulevatSuodatin, tulevatPaginationControls,
+    tulevatEdellinenSivuBtn, tulevatSeuraavaSivuBtn, tulevatSivuInfo;
 
 // --- Sovelluksen tila ---
 let nykyinenKayttaja = null;
@@ -38,6 +39,7 @@ let nykyinenPaiva = new Date();
 let unsubscribeFromEvents = null;
 let unsubscribeFromTasks = null;
 let menneetSivu = 0;
+let tulevatSivu = 0; // UUSI TILA SIVUTUKSELLE
 const TAPAHTUMIA_PER_SIVU = 10;
 
 function alustaElementit() {
@@ -74,6 +76,12 @@ function alustaElementit() {
     seuraavaSivuBtn = document.getElementById('seuraava-sivu-btn');
     sivuInfo = document.getElementById('sivu-info');
     tulevatSuodatin = document.getElementById('tulevat-suodatin');
+
+    // UUDET DOM ELEMENTIT SIVUTUKSELLE
+    tulevatPaginationControls = document.getElementById('tulevat-pagination-controls');
+    tulevatEdellinenSivuBtn = document.getElementById('tulevat-edellinen-sivu-btn');
+    tulevatSeuraavaSivuBtn = document.getElementById('tulevat-seuraava-sivu-btn');
+    tulevatSivuInfo = document.getElementById('tulevat-sivu-info');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -136,16 +144,20 @@ function lisaaKuuntelijat() {
         loppuInput.min = this.value;
     });
     kalenteriGrid.addEventListener('click', handlePaivaClick);
+
+    // PÄIVITETTY HAKUKENTÄN KUUNTELIJA
     hakuKentta.addEventListener('input', () => {
+        tulevatSivu = 0; // Nollaa sivunumeron haettaessa
         naytaTulevatTapahtumat();
         korostaHakuOsumatKalenterissa();
     });
     
-    // **UUSI JA PARANNETTU SUODATTIMEN KUUNTELIJA**
+    // PÄIVITETTY SUODATTIMEN KUUNTELIJA
     tulevatSuodatin.addEventListener('click', (e) => {
         const target = e.target;
         if (!target.classList.contains('filter-btn')) return;
 
+        tulevatSivu = 0; // Nollaa sivunumeron suodatinta vaihtaessa
         const suodatin = target.dataset.filter;
         const kaikkiBtn = tulevatSuodatin.querySelector('[data-filter="kaikki"]');
         const perheBtn = tulevatSuodatin.querySelector('[data-filter="perhe"]');
@@ -159,17 +171,29 @@ function lisaaKuuntelijat() {
             personBtns.forEach(btn => btn.classList.remove('active'));
             kaikkiBtn.classList.remove('active');
             perheBtn.classList.toggle('active');
-        } else { // Henkilönappia klikattu
+        } else {
             kaikkiBtn.classList.remove('active');
             perheBtn.classList.remove('active');
             target.classList.toggle('active');
         }
         
-        // Jos mikään suodatin ei ole aktiivinen, aktivoidaan "Kaikki" oletuksena
         if (!tulevatSuodatin.querySelector('.filter-btn.active')) {
             kaikkiBtn.classList.add('active');
         }
 
+        naytaTulevatTapahtumat();
+    });
+
+    // UUDET KUUNTELIJAT SIVUTUKSELLE
+    tulevatEdellinenSivuBtn.addEventListener('click', () => {
+        if (tulevatSivu > 0) {
+            tulevatSivu--;
+            naytaTulevatTapahtumat();
+        }
+    });
+
+    tulevatSeuraavaSivuBtn.addEventListener('click', () => {
+        tulevatSivu++;
         naytaTulevatTapahtumat();
     });
 
@@ -579,7 +603,7 @@ function naytaTapahtumatKalenterissa() {
     });
 }
 
-// **UUSI JA PARANNETTU SUODATUSLOGIIKKA**
+// **PÄIVITETTY FUNKTIO SIVUTUKSELLA**
 function naytaTulevatTapahtumat() {
     tulevatTapahtumatLista.innerHTML = '';
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
@@ -588,12 +612,11 @@ function naytaTulevatTapahtumat() {
     const nyt = new Date();
     const aktiivisetSuotimet = Array.from(tulevatSuodatin.querySelectorAll('.filter-btn.active')).map(btn => btn.dataset.filter);
     
-    const tulevat = window.kaikkiTapahtumat.filter(t => {
-        // Perustarkistukset: näkyvyys ja aika
+    // 1. Suodata kaikki tapahtumat
+    const suodatetutTulevat = window.kaikkiTapahtumat.filter(t => {
         const nakyvyysJaAikaOk = t.nakyvyys?.[nykyinenKayttaja] && new Date(t.loppu) >= nyt;
         if (!nakyvyysJaAikaOk) return false;
 
-        // Suodatus hakutermin perusteella
         if (hakutermi) {
             const otsikko = (t.otsikko || '').toLowerCase();
             const kuvaus = (t.kuvaus || '').toLowerCase();
@@ -602,24 +625,35 @@ function naytaTulevatTapahtumat() {
             }
         }
         
-        // Jos "Kaikki" on valittu, älä suodata enempää
         if (aktiivisetSuotimet.includes('kaikki')) {
             return true;
         }
 
         const ketakoskee = Array.isArray(t.ketakoskee) ? t.ketakoskee : [String(t.ketakoskee)];
-
-        // JA-ehto: tapahtuman tiedoissa on oltava KAIKKI aktiiviset suotimet
         return aktiivisetSuotimet.every(suodin => ketakoskee.includes(suodin));
+    }).sort((a, b) => new Date(a.alku) - new Date(b.alku));
 
-    }).sort((a, b) => new Date(a.alku) - new Date(b.alku)); // Otetaan raja pois, näytetään kaikki osumat
+    // 2. Sivutuksen logiikka
+    const sivujaYhteensa = Math.ceil(suodatetutTulevat.length / TAPAHTUMIA_PER_SIVU);
+    if (sivujaYhteensa > 1) {
+        tulevatPaginationControls.classList.remove('hidden');
+        tulevatSivuInfo.textContent = `Sivu ${tulevatSivu + 1} / ${sivujaYhteensa}`;
+        tulevatEdellinenSivuBtn.disabled = tulevatSivu === 0;
+        tulevatSeuraavaSivuBtn.disabled = tulevatSivu + 1 >= sivujaYhteensa;
+    } else {
+        tulevatPaginationControls.classList.add('hidden');
+    }
 
-    if (tulevat.length === 0) {
+    const alkuIndeksi = tulevatSivu * TAPAHTUMIA_PER_SIVU;
+    const sivunTapahtumat = suodatetutTulevat.slice(alkuIndeksi, alkuIndeksi + TAPAHTUMIA_PER_SIVU);
+
+    // 3. Näytä tulokset
+    if (sivunTapahtumat.length === 0) {
         tulevatTapahtumatLista.innerHTML = `<p>Valinnoilla ei löytynyt tulevia tapahtumia.</p>`;
         return;
     }
 
-    tulevat.forEach(tapahtuma => {
+    sivunTapahtumat.forEach(tapahtuma => {
         const alku = new Date(tapahtuma.alku);
         const loppu = new Date(tapahtuma.loppu);
         let aikaTeksti;
