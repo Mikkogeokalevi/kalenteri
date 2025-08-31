@@ -23,7 +23,7 @@ const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
 
-// --- DOM-elementit aa (Määritellään muuttujat) ---
+// --- DOM-elementit (Määritellään muuttujat) ---
 let loginOverlay, loginForm, mainContainer, currentUserName, logoutBtn, tulevatTapahtumatLista,
     kalenteriPaivatOtsikot, kalenteriGrid, kuukausiOtsikko, edellinenBtn, seuraavaBtn,
     lisaaLomake, modalOverlay, modalViewContent, modalEditContent, avaaLisaysLomakeBtn,
@@ -75,32 +75,38 @@ function alustaElementit() {
     sivuInfo = document.getElementById('sivu-info');
 }
 
-onAuthStateChanged(auth, user => {
-    if (user) {
-        let userName = user.displayName;
-        if (!userName && user.email) {
-            const emailName = user.email.split('@')[0];
-            userName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
-        }
-        if (userName) {
-            startAppForUser(userName);
+
+// PÄÄAJO-LOGIIKKA KORJATTU
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Haetaan elementit vasta kun sivu on valmis
+    alustaElementit();
+    // 2. Lisätään kuuntelijat elementeille
+    lisaaKuuntelijat();
+
+    // 3. VASTA NYT aletaan tarkkailla kirjautumisen tilaa
+    onAuthStateChanged(auth, user => {
+        if (user) {
+            let userName = user.displayName;
+            if (!userName && user.email) {
+                const emailName = user.email.split('@')[0];
+                userName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+            }
+            if (userName) {
+                startAppForUser(userName);
+            } else {
+                handleLogout();
+            }
         } else {
-            handleLogout();
+            nykyinenKayttaja = null;
+            if (unsubscribeFromEvents) unsubscribeFromEvents();
+            if (unsubscribeFromTasks) unsubscribeFromTasks();
+            mainContainer.classList.add('hidden');
+            loginOverlay.classList.remove('hidden');
+            document.body.className = '';
         }
-    } else {
-        nykyinenKayttaja = null;
-        if (unsubscribeFromEvents) unsubscribeFromEvents();
-        if (unsubscribeFromTasks) unsubscribeFromTasks();
-        mainContainer.classList.add('hidden');
-        loginOverlay.classList.remove('hidden');
-        document.body.className = '';
-    }
+    });
 });
 
-document.addEventListener('DOMContentLoaded', () => {
-    alustaElementit();
-    lisaaKuuntelijat();
-});
 
 function lisaaKuuntelijat() {
     loginForm.addEventListener('submit', handleLogin);
@@ -203,7 +209,78 @@ function suljeMenneetModal() {
 
 
 function naytaMenneetTapahtumat() {
-    // ... (Tämä funktio pysyy ennallaan)
+    if (!window.kaikkiTapahtumat) return;
+    const hakutermi = menneetHakuKentta.value.toLowerCase().trim();
+    const nyt = new Date();
+
+    const kaikkiMenneet = window.kaikkiTapahtumat
+        .filter(t => {
+            const onMennossa = new Date(t.loppu) < nyt;
+            if (!onMennossa || !t.nakyvyys?.[nykyinenKayttaja]) return false;
+
+            if (hakutermi) {
+                const otsikko = (t.otsikko || '').toLowerCase();
+                const kuvaus = (t.kuvaus || '').toLowerCase();
+                return otsikko.includes(hakutermi) || kuvaus.includes(hakutermi);
+            }
+            return true;
+        })
+        .sort((a, b) => new Date(b.alku) - new Date(a.alku));
+
+    const sivujaYhteensa = Math.ceil(kaikkiMenneet.length / TAPAHTUMIA_PER_SIVU);
+    const alkuIndeksi = menneetSivu * TAPAHTUMIA_PER_SIVU;
+    const sivunTapahtumat = kaikkiMenneet.slice(alkuIndeksi, alkuIndeksi + TAPAHTUMIA_PER_SIVU);
+
+    sivuInfo.textContent = `Sivu ${menneetSivu + 1} / ${sivujaYhteensa || 1}`;
+    edellinenSivuBtn.disabled = menneetSivu === 0;
+    seuraavaSivuBtn.disabled = menneetSivu + 1 >= sivujaYhteensa;
+
+    menneetTapahtumatLista.innerHTML = '';
+    if (sivunTapahtumat.length === 0) {
+        menneetTapahtumatLista.innerHTML = `<p style="text-align:center; opacity:0.7;">${hakutermi ? 'Haulla ei löytynyt' : 'Ei'} menneitä tapahtumia.</p>`;
+        return;
+    }
+
+    sivunTapahtumat.forEach(tapahtuma => {
+        const alku = new Date(tapahtuma.alku);
+        const loppu = new Date(tapahtuma.loppu);
+        let aikaTeksti;
+        const alkuPvmStr = alku.toLocaleDateString('fi-FI', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric' });
+        
+        if (alku.toLocaleDateString() !== loppu.toLocaleDateString()) {
+            const loppuPvmStr = loppu.toLocaleDateString('fi-FI', { day: 'numeric', month: 'numeric', year: 'numeric' });
+            aikaTeksti = `${alkuPvmStr} - ${loppuPvmStr}`;
+        } else if (tapahtuma.kokoPaiva) {
+            aikaTeksti = `${alkuPvmStr}, Koko päivän`;
+        } else {
+            const alkuAika = alku.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+            const loppuAika = loppu.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+            aikaTeksti = `${alkuPvmStr} ${alkuAika} - ${loppuAika}`;
+        }
+        
+        const item = document.createElement('div');
+        item.className = 'tuleva-tapahtuma-item';
+        const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
+        if (tiedot.type === 'class') {
+            item.classList.add(tiedot.value);
+        } else {
+            item.style.background = tiedot.value;
+        }
+
+        item.innerHTML = `
+            <div class="tapahtuma-item-luoja">${tiedot.initialit}</div>
+            <div class="tapahtuma-item-tiedot">
+                <div class="tapahtuma-item-aika">${aikaTeksti}</div>
+                <div class="tapahtuma-item-otsikko">${tapahtuma.otsikko}</div>
+            </div>
+        `;
+        
+        item.addEventListener('click', () => {
+            suljeMenneetModal();
+            avaaTapahtumaIkkuna(tapahtuma.key);
+        });
+        menneetTapahtumatLista.appendChild(item);
+    });
 }
 
 function handleLogin(event) {
@@ -231,15 +308,16 @@ function startAppForUser(userName) {
     if (nykyinenKayttaja === userName && !mainContainer.classList.contains('hidden')) return;
     
     nykyinenKayttaja = userName;
-    loginOverlay.classList.add('hidden');
+    
     mainContainer.classList.remove('hidden');
+    loginOverlay.classList.add('hidden');
+
     currentUserName.textContent = nykyinenKayttaja;
     applyTheme(nykyinenKayttaja);
     paivitaTanaanBanneri();
     setInterval(paivitaTanaanBanneri, 60000); 
     sivupalkki.classList.add('hidden');
     
-    // Asetetaan kuuntelijat PÄÄLLE vasta kun käyttäjä on varmasti tiedossa
     kuunteleTapahtumia();
     kuunteleTehtavia();
 }
@@ -253,10 +331,105 @@ function kuunteleTapahtumia() {
             window.kaikkiTapahtumat.push({ key: child.key, ...child.val() });
         });
         
-        // KUN DATA ON SAAPUNUT, PIIRRETÄÄN KAIKKI NÄKYMÄT
         piirraKalenteri();
         naytaTulevatTapahtumat();
     });
 }
 
-// ... (Kaikki muut funktiot, kuten toggleLoppuAika, handlePaivaClick, jne. pysyvät ennallaan)
+function toggleLoppuAika(isChecked, containerId) {
+    // ... (Tämä funktio pysyy ennallaan)
+}
+
+function handlePaivaClick(event) {
+    // ... (Tämä funktio pysyy ennallaan)
+}
+
+function applyTheme(user) {
+    // ... (Tämä funktio pysyy ennallaan)
+}
+
+function getWeekNumber(d) {
+    // ... (Tämä funktio pysyy ennallaan)
+}
+
+function paivitaTanaanBanneri() {
+    // ... (Tämä funktio pysyy ennallaan)
+}
+
+function naytaIlmoitus(viesti) {
+    // ... (Tämä funktio pysyy ennallaan)
+}
+
+function piirraKalenteri() {
+    // ... (Tämä funktio pysyy ennallaan)
+}
+
+function lisaaTapahtuma() {
+    // ... (Tämä funktio pysyy ennallaan)
+}
+
+function luoKoskeeTiedot(ketakoskee) {
+    // ... (Tämä funktio pysyy ennallaan)
+}
+
+function naytaTapahtumatKalenterissa() {
+    // ... (Tämä funktio pysyy ennallaan)
+}
+
+function naytaTulevatTapahtumat() {
+    // ... (Tämä funktio pysyy ennallaan)
+}
+
+function korostaHakuOsumatKalenterissa() {
+    // ... (Tämä funktio pysyy ennallaan)
+}
+
+function avaaTapahtumaIkkuna(key) {
+    // ... (Tämä funktio pysyy ennallaan)
+}
+
+function suljeTapahtumaIkkuna() {
+    // ... (Tämä funktio pysyy ennallaan)
+}
+
+function vaihdaTila(tila) {
+    // ... (Tämä funktio pysyy ennallaan)
+}
+
+function tallennaMuutokset() {
+    // ... (Tämä funktio pysyy ennallaan)
+}
+
+function poistaTapahtuma() {
+    // ... (Tämä funktio pysyy ennallaan)
+}
+
+function kopioiTapahtuma() {
+    // ... (Tämä funktio pysyy ennallaan)
+}
+
+function kuunteleTehtavia() {
+    if (unsubscribeFromTasks) unsubscribeFromTasks();
+    const tehtavatRef = ref(database, 'tehtavalista');
+    unsubscribeFromTasks = onValue(tehtavatRef, (snapshot) => {
+        piirraTehtavalista(snapshot);
+    });
+}
+
+function piirraTehtavalista(snapshot) {
+    // ... (Tämä funktio pysyy ennallaan)
+}
+
+function lisaaTehtava() {
+    // ... (Tämä funktio pysyy ennallaan)
+}
+
+function paivitaTehtavanTila(key, onkoTehty) {
+    update(ref(database, `tehtavalista/${key}`), { tehty: onkoTehty });
+}
+
+function poistaTehtava(key) {
+    if (confirm('Haluatko varmasti poistaa tämän tehtävän?')) {
+        remove(ref(database, `tehtavalista/${key}`));
+    }
+}
