@@ -112,16 +112,85 @@
         </main>
 
         <footer>
+            <button id="avaa-menneet-modal-btn" class="footer-btn">Näytä menneet tapahtumat</button>
             <div id="user-info">
                 Kirjautunut: <strong id="current-user-name"></strong>
                 <button id="logout-btn">Kirjaudu ulos</button>
             </div>
-            <button id="avaa-menneet-modal-btn" class="footer-btn">Näytä menneet tapahtumat</button>
         </footer>
     </div>
 
     <div id="tapahtuma-modal-overlay" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div id="modal-view-content">
+                <h2 id="view-otsikko"></h2>
+                <p><strong>Aika:</strong> <span id="view-aika"></span></p>
+                <p id="view-kuvaus-container"><strong>Lisätiedot:</strong> <span id="view-kuvaus"></span></p>
+                <p><strong>Koskee:</strong> <span id="view-koskee"></span></p>
+                <p id="view-linkki-container" class="hidden"><strong>Linkki:</strong> <a id="view-linkki" href="#" target="_blank" rel="noopener noreferrer">Avaa linkki</a></p>
+                <p><strong>Näkyvyys:</strong> <span id="view-nakyvyys"></span></p>
+                <p><em>Luonut: <span id="view-luoja"></span></em></p>
+                <div class="modal-buttons">
+                    <button type="button" id="kopioi-btn">Kopioi 🗓️</button>
+                    <button type="button" id="muokkaa-btn">Muokkaa ✏️</button>
+                    <button type="button" id="sulje-btn" class="cancel-btn">Sulje</button>
+                </div>
+            </div>
+            <div id="modal-edit-content" class="hidden">
+                <h2>Muokkaa tapahtumaa</h2>
+                <form id="muokkaa-tapahtuma-lomake">
+                    <input type="hidden" id="muokkaa-tapahtuma-id">
+                    <label for="muokkaa-tapahtuma-otsikko">Tapahtuma:</label>
+                    <input type="text" id="muokkaa-tapahtuma-otsikko" required>
+                    <label for="muokkaa-tapahtuma-kuvaus">Lisätiedot:</label>
+                    <textarea id="muokkaa-tapahtuma-kuvaus" rows="3"></textarea>
+
+                    <div class="checkbox-container">
+                         <label for="muokkaa-tapahtuma-koko-paiva">Koko päivän tapahtuma</label>
+                        <input type="checkbox" id="muokkaa-tapahtuma-koko-paiva">
+                    </div>
+                    
+                    <div id="muokkaa-aika-valinnat">
+                        <div>
+                            <label for="muokkaa-tapahtuma-alku">Alkaa / Päivämäärä:</label>
+                            <input type="datetime-local" id="muokkaa-tapahtuma-alku" required>
+                        </div>
+                        <div id="loppu-aika-muokkaa-container">
+                            <label for="muokkaa-tapahtuma-loppu">Loppuu:</label>
+                            <input type="datetime-local" id="muokkaa-tapahtuma-loppu" required>
+                        </div>
+                    </div>
+
+                    <label for="muokkaa-tapahtuma-linkki">Linkki:</label>
+                    <input type="url" id="muokkaa-tapahtuma-linkki" placeholder="https://...">
+
+                    <fieldset>
+                        <legend>Ketä koskee:</legend>
+                        <div class="ketakoskee-valinnat" id="muokkaa-ketakoskee">
+                            <label><input type="checkbox" name="muokkaa-ketakoskee" value="perhe"> Koko perhe</label>
+                            <label><input type="checkbox" name="muokkaa-ketakoskee" value="Toni"> Toni</label>
+                            <label><input type="checkbox" name="muokkaa-ketakoskee" value="Kaisa"> Kaisa</label>
+                            <label><input type="checkbox" name="muokkaa-ketakoskee" value="Oona"> Oona</label>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Näkyy kenelle:</legend>
+                        <div class="nakyvyys-valinnat" id="muokkaa-nakyvyys">
+                            <label><input type="checkbox" name="muokkaa-nakyvyys" value="Toni"> Toni</label>
+                            <label><input type="checkbox" name="muokkaa-nakyvyys" value="Kaisa"> Kaisa</label>
+                            <label><input type="checkbox" name="muokkaa-nakyvyys" value="Oona"> Oona</label>
+                        </div>
+                    </fieldset>
+                    <div class="modal-buttons">
+                        <button type="button" id="tallenna-muutokset-btn">Tallenna</button>
+                        <button type="button" id="poista-tapahtuma-btn" class="delete-btn">Poista</button>
+                        <button type="button" id="peruuta-muokkaus-btn" class="cancel-btn">Peruuta</button>
+                    </div>
+                </form>
+            </div>
         </div>
+    </div>
 
     <div id="menneet-tapahtumat-modal" class="modal-overlay hidden">
         <div class="modal-content">
@@ -138,7 +207,6 @@
             </div>
         </div>
     </div>
-
 
     <div id="ilmoitus" class="hidden"></div>
     
