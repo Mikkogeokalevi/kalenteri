@@ -23,14 +23,16 @@ const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
 
+// --- DOM-elementit (Määritellään muuttujat) ---
 let loginOverlay, loginForm, mainContainer, currentUserName, logoutBtn, tulevatTapahtumatLista,
     kalenteriPaivatOtsikot, kalenteriGrid, kuukausiOtsikko, edellinenBtn, seuraavaBtn,
     lisaaLomake, modalOverlay, modalViewContent, modalEditContent, avaaLisaysLomakeBtn,
     sivupalkki, hakuKentta, tehtavatContainer, uusiTehtavaTeksti, lisaaTehtavaNappi,
     tehtavalistaToggle, tehtavalistaSisalto, avoimetTehtavatLaskuri, avaaMenneetModalBtn,
     menneetTapahtumatModal, suljeMenneetModalBtn, menneetHakuKentta, menneetTapahtumatLista,
-    edellinenSivuBtn, seuraavaSivuBtn, sivuInfo, koskeeSuodatin;
+    edellinenSivuBtn, seuraavaSivuBtn, sivuInfo;
 
+// --- Sovelluksen tila ---
 let nykyinenKayttaja = null;
 let nykyinenPaiva = new Date();
 let unsubscribeFromEvents = null;
@@ -57,7 +59,6 @@ function alustaElementit() {
     avaaLisaysLomakeBtn = document.getElementById('avaa-lisays-lomake-btn');
     sivupalkki = document.querySelector('.sivupalkki');
     hakuKentta = document.getElementById('haku-kentta');
-    koskeeSuodatin = document.getElementById('koskee-suodatin');
     tehtavatContainer = document.getElementById('tehtavat-container');
     uusiTehtavaTeksti = document.getElementById('uusi-tehtava-teksti');
     lisaaTehtavaNappi = document.getElementById('lisaa-tehtava-nappi');
@@ -77,6 +78,7 @@ function alustaElementit() {
 document.addEventListener('DOMContentLoaded', () => {
     alustaElementit();
     lisaaKuuntelijat();
+
     onAuthStateChanged(auth, user => {
         if (user) {
             let userName = user.displayName;
@@ -133,10 +135,16 @@ function lisaaKuuntelijat() {
         loppuInput.min = this.value;
     });
     kalenteriGrid.addEventListener('click', handlePaivaClick);
-    
-    hakuKentta.addEventListener('input', naytaTulevatTapahtumat);
-    koskeeSuodatin.addEventListener('change', naytaTulevatTapahtumat);
-
+    hakuKentta.addEventListener('input', () => {
+        naytaTulevatTapahtumat();
+        korostaHakuOsumatKalenterissa();
+    });
+    document.getElementById('tapahtuma-koko-paiva').addEventListener('change', (e) => {
+        toggleLoppuAika(e.target.checked, 'loppu-aika-lisaa-container');
+    });
+    document.getElementById('muokkaa-tapahtuma-koko-paiva').addEventListener('change', (e) => {
+        toggleLoppuAika(e.target.checked, 'loppu-aika-muokkaa-container');
+    });
     lisaaTehtavaNappi.addEventListener('click', lisaaTehtava);
     uusiTehtavaTeksti.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -321,7 +329,6 @@ function kuunteleTapahtumia() {
         naytaTulevatTapahtumat();
     });
 }
-
 
 function toggleLoppuAika(isChecked, containerId) {
     const container = document.getElementById(containerId);
@@ -539,35 +546,25 @@ function naytaTapahtumatKalenterissa() {
 }
 
 function naytaTulevatTapahtumat() {
+    tulevatTapahtumatLista.innerHTML = '';
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
     const hakutermi = hakuKentta.value.toLowerCase();
-    const suodatinValue = koskeeSuodatin.value;
     const nyt = new Date();
     const tulevat = window.kaikkiTapahtumat.filter(t => {
         const nakyvyysJaAikaOk = t.nakyvyys?.[nykyinenKayttaja] && new Date(t.loppu) >= nyt;
         if (!nakyvyysJaAikaOk) return false;
-        if (suodatinValue !== 'kaikki') {
-            const ketakoskee = Array.isArray(t.ketakoskee) ? t.ketakoskee.sort() : [String(t.ketakoskee)];
-            const suodatinNimet = suodatinValue.split('-').sort();
-            if (ketakoskee.join('-') !== suodatinNimet.join('-')) {
-                 return false;
-            }
-        }
         if (hakutermi) {
             const otsikko = (t.otsikko || '').toLowerCase();
             const kuvaus = (t.kuvaus || '').toLowerCase();
-            if (!otsikko.includes(hakutermi) && !kuvaus.includes(hakutermi)) {
-                return false;
-            }
+            return otsikko.includes(hakutermi) || kuvaus.includes(hakutermi);
         }
         return true;
-    }).sort((a, b) => new Date(a.alku) - new Date(b.alku));
-    tulevatTapahtumatLista.innerHTML = '';
+    }).sort((a, b) => new Date(a.alku) - new Date(b.alku)).slice(0, 10);
     if (tulevat.length === 0) {
-        tulevatTapahtumatLista.innerHTML = `<p style="text-align:center; opacity:0.7;">Ei hakua vastaavia tulevia tapahtumia.</p>`;
+        tulevatTapahtumatLista.innerHTML = `<p>${hakutermi ? 'Hakusanalla ei löytynyt' : 'Ei'} tulevia tapahtumia.</p>`;
         return;
     }
-    tulevat.slice(0, 10).forEach(tapahtuma => {
+    tulevat.forEach(tapahtuma => {
         const alku = new Date(tapahtuma.alku);
         const loppu = new Date(tapahtuma.loppu);
         let aikaTeksti;
