@@ -55,10 +55,8 @@ let nykyinenPaiva = new Date();
 let unsubscribeFromEvents = null;
 let unsubscribeFromTasks = null; 
 
-// MUUTETTU KOHTA: Käyttäjän tilan hallinta
 onAuthStateChanged(auth, user => {
     if (user) {
-        // Yritetään ensin lukea DisplayName. Jos sitä ei ole, päätellään nimi sähköpostista.
         let userName = user.displayName;
         if (!userName && user.email) {
             const emailName = user.email.split('@')[0];
@@ -68,12 +66,10 @@ onAuthStateChanged(auth, user => {
         if (userName) {
             startAppForUser(userName);
         } else {
-            // Varatoimenpide, jos nimeä ei saada selville
             console.error("Kirjautuneen käyttäjän nimeä ei voitu määrittää.");
             handleLogout();
         }
     } else {
-        // Käyttäjä on kirjautunut ulos
         nykyinenKayttaja = null;
         if (unsubscribeFromEvents) unsubscribeFromEvents();
         if (unsubscribeFromTasks) unsubscribeFromTasks();
