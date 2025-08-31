@@ -357,8 +357,9 @@ function naytaTapahtumatKalenterissa() {
         loppuPvm.setHours(0,0,0,0);
         
         const kestoPaivissa = (loppuPvm - alkuPvm) / (1000 * 60 * 60 * 24) + 1;
+        const onMonipaivainen = kestoPaivissa > 1 || tapahtuma.kokoPaiva;
 
-        if (kestoPaivissa <= 1 && !tapahtuma.kokoPaiva) { // YKSITTÄINEN TAPAHTUMA (KUVAKE)
+        if (!onMonipaivainen) {
             const paivaEl = document.querySelector(`.paiva[data-paivamaara="${tapahtuma.alku.substring(0, 10)}"]`);
             if (paivaEl) {
                 const kuvake = document.createElement('div');
@@ -377,8 +378,8 @@ function naytaTapahtumatKalenterissa() {
                 });
                 paivaEl.querySelector('.tapahtumat-container').appendChild(kuvake);
             }
-        } else { // KOKO PÄIVÄN TAI MONIPÄIVÄINEN (PALKKI)
-            let currentDate = alkuPvm;
+        } else {
+            let currentDate = new Date(alkuPvm);
             while (currentDate <= loppuPvm) {
                 const pvmString = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
                 const paivaEl = document.querySelector(`.paiva[data-paivamaara="${pvmString}"]`);
@@ -386,6 +387,7 @@ function naytaTapahtumatKalenterissa() {
                 if (paivaEl) {
                     const palkki = document.createElement('div');
                     palkki.className = 'tapahtuma-palkki';
+                    palkki.title = tapahtuma.otsikko;
                     
                     const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
                     if (tiedot.type === 'class') {
@@ -394,9 +396,8 @@ function naytaTapahtumatKalenterissa() {
                         palkki.style.background = tiedot.value;
                     }
                     
-                    // Lisää otsikko vain palkin ensimmäiseen näkyvään osaan
                     if (currentDate.getTime() === alkuPvm.getTime()) {
-                         palkki.textContent = tapahtuma.otsikko;
+                         palkki.textContent = tiedot.initialit;
                     }
 
                     palkki.addEventListener('click', (e) => {
@@ -483,8 +484,10 @@ function avaaTapahtumaIkkuna(key) {
     const koskeeSpan = document.getElementById('view-koskee');
     const koskeeTieto = Array.isArray(tapahtuma.ketakoskee) ? tapahtuma.ketakoskee : [String(tapahtuma.ketakoskee)];
     koskeeSpan.textContent = (koskeeTieto.includes('perhe') || koskeeTieto.length >= 3) ? 'Koko perhe' : koskeeTieto.join(', ');
-    if (tapahtuma.kokoPaiva) {
-        document.getElementById('view-aika').textContent = `${new Date(tapahtuma.alku).toLocaleDateString('fi-FI', { day: 'numeric', month: 'long' })} - ${new Date(tapahtuma.loppu).toLocaleDateString('fi-FI', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+    if (tapahtuma.kokoPaiva || (new Date(tapahtuma.loppu) - new Date(tapahtuma.alku)) >= 86400000 ) {
+        const alkuPvmStr = new Date(tapahtuma.alku).toLocaleDateString('fi-FI', { day: 'numeric', month: 'long' });
+        const loppuPvmStr = new Date(tapahtuma.loppu).toLocaleDateString('fi-FI', { day: 'numeric', month: 'long', year: 'numeric' });
+        document.getElementById('view-aika').textContent = `${alkuPvmStr} - ${loppuPvmStr}`;
     } else {
         const options = { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' };
         document.getElementById('view-aika').textContent = `${new Date(tapahtuma.alku).toLocaleString('fi-FI', options)} - ${new Date(tapahtuma.loppu).toLocaleString('fi-FI', options)}`;
@@ -547,7 +550,7 @@ function tallennaMuutokset() {
     if (kokoPaivaCheckbox.checked) {
         const paivamaara = alkuInput.value.substring(0, 10);
         alkuAika = `${paivamaara}T00:00`;
-        loppuAika = `${paivamaara}T23:59`;
+        loppuAika = `${document.getElementById('muokkaa-tapahtuma-loppu').value.substring(0,10)}T23:59`;
     } else {
         alkuAika = alkuInput.value;
         loppuAika = document.getElementById('muokkaa-tapahtuma-loppu').value;
