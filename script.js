@@ -412,7 +412,6 @@ function naytaTapahtumatKalenterissa() {
     });
 }
 
-
 function naytaTulevatTapahtumat() {
     tulevatTapahtumatLista.innerHTML = '';
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
@@ -422,7 +421,6 @@ function naytaTulevatTapahtumat() {
     const today = new Date(nyt.getFullYear(), nyt.getMonth(), nyt.getDate());
     
     const tulevat = window.kaikkiTapahtumat.filter(t => {
-        // MUUTETTU: Tapahtuma näytetään, jos sen LOPPUMISAIKA on tulevaisuudessa
         const nakyvyysJaAikaOk = t.nakyvyys?.[nykyinenKayttaja] && new Date(t.loppu) >= today;
         if (!nakyvyysJaAikaOk) return false;
 
@@ -445,9 +443,9 @@ function naytaTulevatTapahtumat() {
         
         let aikaTeksti;
         const alkuPvmStr = alku.toLocaleDateString('fi-FI', { weekday: 'short', day: 'numeric', month: 'numeric' });
-        const loppuPvmStr = loppu.toLocaleDateString('fi-FI', { day: 'numeric', month: 'numeric' });
-
+        
         if (alku.toLocaleDateString() !== loppu.toLocaleDateString()) {
+            const loppuPvmStr = loppu.toLocaleDateString('fi-FI', { day: 'numeric', month: 'numeric' });
             aikaTeksti = `${alkuPvmStr} - ${loppuPvmStr}`;
         } else if (tapahtuma.kokoPaiva) {
             aikaTeksti = `${alkuPvmStr}, Koko päivän`;
@@ -509,7 +507,7 @@ function avaaTapahtumaIkkuna(key) {
     
     const alkuPvm = new Date(tapahtuma.alku);
     const loppuPvm = new Date(tapahtuma.loppu);
-    const onMonipaivainenTaiKokoPaiva = tapahtuma.kokoPaiva || (loppuPvm.setHours(0,0,0,0) > alkuPvm.setHours(0,0,0,0));
+    const onMonipaivainenTaiKokoPaiva = tapahtuma.kokoPaiva || (new Date(loppuPvm).setHours(0,0,0,0) > new Date(alkuPvm).setHours(0,0,0,0));
 
     if (onMonipaivainenTaiKokoPaiva) {
         const alkuPvmStr = new Date(tapahtuma.alku).toLocaleDateString('fi-FI', { day: 'numeric', month: 'long' });
