@@ -114,7 +114,7 @@ main, .sivupalkki, footer {
 input, select, textarea, button {
     font-family: 'Georgia', serif;
 }
-input[type="text"], input[type="password"], input[type="datetime-local"], input[type="search"], select, textarea, input[type="url"] {
+input[type="text"], input[type="password"], input[type="datetime-local"], input[type="search"], select, textarea, input[type="url"], input[type="email"] {
     width: 100%;
     padding: 12px;
     margin-bottom: 10px;
@@ -502,7 +502,7 @@ input[type="checkbox"] {
 
 .tapahtuma-palkki {
     font-size: 0.9em;
-    padding: 2px 8px; /* Lisää tilaa sivuille */
+    padding: 2px 8px;
     border-radius: 4px;
     color: white;
     margin-bottom: 2px;
@@ -510,6 +510,68 @@ input[type="checkbox"] {
     overflow: hidden;
     text-overflow: ellipsis;
     cursor: pointer;
-    text-align: left; /* Asetetaan teksti vasempaan reunaan */
+    text-align: left;
     font-weight: bold;
+}
+
+.footer-btn {
+    width: auto;
+    padding: 8px 15px;
+    margin-top: 10px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--bg-container);
+    padding-bottom: 10px;
+}
+
+.modal-header h2 {
+    margin: 0;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--text-main);
+    font-size: 2.5em;
+    line-height: 1;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    width: auto;
+}
+
+#menneet-tapahtumat-lista {
+    min-height: 400px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid var(--bg-container);
+}
+
+.pagination-controls button {
+    width: auto;
+    padding: 8px 15px;
+    margin: 0;
+}
+
+.pagination-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: #7f8c8d;
+    color: #7f8c8d;
+}
+.pagination-controls button:disabled:hover {
+    background-color: transparent;
 }
