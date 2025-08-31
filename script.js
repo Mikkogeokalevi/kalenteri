@@ -30,7 +30,7 @@ let loginOverlay, loginForm, mainContainer, currentUserName, logoutBtn, tulevatT
     sivupalkki, hakuKentta, tehtavatContainer, uusiTehtavaTeksti, lisaaTehtavaNappi,
     tehtavalistaToggle, tehtavalistaSisalto, avoimetTehtavatLaskuri, avaaMenneetModalBtn,
     menneetTapahtumatModal, suljeMenneetModalBtn, menneetHakuKentta, menneetTapahtumatLista,
-    edellinenSivuBtn, seuraavaSivuBtn, sivuInfo;
+    edellinenSivuBtn, seuraavaSivuBtn, sivuInfo, koskeeSuodatin;
 
 // --- Sovelluksen tila ---
 let nykyinenKayttaja = null;
@@ -59,6 +59,7 @@ function alustaElementit() {
     avaaLisaysLomakeBtn = document.getElementById('avaa-lisays-lomake-btn');
     sivupalkki = document.querySelector('.sivupalkki');
     hakuKentta = document.getElementById('haku-kentta');
+    koskeeSuodatin = document.getElementById('koskee-suodatin');
     tehtavatContainer = document.getElementById('tehtavat-container');
     uusiTehtavaTeksti = document.getElementById('uusi-tehtava-teksti');
     lisaaTehtavaNappi = document.getElementById('lisaa-tehtava-nappi');
@@ -135,16 +136,10 @@ function lisaaKuuntelijat() {
         loppuInput.min = this.value;
     });
     kalenteriGrid.addEventListener('click', handlePaivaClick);
-    hakuKentta.addEventListener('input', () => {
-        naytaTulevatTapahtumat();
-        korostaHakuOsumatKalenterissa();
-    });
-    document.getElementById('tapahtuma-koko-paiva').addEventListener('change', (e) => {
-        toggleLoppuAika(e.target.checked, 'loppu-aika-lisaa-container');
-    });
-    document.getElementById('muokkaa-tapahtuma-koko-paiva').addEventListener('change', (e) => {
-        toggleLoppuAika(e.target.checked, 'loppu-aika-muokkaa-container');
-    });
+    
+    hakuKentta.addEventListener('input', naytaTulevatTapahtumat);
+    koskeeSuodatin.addEventListener('change', naytaTulevatTapahtumat);
+
     lisaaTehtavaNappi.addEventListener('click', lisaaTehtava);
     uusiTehtavaTeksti.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -200,7 +195,6 @@ function avaaMenneetModal() {
 function suljeMenneetModal() {
     menneetTapahtumatModal.classList.add('hidden');
 }
-
 
 function naytaMenneetTapahtumat() {
     if (!window.kaikkiTapahtumat) return;
@@ -329,6 +323,7 @@ function kuunteleTapahtumia() {
         naytaTulevatTapahtumat();
     });
 }
+
 
 function toggleLoppuAika(isChecked, containerId) {
     const container = document.getElementById(containerId);
@@ -546,25 +541,35 @@ function naytaTapahtumatKalenterissa() {
 }
 
 function naytaTulevatTapahtumat() {
-    tulevatTapahtumatLista.innerHTML = '';
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
     const hakutermi = hakuKentta.value.toLowerCase();
+    const suodatinValue = koskeeSuodatin.value;
     const nyt = new Date();
     const tulevat = window.kaikkiTapahtumat.filter(t => {
         const nakyvyysJaAikaOk = t.nakyvyys?.[nykyinenKayttaja] && new Date(t.loppu) >= nyt;
         if (!nakyvyysJaAikaOk) return false;
+        if (suodatinValue !== 'kaikki') {
+            const ketakoskee = Array.isArray(t.ketakoskee) ? t.ketakoskee.sort() : [String(t.ketakoskee)];
+            const suodatinNimet = suodatinValue.split('-').sort();
+            if (ketakoskee.join('-') !== suodatinNimet.join('-')) {
+                 return false;
+            }
+        }
         if (hakutermi) {
             const otsikko = (t.otsikko || '').toLowerCase();
             const kuvaus = (t.kuvaus || '').toLowerCase();
-            return otsikko.includes(hakutermi) || kuvaus.includes(hakutermi);
+            if (!otsikko.includes(hakutermi) && !kuvaus.includes(hakutermi)) {
+                return false;
+            }
         }
         return true;
-    }).sort((a, b) => new Date(a.alku) - new Date(b.alku)).slice(0, 10);
+    }).sort((a, b) => new Date(a.alku) - new Date(b.alku));
+    tulevatTapahtumatLista.innerHTML = '';
     if (tulevat.length === 0) {
-        tulevatTapahtumatLista.innerHTML = `<p>${hakutermi ? 'Hakusanalla ei löytynyt' : 'Ei'} tulevia tapahtumia.</p>`;
+        tulevatTapahtumatLista.innerHTML = `<p style="text-align:center; opacity:0.7;">Ei hakua vastaavia tulevia tapahtumia.</p>`;
         return;
     }
-    tulevat.forEach(tapahtuma => {
+    tulevat.slice(0, 10).forEach(tapahtuma => {
         const alku = new Date(tapahtuma.alku);
         const loppu = new Date(tapahtuma.loppu);
         let aikaTeksti;
