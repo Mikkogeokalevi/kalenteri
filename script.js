@@ -360,7 +360,7 @@ function naytaTapahtumatKalenterissa() {
 
         if (onMonipaivainenTaiKokoPaiva) {
             let currentDate = new Date(alkuAikaNolla);
-            const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee); // Haetaan tiedot kerran
+            const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
             while (currentDate <= loppuAikaNolla) {
                 const pvmString = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
                 const paivaEl = document.querySelector(`.paiva[data-paivamaara="${pvmString}"]`);
@@ -370,7 +370,10 @@ function naytaTapahtumatKalenterissa() {
                     palkki.title = tapahtuma.otsikko;
                     
                     if (tiedot.type === 'class') {
-                        palkki.style.backgroundColor = KAYTTAJA_VARIT[tiedot.value.replace('koskee-', '')] || KAYTTAJA_VARIT.perhe;
+                        // KORJATTU KOHTA: Haetaan väri isolla alkukirjaimella
+                        const key = tiedot.value.replace('koskee-', '');
+                        const capitalizedKey = key.charAt(0).toUpperCase() + key.slice(1);
+                        palkki.style.backgroundColor = KAYTTAJA_VARIT[capitalizedKey] || KAYTTAJA_VARIT.perhe;
                     } else {
                         palkki.style.background = tiedot.value;
                     }
@@ -429,10 +432,9 @@ function naytaTulevatTapahtumat() {
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
     
     const hakutermi = hakuKentta.value.toLowerCase();
-    const nyt = new Date(); // Käytetään tarkkaa kellonaikaa
+    const nyt = new Date();
     
     const tulevat = window.kaikkiTapahtumat.filter(t => {
-        // Tapahtuma näytetään, jos sen LOPPUMISAIKA on myöhemmin kuin NYT
         const nakyvyysJaAikaOk = t.nakyvyys?.[nykyinenKayttaja] && new Date(t.loppu) >= nyt;
         if (!nakyvyysJaAikaOk) return false;
 
@@ -645,7 +647,7 @@ function kopioiTapahtuma() {
 function kuunteleTehtavia() {
     if (unsubscribeFromTasks) unsubscribeFromTasks();
     const tehtavatRef = ref(database, 'tehtavalista');
-    unsubscribeFromTasks = onValue(tehtavatRef, (snapshot) => {
+    unsubscribeFromTasks = onValue(tapahtavatRef, (snapshot) => {
         piirraTehtavalista(snapshot);
     });
 }
