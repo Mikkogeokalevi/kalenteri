@@ -286,7 +286,7 @@ function lisaaTapahtuma() {
         const paivamaara = alkuInput.value.substring(0, 10);
         if(!paivamaara) return alert('Valitse päivämäärä ensin, tai poista "Koko päivän" valinta.');
         alkuAika = `${paivamaara}T00:00`;
-        loppuAika = `${paivamaara}T23:59`;
+        loppuAika = `${document.getElementById('tapahtuma-loppu').value.substring(0,10)}T23:59`;
     } else {
         alkuAika = alkuInput.value;
         loppuAika = document.getElementById('tapahtuma-loppu').value;
@@ -353,13 +353,13 @@ function naytaTapahtumatKalenterissa() {
 
         const alkuPvm = new Date(tapahtuma.alku);
         const loppuPvm = new Date(tapahtuma.loppu);
-        alkuPvm.setHours(0,0,0,0);
-        loppuPvm.setHours(0,0,0,0);
         
-        const kestoPaivissa = (loppuPvm - alkuPvm) / (1000 * 60 * 60 * 24) + 1;
-        const onMonipaivainen = kestoPaivissa > 1 || tapahtuma.kokoPaiva;
+        const alkuAikaNolla = new Date(alkuPvm).setHours(0,0,0,0);
+        const loppuAikaNolla = new Date(loppuPvm).setHours(0,0,0,0);
+        
+        const onMonipaivainen = alkuAikaNolla !== loppuAikaNolla;
 
-        if (!onMonipaivainen) {
+        if (!onMonipaivainen && !tapahtuma.kokoPaiva) {
             const paivaEl = document.querySelector(`.paiva[data-paivamaara="${tapahtuma.alku.substring(0, 10)}"]`);
             if (paivaEl) {
                 const kuvake = document.createElement('div');
@@ -379,8 +379,8 @@ function naytaTapahtumatKalenterissa() {
                 paivaEl.querySelector('.tapahtumat-container').appendChild(kuvake);
             }
         } else {
-            let currentDate = new Date(alkuPvm);
-            while (currentDate <= loppuPvm) {
+            let currentDate = new Date(alkuAikaNolla);
+            while (currentDate <= loppuAikaNolla) {
                 const pvmString = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
                 const paivaEl = document.querySelector(`.paiva[data-paivamaara="${pvmString}"]`);
 
@@ -396,7 +396,7 @@ function naytaTapahtumatKalenterissa() {
                         palkki.style.background = tiedot.value;
                     }
                     
-                    if (currentDate.getTime() === alkuPvm.getTime()) {
+                    if (currentDate.getTime() === alkuAikaNolla) {
                          palkki.textContent = tiedot.initialit;
                     }
 
@@ -416,12 +416,16 @@ function naytaTapahtumatKalenterissa() {
 function naytaTulevatTapahtumat() {
     tulevatTapahtumatLista.innerHTML = '';
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
+    
     const hakutermi = hakuKentta.value.toLowerCase();
     const nyt = new Date();
     const today = new Date(nyt.getFullYear(), nyt.getMonth(), nyt.getDate());
+    
     const tulevat = window.kaikkiTapahtumat.filter(t => {
-        const nakyvyysJaAikaOk = t.nakyvyys?.[nykyinenKayttaja] && new Date(t.alku) >= today;
+        // MUUTETTU: Tapahtuma näytetään, jos sen LOPPUMISAIKA on tulevaisuudessa
+        const nakyvyysJaAikaOk = t.nakyvyys?.[nykyinenKayttaja] && new Date(t.loppu) >= today;
         if (!nakyvyysJaAikaOk) return false;
+
         if (hakutermi) {
             const otsikko = (t.otsikko || '').toLowerCase();
             const kuvaus = (t.kuvaus || '').toLowerCase();
@@ -429,20 +433,30 @@ function naytaTulevatTapahtumat() {
         }
         return true;
     }).sort((a, b) => new Date(a.alku) - new Date(b.alku)).slice(0, 10);
+
     if (tulevat.length === 0) {
         tulevatTapahtumatLista.innerHTML = `<p>${hakutermi ? 'Hakusanalla ei löytynyt' : 'Ei'} tulevia tapahtumia.</p>`;
         return;
     }
+
     tulevat.forEach(tapahtuma => {
         const alku = new Date(tapahtuma.alku);
-        const paiva = alku.toLocaleDateString('fi-FI', { weekday: 'short', day: 'numeric', month: 'numeric' });
-        let aikaTeksti = "Koko päivän";
-        if (!tapahtuma.kokoPaiva) {
-            const loppu = new Date(tapahtuma.loppu);
+        const loppu = new Date(tapahtuma.loppu);
+        
+        let aikaTeksti;
+        const alkuPvmStr = alku.toLocaleDateString('fi-FI', { weekday: 'short', day: 'numeric', month: 'numeric' });
+        const loppuPvmStr = loppu.toLocaleDateString('fi-FI', { day: 'numeric', month: 'numeric' });
+
+        if (alku.toLocaleDateString() !== loppu.toLocaleDateString()) {
+            aikaTeksti = `${alkuPvmStr} - ${loppuPvmStr}`;
+        } else if (tapahtuma.kokoPaiva) {
+            aikaTeksti = `${alkuPvmStr}, Koko päivän`;
+        } else {
             const alkuAika = alku.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
             const loppuAika = loppu.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
-            aikaTeksti = `${alkuAika} - ${loppuAika}`;
+            aikaTeksti = `${alkuPvmStr} ${alkuAika} - ${loppuAika}`;
         }
+        
         const item = document.createElement('div');
         item.className = 'tuleva-tapahtuma-item';
         const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
@@ -451,7 +465,15 @@ function naytaTulevatTapahtumat() {
         } else {
             item.style.background = tiedot.value;
         }
-        item.innerHTML = `<div class="tapahtuma-item-luoja">${tiedot.initialit}</div><div class="tapahtuma-item-tiedot"><div class="tapahtuma-item-aika">${paiva} ${aikaTeksti}</div><div class="tapahtuma-item-otsikko">${tapahtuma.otsikko}</div></div>`;
+
+        item.innerHTML = `
+            <div class="tapahtuma-item-luoja">${tiedot.initialit}</div>
+            <div class="tapahtuma-item-tiedot">
+                <div class="tapahtuma-item-aika">${aikaTeksti}</div>
+                <div class="tapahtuma-item-otsikko">${tapahtuma.otsikko}</div>
+            </div>
+        `;
+        
         item.addEventListener('click', () => avaaTapahtumaIkkuna(tapahtuma.key));
         tulevatTapahtumatLista.appendChild(item);
     });
@@ -484,7 +506,12 @@ function avaaTapahtumaIkkuna(key) {
     const koskeeSpan = document.getElementById('view-koskee');
     const koskeeTieto = Array.isArray(tapahtuma.ketakoskee) ? tapahtuma.ketakoskee : [String(tapahtuma.ketakoskee)];
     koskeeSpan.textContent = (koskeeTieto.includes('perhe') || koskeeTieto.length >= 3) ? 'Koko perhe' : koskeeTieto.join(', ');
-    if (tapahtuma.kokoPaiva || (new Date(tapahtuma.loppu) - new Date(tapahtuma.alku)) >= 86400000 ) {
+    
+    const alkuPvm = new Date(tapahtuma.alku);
+    const loppuPvm = new Date(tapahtuma.loppu);
+    const onMonipaivainenTaiKokoPaiva = tapahtuma.kokoPaiva || (loppuPvm.setHours(0,0,0,0) > alkuPvm.setHours(0,0,0,0));
+
+    if (onMonipaivainenTaiKokoPaiva) {
         const alkuPvmStr = new Date(tapahtuma.alku).toLocaleDateString('fi-FI', { day: 'numeric', month: 'long' });
         const loppuPvmStr = new Date(tapahtuma.loppu).toLocaleDateString('fi-FI', { day: 'numeric', month: 'long', year: 'numeric' });
         document.getElementById('view-aika').textContent = `${alkuPvmStr} - ${loppuPvmStr}`;
@@ -492,6 +519,7 @@ function avaaTapahtumaIkkuna(key) {
         const options = { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' };
         document.getElementById('view-aika').textContent = `${new Date(tapahtuma.alku).toLocaleString('fi-FI', options)} - ${new Date(tapahtuma.loppu).toLocaleString('fi-FI', options)}`;
     }
+
     const linkkiContainer = document.getElementById('view-linkki-container');
     if (tapahtuma.linkki) {
         document.getElementById('view-linkki').href = tapahtuma.linkki;
@@ -577,7 +605,7 @@ function tallennaMuutokset() {
 
 function poistaTapahtuma() {
     const key = modalOverlay.dataset.tapahtumaId;
-    if (confirm('Haluatko varmasti poistaa tämän tapahtuman?')) {
+    if (confirm('Haluatko varmasti poistaa tämän tehtävän?')) {
         remove(ref(database, `tapahtumat/${key}`)).then(() => suljeTapahtumaIkkuna());
     }
 }
