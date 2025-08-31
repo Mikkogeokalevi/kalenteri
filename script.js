@@ -140,26 +140,39 @@ function lisaaKuuntelijat() {
         naytaTulevatTapahtumat();
         korostaHakuOsumatKalenterissa();
     });
+    
+    // **UUSI JA PARANNETTU SUODATTIMEN KUUNTELIJA**
     tulevatSuodatin.addEventListener('click', (e) => {
         const target = e.target;
-        if (target.classList.contains('filter-btn')) {
-            const suodatin = target.dataset.filter;
-            const kaikkiBtn = tulevatSuodatin.querySelector('[data-filter="kaikki"]');
-            
-            if (suodatin === 'kaikki') {
-                tulevatSuodatin.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-                target.classList.add('active');
-            } else {
-                kaikkiBtn.classList.remove('active');
-                target.classList.toggle('active');
-                // Jos mikään muu ei ole aktiivinen, aktivoi "Kaikki"
-                if (!tulevatSuodatin.querySelector('.filter-btn.active')) {
-                    kaikkiBtn.classList.add('active');
-                }
-            }
-            naytaTulevatTapahtumat();
+        if (!target.classList.contains('filter-btn')) return;
+
+        const suodatin = target.dataset.filter;
+        const kaikkiBtn = tulevatSuodatin.querySelector('[data-filter="kaikki"]');
+        const perheBtn = tulevatSuodatin.querySelector('[data-filter="perhe"]');
+        const personBtns = tulevatSuodatin.querySelectorAll('.filter-btn:not([data-filter="kaikki"]):not([data-filter="perhe"])');
+
+        if (suodatin === 'kaikki') {
+            personBtns.forEach(btn => btn.classList.remove('active'));
+            perheBtn.classList.remove('active');
+            kaikkiBtn.classList.add('active');
+        } else if (suodatin === 'perhe') {
+            personBtns.forEach(btn => btn.classList.remove('active'));
+            kaikkiBtn.classList.remove('active');
+            perheBtn.classList.toggle('active');
+        } else { // Henkilönappia klikattu
+            kaikkiBtn.classList.remove('active');
+            perheBtn.classList.remove('active');
+            target.classList.toggle('active');
         }
+        
+        // Jos mikään suodatin ei ole aktiivinen, aktivoidaan "Kaikki" oletuksena
+        if (!tulevatSuodatin.querySelector('.filter-btn.active')) {
+            kaikkiBtn.classList.add('active');
+        }
+
+        naytaTulevatTapahtumat();
     });
+
     document.getElementById('tapahtuma-koko-paiva').addEventListener('change', (e) => {
         toggleLoppuAika(e.target.checked, 'loppu-aika-lisaa-container');
     });
@@ -566,17 +579,17 @@ function naytaTapahtumatKalenterissa() {
     });
 }
 
+// **UUSI JA PARANNETTU SUODATUSLOGIIKKA**
 function naytaTulevatTapahtumat() {
     tulevatTapahtumatLista.innerHTML = '';
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
 
     const hakutermi = hakuKentta.value.toLowerCase();
     const nyt = new Date();
-
     const aktiivisetSuotimet = Array.from(tulevatSuodatin.querySelectorAll('.filter-btn.active')).map(btn => btn.dataset.filter);
-    const naytaKaikki = aktiivisetSuotimet.includes('kaikki');
-
+    
     const tulevat = window.kaikkiTapahtumat.filter(t => {
+        // Perustarkistukset: näkyvyys ja aika
         const nakyvyysJaAikaOk = t.nakyvyys?.[nykyinenKayttaja] && new Date(t.loppu) >= nyt;
         if (!nakyvyysJaAikaOk) return false;
 
@@ -588,20 +601,21 @@ function naytaTulevatTapahtumat() {
                 return false;
             }
         }
-
-        // Suodatus henkilöiden perusteella
-        if (naytaKaikki) {
-            return true; // Jos "Kaikki" on valittu, näytä kaikki hakua vastaavat
+        
+        // Jos "Kaikki" on valittu, älä suodata enempää
+        if (aktiivisetSuotimet.includes('kaikki')) {
+            return true;
         }
 
         const ketakoskee = Array.isArray(t.ketakoskee) ? t.ketakoskee : [String(t.ketakoskee)];
-        // Palauttaa true, jos yksikin tapahtuman henkilö löytyy aktiivisista suotimista
-        return aktiivisetSuotimet.some(suodin => ketakoskee.includes(suodin));
 
-    }).sort((a, b) => new Date(a.alku) - new Date(b.alku)).slice(0, 15); // Nostin rajaa 15:een, koska suodattimilla lista voi lyhentyä
+        // JA-ehto: tapahtuman tiedoissa on oltava KAIKKI aktiiviset suotimet
+        return aktiivisetSuotimet.every(suodin => ketakoskee.includes(suodin));
+
+    }).sort((a, b) => new Date(a.alku) - new Date(b.alku)); // Otetaan raja pois, näytetään kaikki osumat
 
     if (tulevat.length === 0) {
-        tulevatTapahtumatLista.innerHTML = `<p>${hakutermi || aktiivisetSuotimet.length > 0 ? 'Valinnoilla ei löytynyt' : 'Ei'} tulevia tapahtumia.</p>`;
+        tulevatTapahtumatLista.innerHTML = `<p>Valinnoilla ei löytynyt tulevia tapahtumia.</p>`;
         return;
     }
 
