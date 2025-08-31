@@ -23,7 +23,6 @@ const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
 
-// --- DOM-elementit (Määritellään muuttujat) ---
 let loginOverlay, loginForm, mainContainer, currentUserName, logoutBtn, tulevatTapahtumatLista,
     kalenteriPaivatOtsikot, kalenteriGrid, kuukausiOtsikko, edellinenBtn, seuraavaBtn,
     lisaaLomake, modalOverlay, modalViewContent, modalEditContent, avaaLisaysLomakeBtn,
@@ -32,7 +31,6 @@ let loginOverlay, loginForm, mainContainer, currentUserName, logoutBtn, tulevatT
     menneetTapahtumatModal, suljeMenneetModalBtn, menneetHakuKentta, menneetTapahtumatLista,
     edellinenSivuBtn, seuraavaSivuBtn, sivuInfo, koskeeSuodatin;
 
-// --- Sovelluksen tila ---
 let nykyinenKayttaja = null;
 let nykyinenPaiva = new Date();
 let unsubscribeFromEvents = null;
@@ -79,7 +77,6 @@ function alustaElementit() {
 document.addEventListener('DOMContentLoaded', () => {
     alustaElementit();
     lisaaKuuntelijat();
-
     onAuthStateChanged(auth, user => {
         if (user) {
             let userName = user.displayName;
@@ -195,6 +192,7 @@ function avaaMenneetModal() {
 function suljeMenneetModal() {
     menneetTapahtumatModal.classList.add('hidden');
 }
+
 
 function naytaMenneetTapahtumat() {
     if (!window.kaikkiTapahtumat) return;
