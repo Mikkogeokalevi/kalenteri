@@ -348,37 +348,17 @@ function naytaTapahtumatKalenterissa() {
     document.querySelectorAll('.tapahtumat-container').forEach(c => c.innerHTML = '');
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
 
-    window.kaikkiTapahtumat.forEach(tapahtuma => {
-        if (!tapahtuma.nakyvyys?.[nykyinenKayttaja] || !tapahtuma.alku) return;
+    const nakyvatTapahtumat = window.kaikkiTapahtumat.filter(t => t.nakyvyys?.[nykyinenKayttaja] && t.alku);
 
+    // 1. Piirrä palkit (monipäiväiset ja koko päivän tapahtumat)
+    nakyvatTapahtumat.forEach(tapahtuma => {
         const alkuPvm = new Date(tapahtuma.alku);
         const loppuPvm = new Date(tapahtuma.loppu);
-        
         const alkuAikaNolla = new Date(alkuPvm).setHours(0,0,0,0);
         const loppuAikaNolla = new Date(loppuPvm).setHours(0,0,0,0);
-        
-        const onMonipaivainen = alkuAikaNolla !== loppuAikaNolla;
+        const onMonipaivainenTaiKokoPaiva = alkuAikaNolla !== loppuAikaNolla || tapahtuma.kokoPaiva;
 
-        if (!onMonipaivainen && !tapahtuma.kokoPaiva) {
-            const paivaEl = document.querySelector(`.paiva[data-paivamaara="${tapahtuma.alku.substring(0, 10)}"]`);
-            if (paivaEl) {
-                const kuvake = document.createElement('div');
-                kuvake.title = tapahtuma.otsikko;
-                const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
-                kuvake.textContent = tiedot.initialit;
-                kuvake.className = 'tapahtuma-kuvake';
-                if (tiedot.type === 'class') {
-                    kuvake.classList.add(tiedot.value);
-                } else {
-                    kuvake.style.background = tiedot.value;
-                }
-                kuvake.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    avaaTapahtumaIkkuna(tapahtuma.key);
-                });
-                paivaEl.querySelector('.tapahtumat-container').appendChild(kuvake);
-            }
-        } else {
+        if (onMonipaivainenTaiKokoPaiva) {
             let currentDate = new Date(alkuAikaNolla);
             while (currentDate <= loppuAikaNolla) {
                 const pvmString = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
@@ -398,6 +378,8 @@ function naytaTapahtumatKalenterissa() {
                     
                     if (currentDate.getTime() === alkuAikaNolla) {
                          palkki.textContent = tiedot.initialit;
+                    } else {
+                        palkki.innerHTML = '&gt;'; // Jatkumismerkki
                     }
 
                     palkki.addEventListener('click', (e) => {
@@ -410,7 +392,38 @@ function naytaTapahtumatKalenterissa() {
             }
         }
     });
+
+    // 2. Piirrä kuvakkeet (yksittäiset, kellonajalliset tapahtumat)
+    nakyvatTapahtumat.forEach(tapahtuma => {
+        const alkuPvm = new Date(tapahtuma.alku);
+        const loppuPvm = new Date(tapahtuma.loppu);
+        const alkuAikaNolla = new Date(alkuPvm).setHours(0,0,0,0);
+        const loppuAikaNolla = new Date(loppuPvm).setHours(0,0,0,0);
+        const onYksittainenJaAjastettu = alkuAikaNolla === loppuAikaNolla && !tapahtuma.kokoPaiva;
+
+        if (onYksittainenJaAjastettu) {
+            const paivaEl = document.querySelector(`.paiva[data-paivamaara="${tapahtuma.alku.substring(0, 10)}"]`);
+            if (paivaEl) {
+                const kuvake = document.createElement('div');
+                kuvake.title = tapahtuma.otsikko;
+                const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
+                kuvake.textContent = tiedot.initialit;
+                kuvake.className = 'tapahtuma-kuvake';
+                if (tiedot.type === 'class') {
+                    kuvake.classList.add(tiedot.value);
+                } else {
+                    kuvake.style.background = tiedot.value;
+                }
+                kuvake.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    avaaTapahtumaIkkuna(tapahtuma.key);
+                });
+                paivaEl.querySelector('.tapahtumat-container').appendChild(kuvake);
+            }
+        }
+    });
 }
+
 
 function naytaTulevatTapahtumat() {
     tulevatTapahtumatLista.innerHTML = '';
