@@ -30,7 +30,7 @@ let loginOverlay, loginForm, mainContainer, currentUserName, logoutBtn, tulevatT
     sivupalkki, hakuKentta, tehtavatContainer, uusiTehtavaTeksti, lisaaTehtavaNappi,
     tehtavalistaToggle, tehtavalistaSisalto, avoimetTehtavatLaskuri, avaaMenneetModalBtn,
     menneetTapahtumatModal, suljeMenneetModalBtn, menneetHakuKentta, menneetTapahtumatLista,
-    edellinenSivuBtn, seuraavaSivuBtn, sivuInfo;
+    edellinenSivuBtn, seuraavaSivuBtn, sivuInfo, tulevatSuodatin;
 
 // --- Sovelluksen tila ---
 let nykyinenKayttaja = null;
@@ -73,6 +73,7 @@ function alustaElementit() {
     edellinenSivuBtn = document.getElementById('edellinen-sivu-btn');
     seuraavaSivuBtn = document.getElementById('seuraava-sivu-btn');
     sivuInfo = document.getElementById('sivu-info');
+    tulevatSuodatin = document.getElementById('tulevat-suodatin');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -138,6 +139,26 @@ function lisaaKuuntelijat() {
     hakuKentta.addEventListener('input', () => {
         naytaTulevatTapahtumat();
         korostaHakuOsumatKalenterissa();
+    });
+    tulevatSuodatin.addEventListener('click', (e) => {
+        const target = e.target;
+        if (target.classList.contains('filter-btn')) {
+            const suodatin = target.dataset.filter;
+            const kaikkiBtn = tulevatSuodatin.querySelector('[data-filter="kaikki"]');
+            
+            if (suodatin === 'kaikki') {
+                tulevatSuodatin.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                target.classList.add('active');
+            } else {
+                kaikkiBtn.classList.remove('active');
+                target.classList.toggle('active');
+                // Jos mikään muu ei ole aktiivinen, aktivoi "Kaikki"
+                if (!tulevatSuodatin.querySelector('.filter-btn.active')) {
+                    kaikkiBtn.classList.add('active');
+                }
+            }
+            naytaTulevatTapahtumat();
+        }
     });
     document.getElementById('tapahtuma-koko-paiva').addEventListener('change', (e) => {
         toggleLoppuAika(e.target.checked, 'loppu-aika-lisaa-container');
@@ -548,22 +569,42 @@ function naytaTapahtumatKalenterissa() {
 function naytaTulevatTapahtumat() {
     tulevatTapahtumatLista.innerHTML = '';
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
+
     const hakutermi = hakuKentta.value.toLowerCase();
     const nyt = new Date();
+
+    const aktiivisetSuotimet = Array.from(tulevatSuodatin.querySelectorAll('.filter-btn.active')).map(btn => btn.dataset.filter);
+    const naytaKaikki = aktiivisetSuotimet.includes('kaikki');
+
     const tulevat = window.kaikkiTapahtumat.filter(t => {
         const nakyvyysJaAikaOk = t.nakyvyys?.[nykyinenKayttaja] && new Date(t.loppu) >= nyt;
         if (!nakyvyysJaAikaOk) return false;
+
+        // Suodatus hakutermin perusteella
         if (hakutermi) {
             const otsikko = (t.otsikko || '').toLowerCase();
             const kuvaus = (t.kuvaus || '').toLowerCase();
-            return otsikko.includes(hakutermi) || kuvaus.includes(hakutermi);
+            if (!otsikko.includes(hakutermi) && !kuvaus.includes(hakutermi)) {
+                return false;
+            }
         }
-        return true;
-    }).sort((a, b) => new Date(a.alku) - new Date(b.alku)).slice(0, 10);
+
+        // Suodatus henkilöiden perusteella
+        if (naytaKaikki) {
+            return true; // Jos "Kaikki" on valittu, näytä kaikki hakua vastaavat
+        }
+
+        const ketakoskee = Array.isArray(t.ketakoskee) ? t.ketakoskee : [String(t.ketakoskee)];
+        // Palauttaa true, jos yksikin tapahtuman henkilö löytyy aktiivisista suotimista
+        return aktiivisetSuotimet.some(suodin => ketakoskee.includes(suodin));
+
+    }).sort((a, b) => new Date(a.alku) - new Date(b.alku)).slice(0, 15); // Nostin rajaa 15:een, koska suodattimilla lista voi lyhentyä
+
     if (tulevat.length === 0) {
-        tulevatTapahtumatLista.innerHTML = `<p>${hakutermi ? 'Hakusanalla ei löytynyt' : 'Ei'} tulevia tapahtumia.</p>`;
+        tulevatTapahtumatLista.innerHTML = `<p>${hakutermi || aktiivisetSuotimet.length > 0 ? 'Valinnoilla ei löytynyt' : 'Ei'} tulevia tapahtumia.</p>`;
         return;
     }
+
     tulevat.forEach(tapahtuma => {
         const alku = new Date(tapahtuma.alku);
         const loppu = new Date(tapahtuma.loppu);
