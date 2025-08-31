@@ -30,7 +30,7 @@ body {
     color: var(--text-main);
     margin: 0;
     padding: 10px;
-    transition: background-color 0.3s ease;
+    transition: background-color: 0.3s ease;
 }
 .container {
     max-width: 900px;
@@ -187,7 +187,6 @@ button:hover {
     margin-bottom: 8px;
     cursor: pointer;
     transition: transform 0.2s ease;
-    /* POISTETTU oletustaustaväri, koska se tulee nyt luokasta tai tyylistä */
 }
 .tuleva-tapahtuma-item:hover {
     transform: scale(1.02);
@@ -197,7 +196,7 @@ button:hover {
     width: 32px;
     height: 32px;
     border-radius: 5px;
-    background-color: rgba(0, 0, 0, 0.2); /* Tummennus taustavärin päällä */
+    background-color: rgba(0, 0, 0, 0.2);
     color: var(--text-main);
     display: flex;
     align-items: center;
@@ -347,7 +346,6 @@ footer {
     background-color: #4682b4;
     color: #fff; 
 }
-
 
 #haku-kentta {
     margin-bottom: 15px;
