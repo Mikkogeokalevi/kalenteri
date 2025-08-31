@@ -1,4 +1,4 @@
-/* CSS Muuttujat teemoi lle */
+/* CSS Muuttujat teemoille */
 :root {
     --bg-main: #1a2015;
     --bg-container: #3D4F2B;
@@ -351,7 +351,6 @@ footer {
 }
 
 #haku-kentta {
-    margin-bottom: 15px;
     border-color: var(--bg-container);
 }
 
@@ -384,7 +383,6 @@ input[type="checkbox"] {
     text-decoration: underline;
 }
 
-/* TEHTÄVÄLISTAN TYYLIT */
 .tehtavalista {
     background-color: var(--bg-sidebar);
     padding: 15px 20px;
@@ -574,4 +572,22 @@ input[type="checkbox"] {
 }
 .pagination-controls button:disabled:hover {
     background-color: transparent;
+}
+
+.haku-ja-suodatus-kontrollit {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    align-items: center;
+}
+
+#haku-kentta {
+    flex-grow: 1;
+    margin-bottom: 0;
+}
+
+#koskee-suodatin {
+    flex-shrink: 0;
+    margin-bottom: 0;
+    width: auto;
 }
