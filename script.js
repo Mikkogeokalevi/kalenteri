@@ -300,6 +300,7 @@ function handleLogout() {
 
 function startAppForUser(userName) {
     if (nykyinenKayttaja === userName && mainContainer.classList.contains('hidden') === false) return;
+    
     nykyinenKayttaja = userName;
     loginOverlay.classList.add('hidden');
     mainContainer.classList.remove('hidden');
@@ -308,9 +309,12 @@ function startAppForUser(userName) {
     paivitaTanaanBanneri();
     setInterval(paivitaTanaanBanneri, 60000); 
     sivupalkki.classList.add('hidden');
-    piirraKalenteri();
+    
+    // Nämä rivit siirretään tänne, jotta ne ajetaan vasta kun käyttäjä on varmasti tiedossa
     kuunteleTapahtumia();
     kuunteleTehtavia();
+    
+    piirraKalenteri();
 }
 
 function toggleLoppuAika(isChecked, containerId) {
