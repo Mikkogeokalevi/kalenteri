@@ -53,7 +53,10 @@
             <div class="tehtavalista">
                 <div class="tehtavalista-otsikko" id="tehtavalista-toggle">
                     <h3>Yhteinen muistilista</h3>
-                    <span class="tehtava-laskuri" id="avoimet-tehtavat-laskuri"></span>
+                    <div class="tehtavalista-otsikko-oikea">
+                        <span class="tehtava-laskuri" id="avoimet-tehtavat-laskuri"></span>
+                        <button id="avaa-arkisto-btn" class="pieni-nappi">Arkisto</button>
+                    </div>
                 </div>
                 <div id="tehtavalista-sisalto" class="hidden">
                     <div id="tehtavat-container">
@@ -228,6 +231,16 @@
                 <span id="sivu-info"></span>
                 <button id="seuraava-sivu-btn">Seuraava &gt;</button>
             </div>
+        </div>
+    </div>
+
+    <div id="tehtava-arkisto-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Arkistoidut tehtävät</h2>
+                <button id="sulje-arkisto-modal-btn" class="close-btn">&times;</button>
+            </div>
+            <div id="arkistoidut-tehtavat-lista"></div>
         </div>
     </div>
 
