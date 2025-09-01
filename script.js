@@ -900,6 +900,7 @@ function rakennaTehtavaItemView(itemElement, tehtava) {
 }
 
 function siirryMuokkaustilaan(itemElement, tehtava) {
+    itemElement.classList.add('is-editing');
     itemElement.innerHTML = '';
     const vasen = document.createElement('div');
     vasen.className = 'tehtava-vasen';
