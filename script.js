@@ -31,7 +31,8 @@ let loginOverlay, loginForm, mainContainer, currentUserName, logoutBtn, tulevatT
     tehtavalistaToggle, tehtavalistaSisalto, avoimetTehtavatLaskuri, avaaMenneetModalBtn,
     menneetTapahtumatModal, suljeMenneetModalBtn, menneetHakuKentta, menneetTapahtumatLista,
     edellinenSivuBtn, seuraavaSivuBtn, sivuInfo, tulevatSuodatin, tulevatPaginationControls,
-    tulevatEdellinenSivuBtn, tulevatSeuraavaSivuBtn, tulevatSivuInfo, lisaaTehtavaHenkilot;
+    tulevatEdellinenSivuBtn, tulevatSeuraavaSivuBtn, tulevatSivuInfo, lisaaTehtavaHenkilot,
+    avaaArkistoBtn, tehtavaArkistoModal, suljeArkistoModalBtn, arkistoidutTehtavatLista;
 
 // --- Sovelluksen tila ---
 let nykyinenKayttaja = null;
@@ -83,6 +84,10 @@ function alustaElementit() {
     tulevatSeuraavaSivuBtn = document.getElementById('tulevat-seuraava-sivu-btn');
     tulevatSivuInfo = document.getElementById('tulevat-sivu-info');
     lisaaTehtavaHenkilot = document.getElementById('lisaa-tehtava-henkilot');
+    avaaArkistoBtn = document.getElementById('avaa-arkisto-btn');
+    tehtavaArkistoModal = document.getElementById('tehtava-arkisto-modal');
+    suljeArkistoModalBtn = document.getElementById('sulje-arkisto-modal-btn');
+    arkistoidutTehtavatLista = document.getElementById('arkistoidut-tehtavat-lista');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -252,6 +257,9 @@ function lisaaKuuntelijat() {
         menneetSivu++;
         naytaMenneetTapahtumat();
     });
+    avaaArkistoBtn.addEventListener('click', avaaArkisto);
+    suljeArkistoModalBtn.addEventListener('click', () => tehtavaArkistoModal.classList.add('hidden'));
+    tehtavaArkistoModal.addEventListener('click', (e) => { if(e.target === tehtavaArkistoModal) tehtavaArkistoModal.classList.add('hidden') });
 }
 
 function avaaMenneetModal() {
@@ -822,19 +830,24 @@ function kuunteleTehtavia() {
             kaikkiTehtavat.push({ key: child.key, ...child.val() });
         });
         piirraTehtavalista();
+        if (!tehtavaArkistoModal.classList.contains('hidden')) {
+            avaaArkisto();
+        }
     });
 }
 
 function piirraTehtavalista() {
     tehtavatContainer.innerHTML = '';
-    const tehtavat = [...kaikkiTehtavat].sort((a, b) => a.tehty - b.tehty);
-    const avoimet = tehtavat.filter(t => !t.tehty);
+    const nakyvatTehtavat = kaikkiTehtavat
+        .filter(t => t.tila !== 'arkistoitu')
+        .sort((a, b) => a.tehty - b.tehty);
+    const avoimet = nakyvatTehtavat.filter(t => !t.tehty);
     avoimetTehtavatLaskuri.textContent = `${avoimet.length} avointa`;
-    if (tehtavat.length === 0) {
+    if (nakyvatTehtavat.length === 0) {
         tehtavatContainer.innerHTML = '<p style="text-align:center; opacity:0.7;">Lista on tyhjä.</p>';
         return;
     }
-    tehtavat.forEach(tehtava => {
+    nakyvatTehtavat.forEach(tehtava => {
         const item = document.createElement('div');
         item.className = 'tehtava-item';
         if (tehtava.tehty) item.classList.add('tehty');
@@ -844,6 +857,7 @@ function piirraTehtavalista() {
 }
 
 function rakennaTehtavaItemView(itemElement, tehtava) {
+    itemElement.classList.remove('is-editing');
     itemElement.innerHTML = '';
     const vasen = document.createElement('div');
     vasen.className = 'tehtava-vasen';
@@ -889,12 +903,13 @@ function rakennaTehtavaItemView(itemElement, tehtava) {
     muokkaaNappi.className = 'muokkaa-tehtava-nappi';
     muokkaaNappi.innerHTML = '✏️';
     muokkaaNappi.addEventListener('click', () => siirryMuokkaustilaan(itemElement, tehtava));
-    const poistaNappi = document.createElement('button');
-    poistaNappi.className = 'poista-tehtava-nappi';
-    poistaNappi.textContent = 'X';
-    poistaNappi.addEventListener('click', () => poistaTehtava(tehtava.key));
+    const arkistoiNappi = document.createElement('button');
+    arkistoiNappi.className = 'arkistoi-tehtava-nappi';
+    arkistoiNappi.innerHTML = '📥';
+    arkistoiNappi.title = 'Arkistoi';
+    arkistoiNappi.addEventListener('click', () => arkistoiTehtava(tehtava.key));
     oikea.appendChild(muokkaaNappi);
-    oikea.appendChild(poistaNappi);
+    oikea.appendChild(arkistoiNappi);
     itemElement.appendChild(vasen);
     itemElement.appendChild(oikea);
 }
@@ -960,7 +975,8 @@ function lisaaTehtava() {
         teksti: teksti,
         tehty: false,
         luoja: nykyinenKayttaja,
-        lisattyAika: serverTimestamp()
+        lisattyAika: serverTimestamp(),
+        tila: 'aktiivinen'
     };
     if (kohdistetutHenkilot.length > 0) {
         uusiTehtava.kohdistettu = kohdistetutHenkilot;
@@ -975,8 +991,55 @@ function paivitaTehtavanTila(key, onkoTehty) {
     update(ref(database, `tehtavalista/${key}`), { tehty: onkoTehty });
 }
 
+function arkistoiTehtava(key) {
+    update(ref(database, `tehtavalista/${key}`), { tila: 'arkistoitu' });
+}
+
+function palautaTehtava(key) {
+    update(ref(database, `tehtavalista/${key}`), { tila: 'aktiivinen' });
+}
+
 function poistaTehtava(key) {
-    if (confirm('Haluatko varmasti poistaa tämän tehtävän?')) {
+    if (confirm('Haluatko varmasti poistaa tämän tehtävän lopullisesti? Tätä ei voi perua.')) {
         remove(ref(database, `tehtavalista/${key}`));
     }
+}
+
+function avaaArkisto() {
+    arkistoidutTehtavatLista.innerHTML = '';
+    const arkistoidut = kaikkiTehtavat.filter(t => t.tila === 'arkistoitu');
+
+    if (arkistoidut.length === 0) {
+        arkistoidutTehtavatLista.innerHTML = '<p style="text-align:center; opacity:0.7;">Arkisto on tyhjä.</p>';
+    } else {
+        arkistoidut.forEach(tehtava => {
+            const item = document.createElement('div');
+            item.className = 'arkisto-item';
+            
+            const teksti = document.createElement('span');
+            teksti.className = 'arkisto-item-teksti';
+            teksti.textContent = tehtava.teksti;
+
+            const nappulat = document.createElement('div');
+            nappulat.className = 'arkisto-item-nappulat';
+
+            const palautaNappi = document.createElement('button');
+            palautaNappi.textContent = 'Palauta';
+            palautaNappi.className = 'pieni-nappi';
+            palautaNappi.addEventListener('click', () => palautaTehtava(tehtava.key));
+
+            const poistaNappi = document.createElement('button');
+            poistaNappi.textContent = 'Poista pysyvästi';
+            poistaNappi.className = 'delete-btn pieni-nappi';
+            poistaNappi.addEventListener('click', () => poistaTehtava(tehtava.key));
+
+            nappulat.appendChild(palautaNappi);
+            nappulat.appendChild(poistaNappi);
+            item.appendChild(teksti);
+            item.appendChild(nappulat);
+            arkistoidutTehtavatLista.appendChild(item);
+        });
+    }
+
+    tehtavaArkistoModal.classList.remove('hidden');
 }
