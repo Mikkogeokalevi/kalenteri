@@ -40,6 +40,7 @@ let unsubscribeFromEvents = null;
 let unsubscribeFromTasks = null;
 let menneetSivu = 0;
 let tulevatSivu = 0;
+let kaikkiTehtavat = []; // Säilöö tehtävät muokkausta varten
 const TAPAHTUMIA_PER_SIVU = 10;
 
 function alustaElementit() {
@@ -81,7 +82,7 @@ function alustaElementit() {
     tulevatEdellinenSivuBtn = document.getElementById('tulevat-edellinen-sivu-btn');
     tulevatSeuraavaSivuBtn = document.getElementById('tulevat-seuraava-sivu-btn');
     tulevatSivuInfo = document.getElementById('tulevat-sivu-info');
-    lisaaTehtavaHenkilot = document.getElementById('lisaa-tehtava-henkilot'); // UUSI
+    lisaaTehtavaHenkilot = document.getElementById('lisaa-tehtava-henkilot');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -210,13 +211,13 @@ function lisaaKuuntelijat() {
     lisaaTehtavaNappi.addEventListener('click', lisaaTehtava);
     uusiTehtavaTeksti.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
+            e.preventDefault();
             lisaaTehtava();
         }
     });
     tehtavalistaToggle.addEventListener('click', () => {
         tehtavalistaSisalto.classList.toggle('hidden');
     });
-    // UUSI KUUNTELIJA TEHTÄVÄN KOHDISTAMISEN NAPEILLE
     lisaaTehtavaHenkilot.addEventListener('click', (e) => {
         if (e.target.classList.contains('assign-btn')) {
             e.target.classList.toggle('active');
@@ -257,9 +258,6 @@ function lisaaKuuntelijat() {
         naytaMenneetTapahtumat();
     });
 }
-
-// ... (funktiot avaaMenneetModal - naytaTapahtumatKalenterissa pysyvät ennallaan) ...
-// (Koodin selkeyden vuoksi en liitä kaikkia muuttumattomia funktioita uudelleen, mutta ne ovat yhä olemassa koodissasi)
 
 function avaaMenneetModal() {
     menneetSivu = 0;
@@ -792,125 +790,4 @@ function kopioiTapahtuma() {
     }).catch(error => {
         console.error("Kopiointivirhe:", error);
     });
-}
-function kuunteleTehtavia() {
-    if (unsubscribeFromTasks) unsubscribeFromTasks();
-    const tehtavatRef = ref(database, 'tehtavalista');
-    unsubscribeFromTasks = onValue(tehtavatRef, (snapshot) => {
-        piirraTehtavalista(snapshot);
-    });
-}
-
-// **PÄIVITETTY FUNKTIO**
-function piirraTehtavalista(snapshot) {
-    tehtavatContainer.innerHTML = '';
-    const tehtavat = [];
-    snapshot.forEach(child => {
-        tehtavat.push({ key: child.key, ...child.val() });
-    });
-    const avoimet = tehtavat.filter(t => !t.tehty);
-    avoimetTehtavatLaskuri.textContent = `${avoimet.length} avointa`;
-    tehtavat.sort((a, b) => a.tehty - b.tehty);
-    if (tehtavat.length === 0) {
-        tehtavatContainer.innerHTML = '<p style="text-align:center; opacity:0.7;">Lista on tyhjä.</p>';
-        return;
-    }
-    tehtavat.forEach(tehtava => {
-        const item = document.createElement('div');
-        item.className = 'tehtava-item';
-        if (tehtava.tehty) item.classList.add('tehty');
-
-        const vasen = document.createElement('div');
-        vasen.className = 'tehtava-vasen';
-
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.checked = tehtava.tehty;
-        checkbox.addEventListener('change', () => paivitaTehtavanTila(tehtava.key, checkbox.checked));
-        
-        const tiedotContainer = document.createElement('div');
-        tiedotContainer.className = 'tehtava-tiedot';
-        
-        const teksti = document.createElement('p');
-        teksti.className = 'tehtava-teksti';
-        teksti.textContent = tehtava.teksti;
-        
-        const meta = document.createElement('small');
-        meta.className = 'tehtava-meta';
-        let metaTeksti = '';
-        if (tehtava.luoja) metaTeksti += `Lisännyt ${tehtava.luoja}`;
-        if (tehtava.lisattyAika) {
-            const pvm = new Date(tehtava.lisattyAika).toLocaleDateString('fi-FI');
-            const aika = new Date(tehtava.lisattyAika).toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
-            metaTeksti += ` - ${pvm} klo ${aika}`;
-        }
-        meta.textContent = metaTeksti;
-        
-        tiedotContainer.appendChild(teksti);
-        tiedotContainer.appendChild(meta);
-        vasen.appendChild(checkbox);
-        vasen.appendChild(tiedotContainer);
-
-        const oikea = document.createElement('div');
-        oikea.className = 'tehtava-oikea';
-
-        if (tehtava.kohdistettu && tehtava.kohdistettu.length > 0) {
-            const kohdistusContainer = document.createElement('div');
-            kohdistusContainer.className = 'tehtava-kohdistus';
-            tehtava.kohdistettu.forEach(nimi => {
-                const pallo = document.createElement('div');
-                pallo.className = 'kohdistus-pallo';
-                pallo.textContent = nimi.charAt(0).toUpperCase();
-                pallo.style.backgroundColor = KAYTTAJA_VARIT[nimi] || '#888';
-                pallo.title = nimi;
-                kohdistusContainer.appendChild(pallo);
-            });
-            oikea.appendChild(kohdistusContainer);
-        }
-
-        const poistaNappi = document.createElement('button');
-        poistaNappi.className = 'poista-tehtava-nappi';
-        poistaNappi.textContent = 'X';
-        poistaNappi.addEventListener('click', () => poistaTehtava(tehtava.key));
-        oikea.appendChild(poistaNappi);
-        
-        item.appendChild(vasen);
-        item.appendChild(oikea);
-        tehtavatContainer.appendChild(item);
-    });
-}
-
-// **PÄIVITETTY FUNKTIO**
-function lisaaTehtava() {
-    const teksti = uusiTehtavaTeksti.value.trim();
-    if (teksti === '') return;
-
-    const kohdistetutHenkilot = Array.from(lisaaTehtavaHenkilot.querySelectorAll('.assign-btn.active'))
-                                     .map(btn => btn.dataset.assignee);
-
-    const uusiTehtava = {
-        teksti: teksti,
-        tehty: false,
-        luoja: nykyinenKayttaja,
-        lisattyAika: serverTimestamp()
-    };
-
-    if (kohdistetutHenkilot.length > 0) {
-        uusiTehtava.kohdistettu = kohdistetutHenkilot;
-    }
-
-    push(ref(database, 'tehtavalista'), uusiTehtava).then(() => {
-        uusiTehtavaTeksti.value = '';
-        lisaaTehtavaHenkilot.querySelectorAll('.assign-btn').forEach(btn => btn.classList.remove('active'));
-    });
-}
-
-function paivitaTehtavanTila(key, onkoTehty) {
-    update(ref(database, `tehtavalista/${key}`), { tehty: onkoTehty });
-}
-
-function poistaTehtava(key) {
-    if (confirm('Haluatko varmasti poistaa tämän tehtävän?')) {
-        remove(ref(database, `tehtavalista/${key}`));
-    }
 }
