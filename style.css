@@ -323,6 +323,19 @@ footer {
     .header-content h1 {
         font-size: 1.5em;
     }
+    /* KORJAUS MOBIILIN MUOKKAUSTILAAN */
+    .tehtava-item.is-editing {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    .tehtava-item.is-editing .tehtava-vasen {
+        width: 100%;
+    }
+    .tehtava-item.is-editing .tehtava-oikea {
+        width: 100%;
+        justify-content: space-between;
+    }
 }
 #tanaan-banneri {
     text-align: center;
@@ -720,6 +733,10 @@ input[type="checkbox"] {
 .edit-controls {
     display: flex;
     gap: 5px;
+    align-items: center;
+}
+.edit-controls .assign-buttons {
+    margin-bottom: 0;
 }
 .edit-controls .assign-btn {
     width: 24px;
