@@ -52,6 +52,10 @@ header {
     flex-wrap: wrap;
     gap: 15px;
 }
+.header-content h1 {
+    font-size: 2em;
+    margin: 0;
+}
 main, .sivupalkki, footer {
     background-color: var(--bg-container);
     border-radius: 12px;
@@ -289,6 +293,18 @@ footer {
     #kalenteri-paivat-otsikot, #kalenteri-grid {
         grid-template-columns: 25px repeat(7, 1fr);
         gap: 3px;
+    }
+    .header-content {
+        flex-direction: column;
+        gap: 5px;
+    }
+    #header-logo {
+        height: 45px;
+        margin-right: 0;
+        margin-bottom: 5px;
+    }
+    .header-content h1 {
+        font-size: 1.5em;
     }
 }
 #tanaan-banneri {
@@ -620,4 +636,11 @@ input[type="checkbox"] {
     border-top: 1px solid var(--bg-container);
     margin-top: 15px;
     padding-top: 15px;
+}
+
+/* KORJATTU TYYLI LOGOLLE */
+#header-logo {
+    height: 60px;
+    width: auto;
+    margin-right: 10px;
 }
