@@ -323,7 +323,6 @@ footer {
     .header-content h1 {
         font-size: 1.5em;
     }
-    /* KORJAUS MOBIILIN MUOKKAUSTILAAN */
     .tehtava-item.is-editing {
         flex-direction: column;
         align-items: stretch;
@@ -444,6 +443,11 @@ input[type="checkbox"] {
     align-items: center;
     cursor: pointer;
 }
+.tehtavalista-otsikko-oikea {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
 .tehtavalista-otsikko h3 {
     margin: 0;
@@ -504,7 +508,7 @@ input[type="checkbox"] {
     display: block;
 }
 
-.poista-tehtava-nappi, .muokkaa-tehtava-nappi {
+.pieni-nappi, .poista-tehtava-nappi, .muokkaa-tehtava-nappi, .arkistoi-tehtava-nappi {
     width: auto;
     padding: 4px 8px;
     margin: 0;
@@ -524,15 +528,18 @@ input[type="checkbox"] {
     color: white;
 }
 
-.muokkaa-tehtava-nappi {
+.muokkaa-tehtava-nappi, .arkistoi-tehtava-nappi, #avaa-arkisto-btn {
     background-color: transparent;
     border: 1px solid var(--text-accent);
     color: var(--text-accent);
 }
 
-.muokkaa-tehtava-nappi:hover {
+.muokkaa-tehtava-nappi:hover, .arkistoi-tehtava-nappi:hover, #avaa-arkisto-btn:hover {
     background-color: var(--text-accent);
     color: var(--bg-main);
+}
+#avaa-arkisto-btn {
+    margin-top: 0;
 }
 
 
@@ -745,4 +752,33 @@ input[type="checkbox"] {
 }
 .edit-controls button {
     margin: 0;
+}
+
+/* ARKISTO-NÄKYMÄN TYYLIT */
+#arkistoidut-tehtavat-lista {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+.arkisto-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--bg-container);
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    opacity: 0.7;
+}
+.arkisto-item-teksti {
+    text-decoration: line-through;
+    flex-grow: 1;
+}
+.arkisto-item-nappulat {
+    display: flex;
+    gap: 10px;
+}
+.arkisto-item-nappulat button {
+    width: auto;
+    margin: 0;
+    font-size: 0.9em;
 }
