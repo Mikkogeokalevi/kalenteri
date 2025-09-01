@@ -58,9 +58,17 @@
                 <div id="tehtavalista-sisalto" class="hidden">
                     <div id="tehtavat-container">
                     </div>
-                    <div class="lisaa-tehtava-lomake">
-                        <input type="text" id="uusi-tehtava-teksti" placeholder="Kirjoita uusi tehtävä...">
-                        <button id="lisaa-tehtava-nappi">Lisää listaan</button>
+                    <div class="lisaa-tehtava-container">
+                        <div id="lisaa-tehtava-henkilot" class="assign-buttons">
+                            <small>Kohdista:</small>
+                            <button class="assign-btn" data-assignee="Toni">T</button>
+                            <button class="assign-btn" data-assignee="Kaisa">K</button>
+                            <button class="assign-btn" data-assignee="Oona">O</button>
+                        </div>
+                        <div class="lisaa-tehtava-lomake">
+                            <input type="text" id="uusi-tehtava-teksti" placeholder="Kirjoita uusi tehtävä...">
+                            <button id="lisaa-tehtava-nappi">Lisää</button>
+                        </div>
                     </div>
                 </div>
             </div>
