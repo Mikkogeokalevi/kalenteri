@@ -69,7 +69,6 @@ main, .sivupalkki, footer {
 .sivupalkki {
     background-color: var(--bg-sidebar);
 }
-/* TÄMÄ OSIO ON MUUTTUNUT */
 .kalenteri-ylapalkki {
     display: flex;
     justify-content: space-between;
@@ -456,6 +455,7 @@ input[type="checkbox"] {
 
 .tehtava-item {
     display: flex;
+    justify-content: space-between; /* UUSI: Jakaa tilan vasemman ja oikean osan välillä */
     align-items: center;
     background-color: var(--bg-container);
     padding: 10px;
@@ -511,29 +511,26 @@ input[type="checkbox"] {
 .lisaa-tehtava-lomake {
     display: flex;
     gap: 10px;
-    margin-top: 15px;
 }
-
 #lisaa-tehtava-nappi {
     width: auto;
     flex-shrink: 0;
     margin-top: 0;
+    padding-left: 15px;
+    padding-right: 15px;
 }
-
 .paiva.haku-osuma {
     border: 2px solid var(--text-accent);
     box-shadow: 0 0 8px var(--text-accent);
     transform: scale(1.03);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-
 .ketakoskee-valinnat, .nakyvyys-valinnat {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
     align-items: center;
 }
-
 .tapahtuma-palkki {
     font-size: 0.9em;
     padding: 2px 8px;
@@ -547,13 +544,11 @@ input[type="checkbox"] {
     text-align: left;
     font-weight: bold;
 }
-
 .footer-btn {
     width: auto;
     padding: 8px 15px;
     margin-top: 10px;
 }
-
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -562,11 +557,9 @@ input[type="checkbox"] {
     border-bottom: 1px solid var(--bg-container);
     padding-bottom: 10px;
 }
-
 .modal-header h2 {
     margin: 0;
 }
-
 .close-btn {
     background: none;
     border: none;
@@ -578,13 +571,11 @@ input[type="checkbox"] {
     cursor: pointer;
     width: auto;
 }
-
 #menneet-tapahtumat-lista {
     min-height: 400px;
     max-height: 60vh;
     overflow-y: auto;
 }
-
 .pagination-controls {
     display: flex;
     justify-content: space-between;
@@ -593,13 +584,11 @@ input[type="checkbox"] {
     padding-top: 15px;
     border-top: 1px solid var(--bg-container);
 }
-
 .pagination-controls button {
     width: auto;
     padding: 8px 15px;
     margin: 0;
 }
-
 .pagination-controls button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -609,27 +598,23 @@ input[type="checkbox"] {
 .pagination-controls button:disabled:hover {
     background-color: transparent;
 }
-
-/* KORJATUT TYYLIT SUODATINPAINIKKEILLE */
 .filter-buttons {
     display: flex;
     gap: 6px;
     margin-bottom: 15px;
 }
-
 .filter-btn {
-    width: auto; /* Estää 100% leveyden perimisen */
-    flex-grow: 1; /* Jakaa tilan tasaisesti nappien kesken */
-    padding: 8px 5px; /* Hieman tiiviimpi pehmuste */
+    width: auto;
+    flex-grow: 1;
+    padding: 8px 5px;
     margin: 0;
-    font-size: 0.8em; /* Pienempi fontti, jotta tekstit mahtuvat paremmin */
+    font-size: 0.8em;
     border: 1px solid var(--bg-container);
     background-color: var(--bg-container);
     color: var(--text-main);
     opacity: 0.7;
-    white-space: nowrap; /* Estää tekstin rivittymisen */
+    white-space: nowrap;
 }
-
 .filter-btn.active {
     border-color: var(--text-accent);
     color: var(--text-accent);
@@ -637,28 +622,75 @@ input[type="checkbox"] {
     opacity: 1;
     font-weight: bold;
 }
-
 .filter-btn:hover {
     opacity: 1;
     background-color: var(--bg-container);
     color: var(--text-main);
 }
-
 .filter-btn.active:hover {
     background-color: transparent;
     color: var(--text-accent);
 }
-
-/* TYYLI UUSILLE SIVUTUS-ELEMENTEILLE */
 #tulevat-pagination-controls {
     border-top: 1px solid var(--bg-container);
     margin-top: 15px;
     padding-top: 15px;
 }
-
-/* KORJATTU TYYLI LOGOLLE */
 #header-logo {
     height: 60px;
     width: auto;
     margin-right: 10px;
+}
+
+/* UUDET TYYLIT TEHTÄVIEN KOHDISTAMISEEN */
+.lisaa-tehtava-container {
+    margin-top: 15px;
+}
+.assign-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.assign-buttons small {
+    opacity: 0.8;
+}
+.assign-btn {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    margin: 0;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 1em;
+    opacity: 0.5;
+    border: 1px solid var(--bg-container);
+    background-color: var(--bg-container);
+    color: var(--text-main);
+}
+.assign-btn.active {
+    opacity: 1;
+    border-color: var(--text-accent);
+    background-color: transparent;
+    color: var(--text-accent);
+}
+.tehtava-vasen, .tehtava-oikea {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.tehtava-kohdistus {
+    display: flex;
+    gap: 4px;
+}
+.kohdistus-pallo {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8em;
+    font-weight: bold;
 }
