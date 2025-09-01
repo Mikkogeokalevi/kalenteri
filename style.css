@@ -44,6 +44,11 @@ header {
     border-bottom: 2px solid var(--bg-container);
     padding-bottom: 15px;
     text-align: center;
+    /* UUDET OMINAISUUDET OTSAKKEEN KIINNITTÄMISEKSI */
+    position: sticky;
+    top: 0;
+    background-color: var(--bg-main);
+    z-index: 100;
 }
 .header-content {
     display: flex;
