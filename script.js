@@ -25,7 +25,7 @@ const auth = getAuth(app);
 
 // --- DOM-elementit (Määritellään muuttujat) ---
 let loginOverlay, loginForm, mainContainer, currentUserName, logoutBtn, tulevatTapahtumatLista,
-    kalenteriPaivatOtsikot, kalenteriGrid, kuukausiOtsikko, edellinenBtn, seuraavaBtn,
+    kalenteriPaivatOtsikot, kalenteriGrid, kuukausiOtsikko, edellinenBtn, seuraavaBtn, tanaanBtn,
     lisaaLomake, modalOverlay, modalViewContent, modalEditContent, avaaLisaysLomakeBtn,
     sivupalkki, hakuKentta, tehtavatContainer, uusiTehtavaTeksti, lisaaTehtavaNappi,
     tehtavalistaToggle, tehtavalistaSisalto, avoimetTehtavatLaskuri, avaaMenneetModalBtn,
@@ -39,7 +39,7 @@ let nykyinenPaiva = new Date();
 let unsubscribeFromEvents = null;
 let unsubscribeFromTasks = null;
 let menneetSivu = 0;
-let tulevatSivu = 0; // UUSI TILA SIVUTUKSELLE
+let tulevatSivu = 0;
 const TAPAHTUMIA_PER_SIVU = 10;
 
 function alustaElementit() {
@@ -54,6 +54,7 @@ function alustaElementit() {
     kuukausiOtsikko = document.getElementById('kuukausi-otsikko');
     edellinenBtn = document.getElementById('edellinen-kk');
     seuraavaBtn = document.getElementById('seuraava-kk');
+    tanaanBtn = document.getElementById('tanaan-btn'); // UUSI
     lisaaLomake = document.getElementById('lisaa-tapahtuma-lomake');
     modalOverlay = document.getElementById('tapahtuma-modal-overlay');
     modalViewContent = document.getElementById('modal-view-content');
@@ -76,8 +77,6 @@ function alustaElementit() {
     seuraavaSivuBtn = document.getElementById('seuraava-sivu-btn');
     sivuInfo = document.getElementById('sivu-info');
     tulevatSuodatin = document.getElementById('tulevat-suodatin');
-
-    // UUDET DOM ELEMENTIT SIVUTUKSELLE
     tulevatPaginationControls = document.getElementById('tulevat-pagination-controls');
     tulevatEdellinenSivuBtn = document.getElementById('tulevat-edellinen-sivu-btn');
     tulevatSeuraavaSivuBtn = document.getElementById('tulevat-seuraava-sivu-btn');
@@ -111,6 +110,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// UUSI APUFUNKTIO LINKKIEN TEKEMISEEN
+function linkify(text) {
+    if (!text) return '';
+    const urlRegex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%?=~_|])|(\bwww\.[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%?=~_|])/ig;
+    return text.replace(urlRegex, function(url) {
+        let fullUrl = url;
+        if (!fullUrl.startsWith('http')) {
+            fullUrl = 'https://' + fullUrl;
+        }
+        return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+    });
+}
+
 function lisaaKuuntelijat() {
     loginForm.addEventListener('submit', handleLogin);
     logoutBtn.addEventListener('click', handleLogout);
@@ -120,6 +132,11 @@ function lisaaKuuntelijat() {
     });
     seuraavaBtn.addEventListener('click', () => {
         nykyinenPaiva.setMonth(nykyinenPaiva.getMonth() + 1);
+        piirraKalenteri();
+    });
+    // UUSI KUUNTELIJA
+    tanaanBtn.addEventListener('click', () => {
+        nykyinenPaiva = new Date();
         piirraKalenteri();
     });
     lisaaLomake.addEventListener('submit', (e) => {
@@ -144,25 +161,19 @@ function lisaaKuuntelijat() {
         loppuInput.min = this.value;
     });
     kalenteriGrid.addEventListener('click', handlePaivaClick);
-
-    // PÄIVITETTY HAKUKENTÄN KUUNTELIJA
     hakuKentta.addEventListener('input', () => {
-        tulevatSivu = 0; // Nollaa sivunumeron haettaessa
+        tulevatSivu = 0;
         naytaTulevatTapahtumat();
         korostaHakuOsumatKalenterissa();
     });
-    
-    // PÄIVITETTY SUODATTIMEN KUUNTELIJA
     tulevatSuodatin.addEventListener('click', (e) => {
         const target = e.target;
         if (!target.classList.contains('filter-btn')) return;
-
-        tulevatSivu = 0; // Nollaa sivunumeron suodatinta vaihtaessa
+        tulevatSivu = 0;
         const suodatin = target.dataset.filter;
         const kaikkiBtn = tulevatSuodatin.querySelector('[data-filter="kaikki"]');
         const perheBtn = tulevatSuodatin.querySelector('[data-filter="perhe"]');
         const personBtns = tulevatSuodatin.querySelectorAll('.filter-btn:not([data-filter="kaikki"]):not([data-filter="perhe"])');
-
         if (suodatin === 'kaikki') {
             personBtns.forEach(btn => btn.classList.remove('active'));
             perheBtn.classList.remove('active');
@@ -176,27 +187,21 @@ function lisaaKuuntelijat() {
             perheBtn.classList.remove('active');
             target.classList.toggle('active');
         }
-        
         if (!tulevatSuodatin.querySelector('.filter-btn.active')) {
             kaikkiBtn.classList.add('active');
         }
-
         naytaTulevatTapahtumat();
     });
-
-    // UUDET KUUNTELIJAT SIVUTUKSELLE
     tulevatEdellinenSivuBtn.addEventListener('click', () => {
         if (tulevatSivu > 0) {
             tulevatSivu--;
             naytaTulevatTapahtumat();
         }
     });
-
     tulevatSeuraavaSivuBtn.addEventListener('click', () => {
         tulevatSivu++;
         naytaTulevatTapahtumat();
     });
-
     document.getElementById('tapahtuma-koko-paiva').addEventListener('change', (e) => {
         toggleLoppuAika(e.target.checked, 'loppu-aika-lisaa-container');
     });
@@ -603,7 +608,6 @@ function naytaTapahtumatKalenterissa() {
     });
 }
 
-// **PÄIVITETTY FUNKTIO SIVUTUKSELLA**
 function naytaTulevatTapahtumat() {
     tulevatTapahtumatLista.innerHTML = '';
     if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
@@ -612,7 +616,6 @@ function naytaTulevatTapahtumat() {
     const nyt = new Date();
     const aktiivisetSuotimet = Array.from(tulevatSuodatin.querySelectorAll('.filter-btn.active')).map(btn => btn.dataset.filter);
     
-    // 1. Suodata kaikki tapahtumat
     const suodatetutTulevat = window.kaikkiTapahtumat.filter(t => {
         const nakyvyysJaAikaOk = t.nakyvyys?.[nykyinenKayttaja] && new Date(t.loppu) >= nyt;
         if (!nakyvyysJaAikaOk) return false;
@@ -633,7 +636,6 @@ function naytaTulevatTapahtumat() {
         return aktiivisetSuotimet.every(suodin => ketakoskee.includes(suodin));
     }).sort((a, b) => new Date(a.alku) - new Date(b.alku));
 
-    // 2. Sivutuksen logiikka
     const sivujaYhteensa = Math.ceil(suodatetutTulevat.length / TAPAHTUMIA_PER_SIVU);
     if (sivujaYhteensa > 1) {
         tulevatPaginationControls.classList.remove('hidden');
@@ -647,7 +649,6 @@ function naytaTulevatTapahtumat() {
     const alkuIndeksi = tulevatSivu * TAPAHTUMIA_PER_SIVU;
     const sivunTapahtumat = suodatetutTulevat.slice(alkuIndeksi, alkuIndeksi + TAPAHTUMIA_PER_SIVU);
 
-    // 3. Näytä tulokset
     if (sivunTapahtumat.length === 0) {
         tulevatTapahtumatLista.innerHTML = `<p>Valinnoilla ei löytynyt tulevia tapahtumia.</p>`;
         return;
@@ -703,7 +704,12 @@ function avaaTapahtumaIkkuna(key) {
     if (!tapahtuma) return;
     modalOverlay.dataset.tapahtumaId = key;
     document.getElementById('view-otsikko').textContent = tapahtuma.otsikko;
-    document.getElementById('view-kuvaus').textContent = tapahtuma.kuvaus || 'Ei lisätietoja.';
+    
+    // MUUTOS: KÄYTÄ textContent SIJAAN innerHTML + linkify-funktiota
+    const kuvausElementti = document.getElementById('view-kuvaus');
+    const kuvausTeksti = tapahtuma.kuvaus || 'Ei lisätietoja.';
+    kuvausElementti.innerHTML = linkify(kuvausTeksti);
+
     document.getElementById('view-luoja').textContent = tapahtuma.luoja;
     document.getElementById('view-nakyvyys').textContent = Object.keys(tapahtuma.nakyvyys || {}).filter(k => tapahtuma.nakyvyys[k]).join(', ');
     const koskeeSpan = document.getElementById('view-koskee');
