@@ -80,12 +80,12 @@ main, .sivupalkki, footer {
     width: auto;
     margin: 0;
     padding: 8px 12px;
-    flex-shrink: 0; /* Estää nappeja kutistumasta */
+    flex-shrink: 0;
 }
 .kalenteri-ylapalkki h2 {
     color: var(--text-accent);
     margin: 0;
-    flex-grow: 1; /* Antaa otsikolle tilaa kasvaa */
+    flex-grow: 1;
     text-align: center;
     white-space: nowrap;
 }
@@ -452,10 +452,9 @@ input[type="checkbox"] {
     border-top: 1px solid var(--bg-container);
 }
 
-
 .tehtava-item {
     display: flex;
-    justify-content: space-between; /* UUSI: Jakaa tilan vasemman ja oikean osan välillä */
+    justify-content: space-between;
     align-items: center;
     background-color: var(--bg-container);
     padding: 10px;
@@ -492,21 +491,37 @@ input[type="checkbox"] {
     display: block;
 }
 
-.poista-tehtava-nappi {
+.poista-tehtava-nappi, .muokkaa-tehtava-nappi {
     width: auto;
     padding: 4px 8px;
-    margin: 0 0 0 10px;
-    background-color: transparent;
-    border: 1px solid #e74c3c;
-    color: #e74c3c;
+    margin: 0;
     font-size: 0.8em;
     font-weight: bold;
     border-radius: 5px;
+    line-height: 1;
+}
+
+.poista-tehtava-nappi {
+    background-color: transparent;
+    border: 1px solid #e74c3c;
+    color: #e74c3c;
 }
 .poista-tehtava-nappi:hover {
     background-color: #e74c3c;
     color: white;
 }
+
+.muokkaa-tehtava-nappi {
+    background-color: transparent;
+    border: 1px solid var(--text-accent);
+    color: var(--text-accent);
+}
+
+.muokkaa-tehtava-nappi:hover {
+    background-color: var(--text-accent);
+    color: var(--bg-main);
+}
+
 
 .lisaa-tehtava-lomake {
     display: flex;
@@ -642,9 +657,11 @@ input[type="checkbox"] {
     margin-right: 10px;
 }
 
-/* UUDET TYYLIT TEHTÄVIEN KOHDISTAMISEEN */
+/* UUDET TYYLIT TEHTÄVIEN KOHDISTAMISEEN & MUOKKAAMISEEN */
 .lisaa-tehtava-container {
     margin-top: 15px;
+    border-top: 1px solid var(--bg-container);
+    padding-top: 15px;
 }
 .assign-buttons {
     display: flex;
@@ -693,4 +710,22 @@ input[type="checkbox"] {
     justify-content: center;
     font-size: 0.8em;
     font-weight: bold;
+}
+.tehtava-item .edit-input {
+    flex-grow: 1;
+    margin: 0;
+    padding: 8px;
+    height: auto;
+}
+.edit-controls {
+    display: flex;
+    gap: 5px;
+}
+.edit-controls .assign-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 0.9em;
+}
+.edit-controls button {
+    margin: 0;
 }
