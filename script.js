@@ -822,7 +822,6 @@ function kopioiTapahtuma() {
         naytaIlmoitus(`Tapahtuma kopioitu päivälle ${uusiPvm}.`);
         suljeTapahtumaIkkuna();
     }).catch(error => {
-        alert("Tapahtui virhe kopioinnissa.");
         console.error("Kopiointivirhe:", error);
     });
 }
@@ -856,7 +855,10 @@ function piirraTehtavalista() {
     nakyvatTehtavat.forEach(tehtava => {
         const item = document.createElement('div');
         item.className = 'tehtava-item';
-        if (tehtava.tehty) item.classList.add('tehty');
+        const tila = maaritaTehtavanTila(tehtava);
+        if (tila) {
+            item.classList.add(`status-${tila}`);
+        }
         rakennaTehtavaItemView(item, tehtava);
         tehtavatContainer.appendChild(item);
     });
@@ -878,13 +880,17 @@ function rakennaTehtavaItemView(itemElement, tehtava) {
     teksti.textContent = tehtava.teksti;
     const meta = document.createElement('small');
     meta.className = 'tehtava-meta';
-    let metaTeksti = `Lisännyt ${tehtava.luoja}`;
-    if (tehtava.lisattyAika) {
-        metaTeksti += ` - ${new Date(tehtava.lisattyAika).toLocaleDateString('fi-FI')}`;
+    
+    let metaTeksti = '';
+    if (tehtava.maarapaiva) {
+        const pvm = new Date(tehtava.maarapaiva).toLocaleString('fi-FI', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
+        metaTeksti += `Määräpäivä: ${pvm} | `;
     }
+    metaTeksti += `Lisännyt ${tehtava.luoja}`;
     if (tehtava.muokattuAika) {
-        metaTeksti += ` (muokannut ${tehtava.muokannut} ${new Date(tehtava.muokattuAika).toLocaleDateString('fi-FI')})`;
+        metaTeksti += ` (muokattu ${new Date(tehtava.muokattuAika).toLocaleDateString('fi-FI')})`;
     }
+
     meta.textContent = metaTeksti;
     tiedotContainer.appendChild(teksti);
     tiedotContainer.appendChild(meta);
@@ -929,7 +935,11 @@ function siirryMuokkaustilaan(itemElement, tehtava) {
     editInput.type = 'text';
     editInput.value = tehtava.teksti;
     editInput.className = 'edit-input';
+    const editMaarapaiva = document.createElement('input');
+    editMaarapaiva.type = 'datetime-local';
+    editMaarapaiva.value = tehtava.maarapaiva || '';
     vasen.appendChild(editInput);
+    vasen.appendChild(editMaarapaiva);
     const oikea = document.createElement('div');
     oikea.className = 'tehtava-oikea edit-controls';
     const assignContainer = document.createElement('div');
@@ -954,6 +964,7 @@ function siirryMuokkaustilaan(itemElement, tehtava) {
             const paivitys = {
                 teksti: uusiTeksti,
                 kohdistettu: uudetKohdistukset,
+                maarapaiva: editMaarapaiva.value || null, // Poistaa kentän, jos se on tyhjä
                 muokannut: nykyinenKayttaja,
                 muokattuAika: serverTimestamp()
             };
@@ -1021,8 +1032,7 @@ function avaaArkisto() {
     arkistoidutTehtavatLista.innerHTML = '';
     const arkistoidut = kaikkiTehtavat
         .filter(t => t.tila === 'arkistoitu')
-        .sort((a, b) => (a.lisattyAika > b.lisattyAika) ? -1 : 1); // Näytä uusin arkistoitu ensin
-
+        .sort((a, b) => (a.lisattyAika > b.lisattyAika) ? -1 : 1);
     if (arkistoidut.length === 0) {
         arkistoidutTehtavatLista.innerHTML = '<p style="text-align:center; opacity:0.7;">Arkisto on tyhjä.</p>';
     } else {
@@ -1068,11 +1078,10 @@ function maaritaTehtavanTila(tehtava) {
         if (nyt > maarapaiva) {
             return 'myohassa';
         }
-        // 24 tuntia millisekunteina: 24 * 60 * 60 * 1000 = 86400000
-        if (maarapaiva - nyt < 86400000) {
+        if (maarapaiva - nyt < 86400000) { // 24 tuntia millisekunteina
             return 'kiireellinen';
         }
         return 'ok';
     }
-    return ''; // Ei tilaa, jos ei määräpäivää
+    return ''; // Ei erityistä tilaa
 }
