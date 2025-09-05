@@ -32,7 +32,8 @@ let loginOverlay, loginForm, mainContainer, currentUserName, logoutBtn, tulevatT
     menneetTapahtumatModal, suljeMenneetModalBtn, menneetHakuKentta, menneetTapahtumatLista,
     edellinenSivuBtn, seuraavaSivuBtn, sivuInfo, tulevatSuodatin, tulevatPaginationControls,
     tulevatEdellinenSivuBtn, tulevatSeuraavaSivuBtn, tulevatSivuInfo, lisaaTehtavaHenkilot,
-    avaaArkistoBtn, tehtavaArkistoModal, suljeArkistoModalBtn, arkistoidutTehtavatLista;
+    avaaArkistoBtn, tehtavaArkistoModal, suljeArkistoModalBtn, arkistoidutTehtavatLista,
+    lisaaMaarapaivaToggle, uusiTehtavaMaarapaiva;
 
 // --- Sovelluksen tila ---
 let nykyinenKayttaja = null;
@@ -88,6 +89,8 @@ function alustaElementit() {
     tehtavaArkistoModal = document.getElementById('tehtava-arkisto-modal');
     suljeArkistoModalBtn = document.getElementById('sulje-arkisto-modal-btn');
     arkistoidutTehtavatLista = document.getElementById('arkistoidut-tehtavat-lista');
+    lisaaMaarapaivaToggle = document.getElementById('lisaa-maarapaiva-toggle');
+    uusiTehtavaMaarapaiva = document.getElementById('uusi-tehtava-maarapaiva');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -260,6 +263,9 @@ function lisaaKuuntelijat() {
     avaaArkistoBtn.addEventListener('click', avaaArkisto);
     suljeArkistoModalBtn.addEventListener('click', () => tehtavaArkistoModal.classList.add('hidden'));
     tehtavaArkistoModal.addEventListener('click', (e) => { if(e.target === tehtavaArkistoModal) tehtavaArkistoModal.classList.add('hidden') });
+    lisaaMaarapaivaToggle.addEventListener('change', (e) => {
+        uusiTehtavaMaarapaiva.classList.toggle('hidden', !e.target.checked);
+    });
 }
 
 function avaaMenneetModal() {
@@ -981,9 +987,15 @@ function lisaaTehtava() {
     if (kohdistetutHenkilot.length > 0) {
         uusiTehtava.kohdistettu = kohdistetutHenkilot;
     }
+    if (lisaaMaarapaivaToggle.checked && uusiTehtavaMaarapaiva.value) {
+        uusiTehtava.maarapaiva = uusiTehtavaMaarapaiva.value;
+    }
     push(ref(database, 'tehtavalista'), uusiTehtava).then(() => {
         uusiTehtavaTeksti.value = '';
         lisaaTehtavaHenkilot.querySelectorAll('.assign-btn').forEach(btn => btn.classList.remove('active'));
+        lisaaMaarapaivaToggle.checked = false;
+        uusiTehtavaMaarapaiva.classList.add('hidden');
+        uusiTehtavaMaarapaiva.value = '';
     });
 }
 
@@ -1007,7 +1019,9 @@ function poistaTehtava(key) {
 
 function avaaArkisto() {
     arkistoidutTehtavatLista.innerHTML = '';
-    const arkistoidut = kaikkiTehtavat.filter(t => t.tila === 'arkistoitu');
+    const arkistoidut = kaikkiTehtavat
+        .filter(t => t.tila === 'arkistoitu')
+        .sort((a, b) => (a.lisattyAika > b.lisattyAika) ? -1 : 1); // Näytä uusin arkistoitu ensin
 
     if (arkistoidut.length === 0) {
         arkistoidutTehtavatLista.innerHTML = '<p style="text-align:center; opacity:0.7;">Arkisto on tyhjä.</p>';
@@ -1042,4 +1056,23 @@ function avaaArkisto() {
     }
 
     tehtavaArkistoModal.classList.remove('hidden');
+}
+
+function maaritaTehtavanTila(tehtava) {
+    if (tehtava.tehty) {
+        return 'tehty';
+    }
+    if (tehtava.maarapaiva) {
+        const nyt = new Date();
+        const maarapaiva = new Date(tehtava.maarapaiva);
+        if (nyt > maarapaiva) {
+            return 'myohassa';
+        }
+        // 24 tuntia millisekunteina: 24 * 60 * 60 * 1000 = 86400000
+        if (maarapaiva - nyt < 86400000) {
+            return 'kiireellinen';
+        }
+        return 'ok';
+    }
+    return ''; // Ei tilaa, jos ei määräpäivää
 }
