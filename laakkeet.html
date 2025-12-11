@@ -172,7 +172,6 @@
 
         const unsubMeds = onSnapshot(medsRef, (snapshot) => {
           const medsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          // Lajitellaan luomisajan mukaan
           medsData.sort((a, b) => a.createdAt - b.createdAt);
           setMedications(medsData);
           setLoadingData(false);
@@ -188,6 +187,7 @@
 
       // State UI
       const [newMedName, setNewMedName] = useState('');
+      const [selectedColor, setSelectedColor] = useState('blue'); // Uusi state värille
       const [isAdding, setIsAdding] = useState(false);
       const [editingMed, setEditingMed] = useState(null);
       
@@ -214,18 +214,36 @@
       };
       
       const getColors = (key) => colorMap[key] || colorMap['blue'];
-      const getNextColorKey = () => colorList[medications.length % colorList.length];
+      
+      // Etsii värin jota ei ole vielä käytössä aktiivisissa lääkkeissä
+      const getSmartColor = () => {
+        const activeMeds = medications.filter(m => !m.isArchived);
+        const usedColors = new Set(activeMeds.map(m => m.colorKey));
+        // Etsi ensimmäinen väri listalta, jota ei ole käytetty
+        const freeColor = colorList.find(c => !usedColors.has(c));
+        // Jos kaikki käytössä, arvotaan tai otetaan järjestyksessä
+        return freeColor || colorList[medications.length % colorList.length];
+      };
 
       // --- TOIMINNOT ---
 
       const handleLogout = () => { if(window.confirm("Kirjaudutaanko ulos?")) signOut(auth); };
+
+      const openAddModal = () => {
+        setNewMedName('');
+        setSelectedColor(getSmartColor()); // Valitse älykäs oletusväri
+        setIsAdding(true);
+      };
 
       const handleAddMedication = async (e) => {
         e.preventDefault();
         if (!newMedName.trim() || !user) return;
         try {
           await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'medications'), {
-            name: newMedName.trim(), colorKey: getNextColorKey(), createdAt: Date.now(), isArchived: false
+            name: newMedName.trim(), 
+            colorKey: selectedColor, // Käytä valittua väriä
+            createdAt: Date.now(), 
+            isArchived: false
           });
           setNewMedName(''); setIsAdding(false);
         } catch (error) { alert("Virhe lisäyksessä."); }
@@ -236,7 +254,10 @@
         if (!editingMed || !editingMed.name.trim() || !user) return;
         try {
           const medRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', editingMed.id);
-          await updateDoc(medRef, { name: editingMed.name.trim() });
+          await updateDoc(medRef, { 
+            name: editingMed.name.trim(),
+            colorKey: editingMed.colorKey // Päivitä myös väri jos muutettu
+          });
           setEditingMed(null);
         } catch (error) { alert("Virhe muokkauksessa."); }
       };
@@ -408,7 +429,7 @@
                     <div className="text-center py-12 text-slate-400">
                       <div className="bg-white p-4 rounded-full inline-block mb-3 shadow-sm"><Pill size={32} className="text-blue-200" /></div>
                       <p className="mb-4 text-sm">Ei lääkkeitä listalla.</p>
-                      <button onClick={() => setIsAdding(true)} className="bg-blue-600 text-white px-5 py-2.5 rounded-full font-bold shadow-lg text-sm active:scale-95 transition-transform">Lisää ensimmäinen</button>
+                      <button onClick={openAddModal} className="bg-blue-600 text-white px-5 py-2.5 rounded-full font-bold shadow-lg text-sm active:scale-95 transition-transform">Lisää ensimmäinen</button>
                     </div>
                   )}
                   {activeMeds.map(med => {
@@ -528,7 +549,7 @@
           </nav>
 
           {!isAdding && activeTab === 'home' && !showHistoryFor && !deleteDialog.isOpen && !editingMed && !manualLogMed && !editingLog && (
-            <button onClick={() => setIsAdding(true)} className="absolute bottom-20 right-5 bg-blue-600 text-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center z-30 active:scale-95 transition-transform"><Plus size={28}/></button>
+            <button onClick={openAddModal} className="absolute bottom-20 right-5 bg-blue-600 text-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center z-30 active:scale-95 transition-transform"><Plus size={28}/></button>
           )}
 
           {/* --- MODALIT --- */}
@@ -539,6 +560,24 @@
               <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
                 <h2 className="text-lg font-bold mb-4">Lisää lääke</h2>
                 <form onSubmit={handleAddMedication}>
+                  {/* VÄRIVALINTA */}
+                  <div className="flex flex-wrap gap-3 justify-center mb-6">
+                    {colorList.map(c => {
+                      const colors = getColors(c);
+                      const isSelected = selectedColor === c;
+                      return (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setSelectedColor(c)}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isSelected ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'hover:scale-105'}`}
+                        >
+                          <div className={`w-full h-full rounded-full ${colors.dot} shadow-sm`} />
+                        </button>
+                      );
+                    })}
+                  </div>
+
                   <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-4 outline-none border focus:border-blue-500" placeholder="Lääkkeen nimi" value={newMedName} onChange={e => setNewMedName(e.target.value)} />
                   <div className="flex gap-3">
                     <button type="button" onClick={() => setIsAdding(false)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
@@ -554,8 +593,26 @@
           {editingMed && (
             <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
               <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
-                <h2 className="text-lg font-bold mb-4">Muokkaa nimeä</h2>
+                <h2 className="text-lg font-bold mb-4">Muokkaa</h2>
                 <form onSubmit={handleUpdateMedication}>
+                  {/* VÄRIVALINTA MUOKKAUS */}
+                  <div className="flex flex-wrap gap-3 justify-center mb-6">
+                    {colorList.map(c => {
+                      const colors = getColors(c);
+                      const isSelected = editingMed.colorKey === c;
+                      return (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setEditingMed({...editingMed, colorKey: c})}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isSelected ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'hover:scale-105'}`}
+                        >
+                          <div className={`w-full h-full rounded-full ${colors.dot} shadow-sm`} />
+                        </button>
+                      );
+                    })}
+                  </div>
+
                   <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-4 outline-none border focus:border-blue-500" value={editingMed.name} onChange={e => setEditingMed({...editingMed, name: e.target.value})} />
                   <div className="flex gap-3">
                     <button type="button" onClick={() => setEditingMed(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
@@ -601,7 +658,7 @@
                     <button type="button" onClick={() => setEditingLog(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
                     <button type="submit" className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-md">Tallenna</button>
                   </div>
-                  <button type="button" onClick={handleDeleteSingleLog} className="w-full py-3 bg-red-50 text-red-500 rounded-xl font-bold text-sm flex items-center justify-center gap-2"><Trash2 size={16}/> Poista merkintä</button>
+                  <button type="button" onClick={handleDeleteFromEdit} className="w-full py-3 bg-red-50 text-red-500 rounded-xl font-bold text-sm flex items-center justify-center gap-2"><Trash2 size={16}/> Poista merkintä</button>
                 </form>
                 <div className="h-6"></div>
               </div>
