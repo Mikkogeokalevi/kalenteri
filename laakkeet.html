@@ -32,7 +32,7 @@
   <script type="text/babel" data-type="module">
     import React, { useState, useEffect } from 'react';
     import { createRoot } from 'react-dom/client';
-    import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp } from 'lucide-react';
+    import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check } from 'lucide-react';
     
     // --- FIREBASE IMPORTS ---
     import { initializeApp } from 'firebase/app';
@@ -62,6 +62,14 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
     const APP_ID = 'laakemuistio';
+
+    // --- VAKIOT ---
+    const TIME_SLOTS = [
+      { id: 'aamu', label: 'Aamu', icon: Sunrise },
+      { id: 'paiva', label: 'Päivä', icon: Sun },
+      { id: 'ilta', label: 'Ilta', icon: Sunset },
+      { id: 'yo', label: 'Yö', icon: Moon }
+    ];
 
     // --- KIRJAUTUMISNÄKYMÄ ---
     const AuthScreen = () => {
@@ -172,6 +180,7 @@
 
         const unsubMeds = onSnapshot(medsRef, (snapshot) => {
           const medsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          // Lajitellaan luomisajan mukaan
           medsData.sort((a, b) => a.createdAt - b.createdAt);
           setMedications(medsData);
           setLoadingData(false);
@@ -187,7 +196,9 @@
 
       // State UI
       const [newMedName, setNewMedName] = useState('');
-      const [selectedColor, setSelectedColor] = useState('blue'); // Uusi state värille
+      const [selectedColor, setSelectedColor] = useState('blue');
+      const [selectedSchedule, setSelectedSchedule] = useState([]); // Uusi state aikataululle (array of ids)
+      
       const [isAdding, setIsAdding] = useState(false);
       const [editingMed, setEditingMed] = useState(null);
       
@@ -219,9 +230,7 @@
       const getSmartColor = () => {
         const activeMeds = medications.filter(m => !m.isArchived);
         const usedColors = new Set(activeMeds.map(m => m.colorKey));
-        // Etsi ensimmäinen väri listalta, jota ei ole käytetty
         const freeColor = colorList.find(c => !usedColors.has(c));
-        // Jos kaikki käytössä, arvotaan tai otetaan järjestyksessä
         return freeColor || colorList[medications.length % colorList.length];
       };
 
@@ -231,8 +240,25 @@
 
       const openAddModal = () => {
         setNewMedName('');
-        setSelectedColor(getSmartColor()); // Valitse älykäs oletusväri
+        setSelectedColor(getSmartColor());
+        setSelectedSchedule([]); // Oletuksena ei aikataulua (tarvittaessa)
         setIsAdding(true);
+      };
+
+      // Toggle schedule selection in Add/Edit modal
+      const toggleScheduleSlot = (slotId, isEdit = false) => {
+        if (isEdit) {
+          const current = editingMed.schedule || [];
+          const newSchedule = current.includes(slotId) 
+            ? current.filter(id => id !== slotId) 
+            : [...current, slotId];
+          setEditingMed({...editingMed, schedule: newSchedule});
+        } else {
+          const newSchedule = selectedSchedule.includes(slotId)
+            ? selectedSchedule.filter(id => id !== slotId)
+            : [...selectedSchedule, slotId];
+          setSelectedSchedule(newSchedule);
+        }
       };
 
       const handleAddMedication = async (e) => {
@@ -241,7 +267,8 @@
         try {
           await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'medications'), {
             name: newMedName.trim(), 
-            colorKey: selectedColor, // Käytä valittua väriä
+            colorKey: selectedColor,
+            schedule: selectedSchedule, // Tallenna valitut ajat (esim. ['aamu', 'ilta'])
             createdAt: Date.now(), 
             isArchived: false
           });
@@ -256,19 +283,22 @@
           const medRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', editingMed.id);
           await updateDoc(medRef, { 
             name: editingMed.name.trim(),
-            colorKey: editingMed.colorKey // Päivitä myös väri jos muutettu
+            colorKey: editingMed.colorKey,
+            schedule: editingMed.schedule || []
           });
           setEditingMed(null);
         } catch (error) { alert("Virhe muokkauksessa."); }
       };
 
-      const takeMedicine = async (med) => {
+      // Ota lääke (joko yleinen tai tiettyyn aikaan sidottu)
+      const takeMedicine = async (med, slotId = null) => {
         if (!user) return;
         try {
           await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
             medId: med.id, 
             medName: med.name,
             medColor: med.colorKey,
+            slot: slotId, // Tallennetaan mikä "lokero" otettiin (esim. 'aamu')
             timestamp: new Date().toISOString()
           });
         } catch (error) { console.error(error); }
@@ -282,6 +312,7 @@
             medId: manualLogMed.id,
             medName: manualLogMed.name,
             medColor: manualLogMed.colorKey,
+            slot: null, // Manuaalinen on yleensä geneerinen, ellei tehdä valintaa
             timestamp: new Date(manualDate).toISOString()
           });
           setManualLogMed(null); setManualDate('');
@@ -372,15 +403,27 @@
           return `${d.getDate()}.${d.getMonth()+1}.`;
         } catch(e) { return ''; }
       };
+      
       const getLastTaken = (medId) => {
         const l = logs.filter(x => x.medId === medId);
         return l.length ? l.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp))[0] : null;
       };
+
       const getLast7Days = () => Array.from({length:7}, (_, i) => { const d = new Date(); d.setDate(d.getDate() - i); return d; });
       const getLogsForDate = (dateObj) => logs.filter(l => new Date(l.timestamp).toDateString() === dateObj.toDateString()).sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
       const getCurrentDateTimeLocal = () => {
         const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         return now.toISOString().slice(0, 16);
+      };
+
+      // Tarkista onko tietty "lokero" otettu tänään (esim. aamu)
+      const isSlotTakenToday = (medId, slotId) => {
+        const today = new Date().toDateString();
+        return logs.some(l => 
+          l.medId === medId && 
+          l.slot === slotId && 
+          new Date(l.timestamp).toDateString() === today
+        );
       };
 
       // Datan valmistelu
@@ -435,6 +478,8 @@
                   {activeMeds.map(med => {
                     const lastLog = getLastTaken(med.id);
                     const c = getColors(med.colorKey || 'blue');
+                    const hasSchedule = med.schedule && med.schedule.length > 0;
+
                     return (
                       <div key={med.id} className={`rounded-xl p-4 shadow-sm border ${c.bg} ${c.border} relative group`}>
                         <div className="flex justify-between items-start mb-3">
@@ -450,13 +495,38 @@
                           <div className="flex gap-1">
                             <button onClick={() => { setManualLogMed(med); setManualDate(getCurrentDateTimeLocal()); }} className="p-2 bg-white/60 rounded-lg hover:text-blue-600 hover:bg-white" title="Lisää manuaalisesti"><CalendarPlus size={18}/></button>
                             <button onClick={() => setShowHistoryFor(med.id)} className="p-2 bg-white/60 rounded-lg hover:text-blue-600 hover:bg-white" title="Historia"><History size={18}/></button>
-                            <button onClick={() => toggleArchive(med)} className="p-2 bg-white/60 rounded-lg hover:text-orange-500 hover:bg-white" title="Arkistoi (piilota)"><Archive size={18}/></button>
+                            <button onClick={() => toggleArchive(med)} className="p-2 bg-white/60 rounded-lg hover:text-orange-500 hover:bg-white" title="Arkistoi"><Archive size={18}/></button>
                             <button onClick={() => requestDelete(med)} className="p-2 bg-white/60 rounded-lg hover:text-red-500 hover:bg-white" title="Poista"><Trash2 size={18}/></button>
                           </div>
                         </div>
-                        <button onClick={() => takeMedicine(med)} className={`w-full py-3 rounded-lg font-bold text-white shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform ${c.btn}`}>
-                          <CheckCircle size={20} /> OTA NYT
-                        </button>
+
+                        {/* JOKO AIKATAULU TAI NORMAALI NAPPI */}
+                        {hasSchedule ? (
+                          <div className="grid grid-cols-4 gap-2 mt-2">
+                            {TIME_SLOTS.filter(slot => med.schedule.includes(slot.id)).map(slot => {
+                              const isTaken = isSlotTakenToday(med.id, slot.id);
+                              return (
+                                <button 
+                                  key={slot.id}
+                                  onClick={() => takeMedicine(med, slot.id)}
+                                  disabled={isTaken}
+                                  className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${
+                                    isTaken 
+                                      ? 'bg-green-100 border-green-200 text-green-700' 
+                                      : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-600 active:scale-95'
+                                  }`}
+                                >
+                                  {isTaken ? <Check size={20} strokeWidth={3} /> : <slot.icon size={20} />}
+                                  <span className="text-[10px] font-bold mt-1 uppercase">{slot.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <button onClick={() => takeMedicine(med)} className={`w-full py-3 rounded-lg font-bold text-white shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform ${c.btn}`}>
+                            <CheckCircle size={20} /> OTA NYT
+                          </button>
+                        )}
                       </div>
                     );
                   })}
@@ -557,10 +627,11 @@
           {/* 1. LISÄÄ LÄÄKE */}
           {isAdding && (
             <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
-              <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
+              <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[90vh] overflow-y-auto">
                 <h2 className="text-lg font-bold mb-4">Lisää lääke</h2>
                 <form onSubmit={handleAddMedication}>
                   {/* VÄRIVALINTA */}
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Valitse väri</label>
                   <div className="flex flex-wrap gap-3 justify-center mb-6">
                     {colorList.map(c => {
                       const colors = getColors(c);
@@ -578,7 +649,27 @@
                     })}
                   </div>
 
-                  <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-4 outline-none border focus:border-blue-500" placeholder="Lääkkeen nimi" value={newMedName} onChange={e => setNewMedName(e.target.value)} />
+                  <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" placeholder="Lääkkeen nimi" value={newMedName} onChange={e => setNewMedName(e.target.value)} />
+                  
+                  {/* AIKATAULU */}
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Otettava (valinnainen)</label>
+                  <div className="grid grid-cols-4 gap-2 mb-6">
+                    {TIME_SLOTS.map(slot => {
+                      const isSelected = selectedSchedule.includes(slot.id);
+                      return (
+                        <button
+                          key={slot.id}
+                          type="button"
+                          onClick={() => toggleScheduleSlot(slot.id)}
+                          className={`p-2 rounded-lg border text-center transition-all flex flex-col items-center gap-1 ${isSelected ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-slate-200 text-slate-500'}`}
+                        >
+                          <slot.icon size={20} />
+                          <span className="text-[10px] font-bold uppercase">{slot.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
                   <div className="flex gap-3">
                     <button type="button" onClick={() => setIsAdding(false)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
                     <button type="submit" disabled={!newMedName.trim()} className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm disabled:opacity-50">Tallenna</button>
@@ -592,10 +683,11 @@
           {/* 2. MUOKKAA LÄÄKETTÄ */}
           {editingMed && (
             <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
-              <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
+              <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[90vh] overflow-y-auto">
                 <h2 className="text-lg font-bold mb-4">Muokkaa</h2>
                 <form onSubmit={handleUpdateMedication}>
                   {/* VÄRIVALINTA MUOKKAUS */}
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Väri</label>
                   <div className="flex flex-wrap gap-3 justify-center mb-6">
                     {colorList.map(c => {
                       const colors = getColors(c);
@@ -613,7 +705,28 @@
                     })}
                   </div>
 
-                  <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-4 outline-none border focus:border-blue-500" value={editingMed.name} onChange={e => setEditingMed({...editingMed, name: e.target.value})} />
+                  <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" value={editingMed.name} onChange={e => setEditingMed({...editingMed, name: e.target.value})} />
+                  
+                  {/* AIKATAULU MUOKKAUS */}
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Otettava</label>
+                  <div className="grid grid-cols-4 gap-2 mb-6">
+                    {TIME_SLOTS.map(slot => {
+                      const current = editingMed.schedule || [];
+                      const isSelected = current.includes(slot.id);
+                      return (
+                        <button
+                          key={slot.id}
+                          type="button"
+                          onClick={() => toggleScheduleSlot(slot.id, true)}
+                          className={`p-2 rounded-lg border text-center transition-all flex flex-col items-center gap-1 ${isSelected ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-slate-200 text-slate-500'}`}
+                        >
+                          <slot.icon size={20} />
+                          <span className="text-[10px] font-bold uppercase">{slot.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
                   <div className="flex gap-3">
                     <button type="button" onClick={() => setEditingMed(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
                     <button type="submit" disabled={!editingMed.name.trim()} className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm disabled:opacity-50">Tallenna</button>
@@ -658,7 +771,7 @@
                     <button type="button" onClick={() => setEditingLog(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
                     <button type="submit" className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-md">Tallenna</button>
                   </div>
-                  <button type="button" onClick={handleDeleteFromEdit} className="w-full py-3 bg-red-50 text-red-500 rounded-xl font-bold text-sm flex items-center justify-center gap-2"><Trash2 size={16}/> Poista merkintä</button>
+                  <button type="button" onClick={handleDeleteSingleLog} className="w-full py-3 bg-red-50 text-red-500 rounded-xl font-bold text-sm flex items-center justify-center gap-2"><Trash2 size={16}/> Poista merkintä</button>
                 </form>
                 <div className="h-6"></div>
               </div>
