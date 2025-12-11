@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Lääkemuistio</title>
   
+  <!-- --- SOVELLUSKUVAKKEET (FAVICON & ALOITUSNÄYTTÖ) --- -->
+  <link rel="icon" type="image/png" href="https://img.geocaching.com:443/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png">
+  <link rel="apple-touch-icon" href="https://img.geocaching.com:443/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png">
+  
   <!-- Tyylit (Tailwind CSS) -->
   <script src="https://cdn.tailwindcss.com"></script>
   
@@ -106,7 +110,7 @@
 
       return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative overflow-hidden">
-          {/* TAUSTAKUVA VESILEIMA (Login) - Nostettu näkyvyyttä (opacity-15) */}
+          {/* TAUSTAKUVA VESILEIMA (Login) */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
              <img src="https://img.geocaching.com:443/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" alt="" className="w-3/4 opacity-[0.15] grayscale" />
           </div>
@@ -185,6 +189,7 @@
 
         const unsubMeds = onSnapshot(medsRef, (snapshot) => {
           const medsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          // Lajitellaan luomisajan mukaan
           medsData.sort((a, b) => a.createdAt - b.createdAt);
           setMedications(medsData);
           setLoadingData(false);
@@ -201,7 +206,7 @@
       // State UI
       const [newMedName, setNewMedName] = useState('');
       const [selectedColor, setSelectedColor] = useState('blue');
-      const [selectedSchedule, setSelectedSchedule] = useState([]); 
+      const [selectedSchedule, setSelectedSchedule] = useState([]); // Uusi state aikataululle (array of ids)
       
       const [isAdding, setIsAdding] = useState(false);
       const [editingMed, setEditingMed] = useState(null);
@@ -216,7 +221,7 @@
       const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, medId: null, medName: '' });
       const [showArchived, setShowArchived] = useState(false);
 
-      // Värit
+      // Värit - Voimakkaammat sävyt
       const colorList = ['blue', 'green', 'purple', 'orange', 'rose', 'cyan', 'amber'];
       const colorMap = {
         'blue':   { bg: 'bg-blue-100',   border: 'border-blue-300',   dot: 'bg-blue-600',   text: 'text-blue-800',   btn: 'bg-blue-600 active:bg-blue-700' },
@@ -229,6 +234,8 @@
       };
       
       const getColors = (key) => colorMap[key] || colorMap['blue'];
+      
+      // Etsii värin jota ei ole vielä käytössä aktiivisissa lääkkeissä
       const getSmartColor = () => {
         const activeMeds = medications.filter(m => !m.isArchived);
         const usedColors = new Set(activeMeds.map(m => m.colorKey));
@@ -237,22 +244,28 @@
       };
 
       // --- TOIMINNOT ---
+
       const handleLogout = () => { if(window.confirm("Kirjaudutaanko ulos?")) signOut(auth); };
 
       const openAddModal = () => {
         setNewMedName('');
         setSelectedColor(getSmartColor());
-        setSelectedSchedule([]);
+        setSelectedSchedule([]); // Oletuksena ei aikataulua (tarvittaessa)
         setIsAdding(true);
       };
 
+      // Toggle schedule selection in Add/Edit modal
       const toggleScheduleSlot = (slotId, isEdit = false) => {
         if (isEdit) {
           const current = editingMed.schedule || [];
-          const newSchedule = current.includes(slotId) ? current.filter(id => id !== slotId) : [...current, slotId];
+          const newSchedule = current.includes(slotId) 
+            ? current.filter(id => id !== slotId) 
+            : [...current, slotId];
           setEditingMed({...editingMed, schedule: newSchedule});
         } else {
-          const newSchedule = selectedSchedule.includes(slotId) ? selectedSchedule.filter(id => id !== slotId) : [...selectedSchedule, slotId];
+          const newSchedule = selectedSchedule.includes(slotId)
+            ? selectedSchedule.filter(id => id !== slotId)
+            : [...selectedSchedule, slotId];
           setSelectedSchedule(newSchedule);
         }
       };
@@ -262,7 +275,11 @@
         if (!newMedName.trim() || !user) return;
         try {
           await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'medications'), {
-            name: newMedName.trim(), colorKey: selectedColor, schedule: selectedSchedule, createdAt: Date.now(), isArchived: false
+            name: newMedName.trim(), 
+            colorKey: selectedColor,
+            schedule: selectedSchedule, // Tallenna valitut ajat (esim. ['aamu', 'ilta'])
+            createdAt: Date.now(), 
+            isArchived: false
           });
           setNewMedName(''); setIsAdding(false);
         } catch (error) { alert("Virhe lisäyksessä."); }
@@ -273,16 +290,25 @@
         if (!editingMed || !editingMed.name.trim() || !user) return;
         try {
           const medRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', editingMed.id);
-          await updateDoc(medRef, { name: editingMed.name.trim(), colorKey: editingMed.colorKey, schedule: editingMed.schedule || [] });
+          await updateDoc(medRef, { 
+            name: editingMed.name.trim(),
+            colorKey: editingMed.colorKey,
+            schedule: editingMed.schedule || []
+          });
           setEditingMed(null);
         } catch (error) { alert("Virhe muokkauksessa."); }
       };
 
+      // Ota lääke (joko yleinen tai tiettyyn aikaan sidottu)
       const takeMedicine = async (med, slotId = null) => {
         if (!user) return;
         try {
           await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
-            medId: med.id, medName: med.name, medColor: med.colorKey, slot: slotId, timestamp: new Date().toISOString()
+            medId: med.id, 
+            medName: med.name,
+            medColor: med.colorKey,
+            slot: slotId, // Tallennetaan mikä "lokero" otettiin (esim. 'aamu')
+            timestamp: new Date().toISOString()
           });
         } catch (error) { console.error(error); }
       };
@@ -292,12 +318,17 @@
         if (!manualLogMed || !manualDate || !user) return;
         try {
           await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
-            medId: manualLogMed.id, medName: manualLogMed.name, medColor: manualLogMed.colorKey, slot: null, timestamp: new Date(manualDate).toISOString()
+            medId: manualLogMed.id,
+            medName: manualLogMed.name,
+            medColor: manualLogMed.colorKey,
+            slot: null, // Manuaalinen on yleensä geneerinen, ellei tehdä valintaa
+            timestamp: new Date(manualDate).toISOString()
           });
           setManualLogMed(null); setManualDate('');
         } catch (error) { alert("Virhe lisäyksessä."); }
       };
 
+      // ARKISTOINTI
       const toggleArchive = async (med) => {
         if(!user) return;
         try {
@@ -306,6 +337,7 @@
         } catch (e) { alert("Virhe arkistoinnissa"); }
       };
 
+      // POISTO
       const requestDelete = (med) => {
         const hasHistory = logs.some(l => l.medId === med.id);
         if (hasHistory) {
@@ -343,6 +375,7 @@
         setDeleteDialog({ isOpen: false, medId: null, medName: '' });
       };
 
+      // MERKINTÖJEN KÄSITTELY
       const openLogEdit = (log) => {
         setEditingLog(log);
         const d = new Date(log.timestamp);
@@ -387,7 +420,6 @@
 
       const getLogsForDate = (dateObj) => logs.filter(l => new Date(l.timestamp).toDateString() === dateObj.toDateString()).sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
       
-      // UUSI HISTORIALOGIIKKA: Etsii kaikki päivät joilla on lokitietoja ja palauttaa ne järjestettynä
       const getHistoryDates = () => {
         const dates = [...new Set(logs.map(log => new Date(log.timestamp).toDateString()))];
         return dates.sort((a, b) => new Date(b) - new Date(a));
@@ -423,7 +455,7 @@
       return (
         <div className="flex flex-col h-screen bg-slate-50 font-sans overflow-hidden select-none relative">
           
-          {/* TAUSTAKUVA VESILEIMA (Sovellus) - Nostettu näkyvyyttä (opacity-15) */}
+          {/* TAUSTAKUVA VESILEIMA (Sovellus) */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
              <img src="https://img.geocaching.com:443/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" alt="" className="w-3/4 max-w-lg opacity-[0.15] grayscale" />
           </div>
