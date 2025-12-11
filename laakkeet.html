@@ -32,11 +32,11 @@
   <script type="text/babel" data-type="module">
     import React, { useState, useEffect } from 'react';
     import { createRoot } from 'react-dom/client';
-    import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus } from 'lucide-react';
+    import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2 } from 'lucide-react';
     
     // --- FIREBASE IMPORTS ---
     import { initializeApp } from 'firebase/app';
-    import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
     import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot } from 'firebase/firestore';
 
     // --- ASETUKSET ---
@@ -55,26 +55,134 @@
     const db = getFirestore(app);
     const APP_ID = 'laakemuistio';
 
-    // --- SOVELLUSKOMPONENTTI ---
+    // --- KIRJAUTUMISNÄKYMÄ ---
+    const AuthScreen = () => {
+      const [isRegistering, setIsRegistering] = useState(false);
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      const [error, setError] = useState('');
+      const [loading, setLoading] = useState(false);
+
+      const handleAuth = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+        
+        try {
+          if (isRegistering) {
+            await createUserWithEmailAndPassword(auth, email, password);
+          } else {
+            await signInWithEmailAndPassword(auth, email, password);
+          }
+        } catch (err) {
+          console.error(err);
+          let msg = "Tapahtui virhe.";
+          if (err.code === 'auth/invalid-email') msg = "Virheellinen sähköposti.";
+          if (err.code === 'auth/missing-password') msg = "Syötä salasana.";
+          if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') msg = "Väärä sähköposti tai salasana.";
+          if (err.code === 'auth/weak-password') msg = "Salasanan tulee olla vähintään 6 merkkiä.";
+          if (err.code === 'auth/email-already-in-use') msg = "Sähköposti on jo käytössä.";
+          setError(msg);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      return (
+        <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
+          <div className="w-full max-w-sm bg-white p-8 rounded-2xl shadow-xl">
+            <div className="flex justify-center mb-6">
+              <div className="bg-blue-50 p-4 rounded-full">
+                <Pill size={40} className="text-blue-600" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-center text-slate-800 mb-2">
+              {isRegistering ? 'Luo tunnus' : 'Kirjaudu sisään'}
+            </h2>
+            <p className="text-center text-slate-400 text-sm mb-8">
+              Lääkemuistio - Pidä kirjaa lääkkeistäsi
+            </p>
+
+            {error && (
+              <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 flex items-center gap-2">
+                <AlertTriangle size={16} /> {error}
+              </div>
+            )}
+
+            <form onSubmit={handleAuth} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Sähköposti</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 text-slate-400" size={18} />
+                  <input 
+                    type="email" 
+                    required
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                    placeholder="sinun@sahkoposti.fi"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Salasana</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 text-slate-400" size={18} />
+                  <input 
+                    type="password" 
+                    required
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                    placeholder="******"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={loading}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all flex justify-center items-center gap-2 disabled:opacity-70"
+              >
+                {loading && <Loader2 size={20} className="animate-spin" />}
+                {isRegistering ? 'Rekisteröidy' : 'Kirjaudu'}
+              </button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <button 
+                onClick={() => { setIsRegistering(!isRegistering); setError(''); }}
+                className="text-sm text-slate-500 hover:text-blue-600 font-medium"
+              >
+                {isRegistering ? 'Onko sinulla jo tunnus? Kirjaudu' : 'Uusi käyttäjä? Luo tunnus'}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // --- PÄÄSOVELLUS ---
     const MedicineTracker = () => {
       const [activeTab, setActiveTab] = useState('home');
       const [user, setUser] = useState(null);
-      const [loading, setLoading] = useState(true);
+      const [authLoading, setAuthLoading] = useState(true);
+      const [loadingData, setLoadingData] = useState(true);
 
       const [medications, setMedications] = useState([]);
       const [logs, setLogs] = useState([]);
 
-      // 1. Kirjautuminen
+      // 1. Auth tilan kuuntelu
       useEffect(() => {
-        const initAuth = async () => {
-          try { await signInAnonymously(auth); } 
-          catch (error) { console.error("Auth error:", error); }
-        };
-        initAuth();
-
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
           setUser(currentUser);
-          if (!currentUser) setLoading(false);
+          setAuthLoading(false);
+          if (!currentUser) {
+            setLoadingData(false);
+            setMedications([]);
+            setLogs([]);
+          }
         });
         return () => unsubscribe();
       }, []);
@@ -83,6 +191,7 @@
       useEffect(() => {
         if (!user) return;
 
+        setLoadingData(true);
         const medsRef = collection(db, 'artifacts', APP_ID, 'users', user.uid, 'medications');
         const logsRef = collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs');
 
@@ -90,8 +199,8 @@
           const medsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           medsData.sort((a, b) => a.createdAt - b.createdAt);
           setMedications(medsData);
-          setLoading(false);
-        }, (err) => { console.error(err); setLoading(false); });
+          setLoadingData(false);
+        }, (err) => { console.error(err); setLoadingData(false); });
 
         const unsubLogs = onSnapshot(logsRef, (snapshot) => {
           const logsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -104,16 +213,13 @@
       // State UI-toiminnoille
       const [newMedName, setNewMedName] = useState('');
       const [isAdding, setIsAdding] = useState(false);
-      
-      // Muokkaus ja manuaalinen lisäys
-      const [editingMed, setEditingMed] = useState(null); // Sisältää lääke-objektin jota muokataan
-      const [manualLogMed, setManualLogMed] = useState(null); // Sisältää lääkkeen jolle lisätään aika
+      const [editingMed, setEditingMed] = useState(null);
+      const [manualLogMed, setManualLogMed] = useState(null);
       const [manualDate, setManualDate] = useState('');
-      
       const [showHistoryFor, setShowHistoryFor] = useState(null);
       const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, type: null, itemId: null, title: '', message: '' });
 
-      // Värit (Laajennettu ja selkeytetty paletti)
+      // Värit
       const colorList = ['blue', 'green', 'purple', 'orange', 'rose', 'cyan', 'amber'];
       const colorMap = {
         'blue':   { bg: 'bg-blue-50',   border: 'border-blue-100',   dot: 'bg-blue-500',   text: 'text-blue-700',   btn: 'bg-blue-600 active:bg-blue-700' },
@@ -126,16 +232,15 @@
       };
       
       const getColors = (key) => colorMap[key] || colorMap['blue'];
-      
-      // Valitaan väri kiertävästi listan pituuden mukaan
-      const getNextColorKey = () => {
-        const index = medications.length % colorList.length;
-        return colorList[index];
-      };
+      const getNextColorKey = () => colorList[medications.length % colorList.length];
 
       // --- TOIMINNOT ---
+      const handleLogout = () => {
+        if(window.confirm("Kirjaudutaanko ulos?")) {
+           signOut(auth);
+        }
+      };
 
-      // LISÄÄ UUSI
       const handleAddMedication = async (e) => {
         e.preventDefault();
         if (!newMedName.trim() || !user) return;
@@ -150,7 +255,6 @@
         } catch (error) { alert("Virhe lisäyksessä."); }
       };
 
-      // MUOKKAA NIMEA
       const handleUpdateMedication = async (e) => {
         e.preventDefault();
         if (!editingMed || !editingMed.name.trim() || !user) return;
@@ -161,7 +265,6 @@
         } catch (error) { alert("Virhe muokkauksessa."); }
       };
 
-      // LISÄÄ LOKI (OTA NYT)
       const takeMedicine = async (medId) => {
         if (!user) return;
         try {
@@ -172,7 +275,6 @@
         } catch (error) { console.error(error); }
       };
 
-      // LISÄÄ LOKI (MANUAALINEN AIKA)
       const handleManualLog = async (e) => {
         e.preventDefault();
         if (!manualLogMed || !manualDate || !user) return;
@@ -186,7 +288,6 @@
         } catch (error) { alert("Virhe lisäyksessä."); }
       };
 
-      // POISTA
       const executeDelete = async () => {
         if (!user) return;
         const { type, itemId } = confirmDialog;
@@ -203,9 +304,8 @@
         setConfirmDialog({ isOpen: false, type: null, itemId: null, title: '', message: '' });
       };
 
-      // --- APUFUNKTIOT ---
+      // Apufunktiot
       const formatTime = (iso) => { try { return new Date(iso).toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' }); } catch(e) { return '--:--'; } };
-      
       const getDayLabel = (iso) => {
         try {
           const d = new Date(iso); const today = new Date();
@@ -215,16 +315,12 @@
           return `${d.getDate()}.${d.getMonth()+1}.`;
         } catch(e) { return ''; }
       };
-
       const getLastTaken = (medId) => {
         const l = logs.filter(x => x.medId === medId);
         return l.length ? l.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp))[0] : null;
       };
-
       const getLast7Days = () => Array.from({length:7}, (_, i) => { const d = new Date(); d.setDate(d.getDate() - i); return d; });
       const getLogsForDate = (dateObj) => logs.filter(l => new Date(l.timestamp).toDateString() === dateObj.toDateString()).sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
-
-      // Nykyinen aika oletuksena manuaaliseen syöttöön
       const getCurrentDateTimeLocal = () => {
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -232,7 +328,12 @@
       };
 
       // --- RENDERÖINTI ---
-      if (loading) return <div className="flex h-screen items-center justify-center text-slate-400">Yhdistetään...</div>;
+      if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-blue-600" size={40} /></div>;
+
+      // Jos ei kirjautunut, näytä kirjautumissivu
+      if (!user) {
+        return <AuthScreen />;
+      }
 
       return (
         <div className="flex flex-col h-screen bg-slate-50 font-sans overflow-hidden select-none">
@@ -243,13 +344,25 @@
               {activeTab === 'home' ? <Pill className="text-blue-600" size={20} /> : <BarChart2 className="text-blue-600" size={20} />}
               {activeTab === 'home' ? 'Lääkkeet' : 'Historia'}
             </h1>
-            {activeTab === 'home' && <span className="text-xs text-slate-400 font-medium bg-slate-100 px-2 py-1 rounded-full">{new Date().toLocaleDateString('fi-FI')}</span>}
+            <div className="flex items-center gap-2">
+              {activeTab === 'home' && <span className="text-xs text-slate-400 font-medium bg-slate-100 px-2 py-1 rounded-full">{new Date().toLocaleDateString('fi-FI')}</span>}
+              <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-full transition-colors" title="Kirjaudu ulos">
+                <LogOut size={18} />
+              </button>
+            </div>
           </header>
 
           {/* MAIN CONTENT */}
           <main className="flex-1 overflow-y-auto p-3 pb-32">
             <div className="max-w-md mx-auto space-y-3">
               
+              {loadingData ? (
+                <div className="text-center py-10 text-slate-400 flex flex-col items-center gap-2">
+                  <Loader2 className="animate-spin" />
+                  <span className="text-sm">Ladataan lääkkeitä...</span>
+                </div>
+              ) : (
+              <>
               {/* --- KOTINÄKYMÄ --- */}
               {activeTab === 'home' && (
                 <>
@@ -356,6 +469,8 @@
                     </div>
                   </div>
                 </div>
+              )}
+              </>
               )}
             </div>
           </main>
