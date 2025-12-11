@@ -100,9 +100,7 @@
         <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
           <div className="w-full max-w-sm bg-white p-8 rounded-2xl shadow-xl">
             <div className="flex justify-center mb-6">
-              <div className="bg-blue-50 p-4 rounded-full">
-                <Pill size={40} className="text-blue-600" />
-              </div>
+              <img src="https://img.geocaching.com:443/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" alt="Logo" className="h-16 w-auto object-contain" />
             </div>
             <h2 className="text-2xl font-bold text-center text-slate-800 mb-2">
               {isRegistering ? 'Luo tunnus' : 'Kirjaudu sisään'}
@@ -243,13 +241,12 @@
         } catch (error) { alert("Virhe muokkauksessa."); }
       };
 
-      // Tärkeää: Tallennetaan nyt myös lääkkeen nimi ja väri lokiin, jotta historia säilyy vaikka lääke poistettaisiin
       const takeMedicine = async (med) => {
         if (!user) return;
         try {
           await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
             medId: med.id, 
-            medName: med.name, // Tallennetaan nimi snapshotiksi
+            medName: med.name,
             medColor: med.colorKey,
             timestamp: new Date().toISOString()
           });
@@ -270,7 +267,7 @@
         } catch (error) { alert("Virhe lisäyksessä."); }
       };
 
-      // ARKISTOINTI / PALAUTUS
+      // ARKISTOINTI
       const toggleArchive = async (med) => {
         if(!user) return;
         try {
@@ -279,9 +276,8 @@
         } catch (e) { alert("Virhe arkistoinnissa"); }
       };
 
-      // POISTO-LOGIIKKA
+      // POISTO
       const requestDelete = (med) => {
-        // Tarkista onko lääkkeellä historiaa
         const hasHistory = logs.some(l => l.medId === med.id);
         if (hasHistory) {
           setDeleteDialog({ isOpen: true, medId: med.id, medName: med.name, hasHistory: true });
@@ -304,18 +300,14 @@
       const handleDeleteKeepHistory = async () => {
         if (!user || !deleteDialog.medId) return;
         try {
-          // Ennen poistoa varmistetaan, että kaikissa historiatoissa on nimi tallessa
-          // (Tämä tapahtuu client-side, ei paras ratkaisu isoille massoille mutta toimii tässä)
           const logsToUpdate = logs.filter(l => l.medId === deleteDialog.medId && !l.medName);
           const med = medications.find(m => m.id === deleteDialog.medId);
-          
           if (med && logsToUpdate.length > 0) {
              logsToUpdate.forEach(log => {
                const logRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'logs', log.id);
                updateDoc(logRef, { medName: med.name, medColor: med.colorKey });
              });
           }
-
           await deleteDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', deleteDialog.medId));
           if (showHistoryFor === deleteDialog.medId) setShowHistoryFor(null);
         } catch (e) { alert("Poisto epäonnistui"); }
@@ -374,7 +366,6 @@
       const activeMeds = medications.filter(m => !m.isArchived);
       const archivedMeds = medications.filter(m => m.isArchived);
 
-      // Hae lääkkeen nimi lokia varten (joko nykyisistä lääkkeistä tai lokin omasta tallenteesta)
       const getLogName = (log) => {
         const med = medications.find(m => m.id === log.medId);
         return med ? med.name : (log.medName || 'Poistettu lääke');
@@ -392,10 +383,13 @@
         <div className="flex flex-col h-screen bg-slate-50 font-sans overflow-hidden select-none">
           
           <header className="flex-none bg-white border-b border-slate-200 px-4 py-3 flex justify-between items-center z-10 shadow-sm">
-            <h1 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              {activeTab === 'home' ? <Pill className="text-blue-600" size={20} /> : <BarChart2 className="text-blue-600" size={20} />}
-              {activeTab === 'home' ? 'Lääkkeet' : 'Historia'}
-            </h1>
+            <div className="flex items-center gap-3">
+              <img src="https://img.geocaching.com:443/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" alt="Logo" className="h-8 w-auto object-contain" />
+              <h1 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                {activeTab === 'home' ? <Pill className="text-blue-600" size={20} /> : <BarChart2 className="text-blue-600" size={20} />}
+                {activeTab === 'home' ? 'Lääkkeet' : 'Historia'}
+              </h1>
+            </div>
             <div className="flex items-center gap-2">
               {activeTab === 'home' && <span className="text-xs text-slate-400 font-medium bg-slate-100 px-2 py-1 rounded-full">{new Date().toLocaleDateString('fi-FI')}</span>}
               <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-full transition-colors"><LogOut size={18}/></button>
