@@ -113,17 +113,64 @@
               </h3>
               <div className="space-y-4 text-sm text-slate-600">
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                  <p className="mb-2"><strong className="text-slate-800">Lääkkeen lisääminen:</strong> Paina oikean alakulman sinistä <strong>+</strong> painiketta.</p>
+                  <p className="mb-2"><strong className="text-slate-800">Lääkkeen lisääminen:</strong> Paina oikean alakulman sinistä <strong>+</strong> painiketta. Voit antaa lääkkeelle nimen, annostuksen (esim. "1 tabl"), värin ja halutessasi aikataulun.</p>
                 </div>
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                  <p className="mb-2"><strong className="text-slate-800">Kortin toiminnot (klikkaa lääkettä avataksesi):</strong></p>
-                  <p>Lääkkeet ovat listassa kompaktisti. Klikkaa lääkkeen nimeä, niin näet "OTA NYT" -napin ja muut toiminnot.</p>
+                  <p className="mb-2"><strong className="text-slate-800">Lääkkeen ottaminen:</strong></p>
+                  <ul className="list-disc list-inside space-y-1 ml-1">
+                    <li>Jos lääkkeellä ei ole aikataulua: Avaa lääkkeen kortti ja paina isoa punaista/värikästä <strong>OTA NYT</strong> -nappia.</li>
+                    <li>Jos lääkkeellä on aikataulu (esim. Aamu/Ilta): Paina vastaavaa kuvaketta (esim. <Sun size={12} className="inline"/>). Se muuttuu vihreäksi <Check size={12} className="inline text-green-600"/>, kun lääke on merkitty otetuksi tälle päivälle.</li>
+                  </ul>
+                </div>
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                  <p className="mb-2"><strong className="text-slate-800">Kortin toiminnot (avaa klikkaamalla):</strong></p>
+                  <div className="grid grid-cols-1 gap-3">
+                    <div className="flex items-center gap-3"><CalendarPlus size={18} className="text-blue-600"/> <span><strong>Manuaalinen lisäys:</strong> Jos unohdit merkitä lääkkeen ajoissa, tästä voit lisätä sen menneisyyteen.</span></div>
+                    <div className="flex items-center gap-3"><History size={18} className="text-blue-600"/> <span><strong>Historia:</strong> Näyttää listan tämän kyseisen lääkkeen ottokerroista.</span></div>
+                    <div className="flex items-center gap-3"><Pencil size={18} className="text-blue-600"/> <span><strong>Muokkaa:</strong> Muuta nimeä, väriä, annostusta tai aikataulua.</span></div>
+                    <div className="flex items-center gap-3"><Archive size={18} className="text-orange-500"/> <span><strong>Arkistoi:</strong> Piilottaa lääkkeen listalta poistamatta sitä kokonaan (esim. kuurin päätyttyä). Löydät sen sivun alareunasta.</span></div>
+                    <div className="flex items-center gap-3"><Trash2 size={18} className="text-red-500"/> <span><strong>Poista:</strong> Poistaa lääkkeen. Voit valita poistetaanko myös historia vai säilytetäänkö se.</span></div>
+                  </div>
                 </div>
               </div>
             </section>
 
+            <section>
+              <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
+                <Zap className="text-orange-500" /> Pikalisäys
+              </h3>
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-sm text-slate-600">
+                <p>Oikeassa alakulmassa oleva oranssi <strong>Salama</strong>-painike on tarkoitettu satunnaisille lääkkeille (esim. päänsärkylääke), joille et halua luoda pysyvää korttia. Kirjoita vain nimi ja se tallentuu historiaan.</p>
+              </div>
+            </section>
+
+             <section>
+              <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
+                <BarChart2 className="text-blue-500" /> Historia & Muokkaus
+              </h3>
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-sm text-slate-600">
+                <p className="mb-2"><strong>Historia-välilehti</strong> näyttää kaikki tapahtumat aikajärjestyksessä.</p>
+                <p><strong>Virheen korjaus:</strong> Jos painoit nappia vahingossa tai väärään aikaan, klikkaa merkintää historiassa. Avautuvasta ikkunasta voit:</p>
+                <ul className="list-disc list-inside ml-2 mt-1">
+                  <li>Muuttaa kellonaikaa ja päivämäärää.</li>
+                  <li>Poistaa yksittäisen merkinnän (Roskakori).</li>
+                </ul>
+              </div>
+            </section>
+
+            <section>
+              <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
+                <Bell className="text-blue-500" /> Muut toiminnot
+              </h3>
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-sm text-slate-600 space-y-3">
+                <div className="flex items-start gap-3"><ArrowUpDown size={18} className="text-slate-500 mt-1"/> <span><strong>Järjestä:</strong> Yläpalkin nuoli-ikonista voit muuttaa lääkkeiden järjestystä listalla.</span></div>
+                <div className="flex items-start gap-3"><Bell size={18} className="text-slate-500 mt-1"/> <span><strong>Muistutukset:</strong> Yläpalkin kello-ikoni pyytää luvan lähettää ilmoituksia, kun lääkkeenottoaika koittaa.</span></div>
+                <div className="flex items-start gap-3"><LogOut size={18} className="text-slate-500 mt-1"/> <span><strong>Kirjaudu ulos:</strong> Kirjautuu ulos tililtäsi. Tiedot pysyvät tallessa pilvessä.</span></div>
+              </div>
+            </section>
+
             <div className="text-center text-xs text-slate-400 pt-4">
-              Lääkemuistio v1.4
+              Lääkemuistio v1.5
             </div>
 
           </div>
@@ -689,6 +736,9 @@
             <div className="flex justify-between items-center mb-3">
               <div className="flex items-center gap-3">
                 <img src="https://img.geocaching.com:443/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" alt="Logo" className="h-8 w-auto object-contain" />
+                <h1 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  Lääkemuistio
+                </h1>
               </div>
               <div className="flex items-center gap-1">
                 {activeTab === 'home' && (
