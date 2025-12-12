@@ -36,7 +36,7 @@
   <script type="text/babel" data-type="module">
     import React, { useState, useEffect, useRef } from 'react';
     import { createRoot } from 'react-dom/client';
-    import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff } from 'lucide-react';
+    import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
     
     // --- FIREBASE IMPORTS ---
     import { initializeApp } from 'firebase/app';
@@ -165,6 +165,7 @@
       const [logs, setLogs] = useState([]);
       
       const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+      const [isReordering, setIsReordering] = useState(false);
 
       // Auth Listener
       useEffect(() => {
@@ -189,7 +190,14 @@
 
         const unsubMeds = onSnapshot(medsRef, (snapshot) => {
           const medsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          medsData.sort((a, b) => a.createdAt - b.createdAt);
+          
+          // Lajitellaan order-kentän mukaan, jos se on olemassa. Muuten luomisajan mukaan.
+          medsData.sort((a, b) => {
+            const orderA = a.order !== undefined ? a.order : a.createdAt;
+            const orderB = b.order !== undefined ? b.order : b.createdAt;
+            return orderA - orderB;
+          });
+          
           setMedications(medsData);
           setLoadingData(false);
         }, (err) => { console.error(err); setLoadingData(false); });
@@ -217,13 +225,11 @@
         Notification.requestPermission().then((permission) => {
           if (permission === "granted") {
             setNotificationsEnabled(true);
-            // Testi-ilmoitus
             new Notification("Lääkemuistio", { body: "Muistutukset käytössä!" });
           }
         });
       };
 
-      // Kello joka tarkistaa minuutin välein onko aika ottaa lääke
       useEffect(() => {
         if (!notificationsEnabled || medications.length === 0) return;
 
@@ -281,19 +287,18 @@
 
       const [showHistoryFor, setShowHistoryFor] = useState(null);
       
-      // Päivitetty dialogi tila tukemaan myös lokin poistoa
       const [deleteDialog, setDeleteDialog] = useState({ 
         isOpen: false, 
-        mode: null, // 'med' or 'log'
+        mode: null, 
         medId: null, 
         medName: '', 
-        logId: null, // Yksittäiselle lokille
+        logId: null, 
         hasHistory: false
       });
       const [showArchived, setShowArchived] = useState(false);
 
-      // Värit
-      const colorList = ['blue', 'green', 'purple', 'orange', 'rose', 'cyan', 'amber'];
+      // Värit - LAAJENNETTU VALIKOIMA
+      const colorList = ['blue', 'green', 'purple', 'orange', 'rose', 'cyan', 'amber', 'teal', 'indigo', 'lime', 'fuchsia', 'slate'];
       const colorMap = {
         'blue':   { bg: 'bg-blue-100',   border: 'border-blue-300',   dot: 'bg-blue-600',   text: 'text-blue-800',   btn: 'bg-blue-600 active:bg-blue-700' },
         'green':  { bg: 'bg-green-100',  border: 'border-green-300',  dot: 'bg-green-600',  text: 'text-green-800',  btn: 'bg-green-600 active:bg-green-700' },
@@ -301,7 +306,12 @@
         'orange': { bg: 'bg-orange-100', border: 'border-orange-300', dot: 'bg-orange-500', text: 'text-orange-800', btn: 'bg-orange-500 active:bg-orange-600' },
         'rose':   { bg: 'bg-red-100',    border: 'border-red-300',    dot: 'bg-red-600',    text: 'text-red-800',    btn: 'bg-red-600 active:bg-red-700' },
         'cyan':   { bg: 'bg-cyan-100',   border: 'border-cyan-300',   dot: 'bg-cyan-600',   text: 'text-cyan-800',   btn: 'bg-cyan-600 active:bg-cyan-700' },
-        'amber':  { bg: 'bg-yellow-100', border: 'border-yellow-300', dot: 'bg-yellow-500', text: 'text-yellow-800', btn: 'bg-yellow-500 active:bg-yellow-600' },
+        'amber':  { bg: 'bg-amber-100',  border: 'border-amber-300',  dot: 'bg-amber-500',  text: 'text-amber-800',  btn: 'bg-amber-500 active:bg-amber-600' },
+        'teal':   { bg: 'bg-teal-100',   border: 'border-teal-300',   dot: 'bg-teal-600',   text: 'text-teal-800',   btn: 'bg-teal-600 active:bg-teal-700' },
+        'indigo': { bg: 'bg-indigo-100', border: 'border-indigo-300', dot: 'bg-indigo-600', text: 'text-indigo-800', btn: 'bg-indigo-600 active:bg-indigo-700' },
+        'lime':   { bg: 'bg-lime-100',   border: 'border-lime-300',   dot: 'bg-lime-600',   text: 'text-lime-800',   btn: 'bg-lime-600 active:bg-lime-700' },
+        'fuchsia':{ bg: 'bg-fuchsia-100',border: 'border-fuchsia-300',dot: 'bg-fuchsia-600',text: 'text-fuchsia-800',btn: 'bg-fuchsia-600 active:bg-fuchsia-700' },
+        'slate':  { bg: 'bg-slate-200',  border: 'border-slate-300',  dot: 'bg-slate-600',  text: 'text-slate-800',  btn: 'bg-slate-600 active:bg-slate-700' },
       };
       
       const getColors = (key) => colorMap[key] || colorMap['blue'];
@@ -327,7 +337,6 @@
         if (isEdit) {
           const current = editingMed.schedule || [];
           const newSchedule = current.includes(slotId) ? current.filter(id => id !== slotId) : [...current, slotId];
-          
           let newTimes = { ...(editingMed.scheduleTimes || {}) };
           if (!current.includes(slotId)) {
              newTimes[slotId] = TIME_SLOTS.find(s => s.id === slotId).defaultTime;
@@ -359,13 +368,15 @@
         e.preventDefault();
         if (!newMedName.trim() || !user) return;
         try {
+          const maxOrder = medications.reduce((max, m) => Math.max(max, m.order || 0), 0);
           await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'medications'), {
             name: newMedName.trim(), 
-            dosage: newMedDosage.trim(), // Annostus
+            dosage: newMedDosage.trim(), 
             colorKey: selectedColor, 
             schedule: selectedSchedule, 
             scheduleTimes: scheduleTimes,
-            createdAt: Date.now(), 
+            createdAt: Date.now(),
+            order: maxOrder + 1, // Asetetaan järjestysnumeroksi seuraava vapaa
             isArchived: false
           });
           setNewMedName(''); setNewMedDosage(''); setIsAdding(false);
@@ -386,6 +397,32 @@
           });
           setEditingMed(null);
         } catch (error) { alert("Virhe muokkauksessa."); }
+      };
+
+      // JÄRJESTYKSEN VAIHTO
+      const moveMedication = async (index, direction) => {
+        if (!user) return;
+        const activeMeds = medications.filter(m => !m.isArchived); // Järjestetään vain aktiivisia
+        
+        if (index + direction < 0 || index + direction >= activeMeds.length) return;
+
+        const currentMed = activeMeds[index];
+        const swapMed = activeMeds[index + direction];
+
+        // Vaihdetaan järjestysnumerot. Jos numeroita ei ole, käytetään luomisaikaa fallbackina.
+        let order1 = currentMed.order ?? currentMed.createdAt;
+        let order2 = swapMed.order ?? swapMed.createdAt;
+
+        // Varmistetaan että arvot ovat eri, jotta vaihto toimii
+        if (order1 === order2) order2 = order1 + 1;
+
+        try {
+          const medRef1 = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', currentMed.id);
+          const medRef2 = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', swapMed.id);
+          
+          await updateDoc(medRef1, { order: order2 });
+          await updateDoc(medRef2, { order: order1 });
+        } catch (e) { console.error("Järjestäminen epäonnistui", e); }
       };
 
       // PIKALISÄYS
@@ -473,7 +510,6 @@
         setDeleteDialog({ isOpen: false, mode: null, medId: null, medName: '', hasHistory: false });
       };
 
-      // MERKINTÖJEN KÄSITTELY
       const openLogEdit = (log) => {
         setEditingLog(log);
         const d = new Date(log.timestamp);
@@ -491,13 +527,10 @@
         } catch (error) { alert("Virhe tallennuksessa."); }
       };
 
-      // Pyydä poistovahvistus yksittäiselle lokille
       const requestDeleteLog = () => {
          if(!editingLog) return;
-         // Sulje muokkausikkuna
          const logId = editingLog.id;
          setEditingLog(null);
-         // Avaa poistovarmistus
          setDeleteDialog({
            isOpen: true,
            mode: 'log',
@@ -507,7 +540,6 @@
          });
       };
 
-      // Suorita yksittäisen lokin poisto
       const handleDeleteSingleLog = async () => {
          if(!user || !deleteDialog.logId) return;
          try {
@@ -581,13 +613,22 @@
             </div>
             <div className="flex items-center gap-1">
               {activeTab === 'home' && (
-                <button 
-                  onClick={requestNotificationPermission} 
-                  className={`p-2 rounded-full transition-colors ${notificationsEnabled ? 'text-blue-500' : 'text-slate-400 hover:text-slate-600'}`}
-                  title={notificationsEnabled ? "Ilmoitukset päällä" : "Ota ilmoitukset käyttöön"}
-                >
-                  {notificationsEnabled ? <Bell size={18} /> : <BellOff size={18} />}
-                </button>
+                <>
+                  <button 
+                    onClick={() => setIsReordering(!isReordering)} 
+                    className={`p-2 rounded-full transition-colors ${isReordering ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                    title="Järjestä lääkkeet"
+                  >
+                    <ArrowUpDown size={18} />
+                  </button>
+                  <button 
+                    onClick={requestNotificationPermission} 
+                    className={`p-2 rounded-full transition-colors ${notificationsEnabled ? 'text-blue-500' : 'text-slate-400 hover:text-slate-600'}`}
+                    title={notificationsEnabled ? "Ilmoitukset päällä" : "Ota ilmoitukset käyttöön"}
+                  >
+                    {notificationsEnabled ? <Bell size={18} /> : <BellOff size={18} />}
+                  </button>
+                </>
               )}
               <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-full transition-colors"><LogOut size={18}/></button>
             </div>
@@ -608,14 +649,35 @@
                       <button onClick={openAddModal} className="bg-blue-600 text-white px-5 py-2.5 rounded-full font-bold shadow-lg text-sm active:scale-95 transition-transform">Lisää ensimmäinen</button>
                     </div>
                   )}
-                  {activeMeds.map(med => {
+                  {activeMeds.map((med, index) => {
                     const lastLog = getLastTaken(med.id);
                     const c = getColors(med.colorKey || 'blue');
                     const hasSchedule = med.schedule && med.schedule.length > 0;
 
                     return (
-                      <div key={med.id} className={`rounded-xl p-4 shadow-sm border ${c.bg} ${c.border} relative group`}>
-                        <div className="flex justify-between items-start mb-3">
+                      <div key={med.id} className={`rounded-xl p-4 shadow-sm border ${c.bg} ${c.border} relative group transition-all duration-300 ${isReordering ? 'scale-[0.98]' : ''}`}>
+                        
+                        {/* JÄRJESTYSKONTROLLIT (Vain järjestystilassa) */}
+                        {isReordering && (
+                          <div className="absolute right-0 top-0 bottom-0 w-14 flex flex-col justify-center gap-2 pr-2 bg-gradient-to-l from-white/80 via-white/50 to-transparent rounded-r-xl z-20">
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); moveMedication(index, -1); }}
+                              disabled={index === 0}
+                              className="p-2 bg-white rounded-full shadow-sm text-slate-500 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed mx-auto"
+                            >
+                              <ArrowUp size={18} />
+                            </button>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); moveMedication(index, 1); }}
+                              disabled={index === activeMeds.length - 1}
+                              className="p-2 bg-white rounded-full shadow-sm text-slate-500 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed mx-auto"
+                            >
+                              <ArrowDown size={18} />
+                            </button>
+                          </div>
+                        )}
+
+                        <div className={`flex justify-between items-start mb-3 ${isReordering ? 'opacity-50' : ''}`}>
                           <div className="pr-2">
                             <div className="flex items-center gap-2">
                               <h3 className="text-lg font-bold text-slate-800 leading-tight">{med.name}</h3>
@@ -639,41 +701,43 @@
                           </div>
                         </div>
 
-                        {hasSchedule ? (
-                          <div className="grid grid-cols-4 gap-2 mt-2">
-                            {TIME_SLOTS.filter(slot => med.schedule.includes(slot.id)).map(slot => {
-                              const isTaken = isSlotTakenToday(med.id, slot.id);
-                              // Haetaan tallennettu aika tai oletus
-                              const scheduleTime = med.scheduleTimes?.[slot.id] || slot.defaultTime;
-                              return (
-                                <button 
-                                  key={slot.id}
-                                  onClick={() => takeMedicine(med, slot.id)}
-                                  disabled={isTaken}
-                                  className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${
-                                    isTaken 
-                                      ? 'bg-green-100 border-green-200 text-green-700' 
-                                      : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-600 active:scale-95'
-                                  }`}
-                                >
-                                  {isTaken ? <Check size={20} strokeWidth={3} /> : <slot.icon size={20} />}
-                                  <span className="text-[10px] font-bold mt-1 uppercase">{slot.label}</span>
-                                  {!isTaken && <span className="text-[9px] text-slate-400">{scheduleTime}</span>}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <button onClick={() => takeMedicine(med)} className={`w-full py-3 rounded-lg font-bold text-white shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform ${c.btn}`}>
-                            <CheckCircle size={20} /> OTA NYT
-                          </button>
+                        {/* JOKO AIKATAULU TAI NORMAALI NAPPI (Piilotetaan järjestäessä) */}
+                        {!isReordering && (
+                          hasSchedule ? (
+                            <div className="grid grid-cols-4 gap-2 mt-2">
+                              {TIME_SLOTS.filter(slot => med.schedule.includes(slot.id)).map(slot => {
+                                const isTaken = isSlotTakenToday(med.id, slot.id);
+                                const scheduleTime = med.scheduleTimes?.[slot.id] || slot.defaultTime;
+                                return (
+                                  <button 
+                                    key={slot.id}
+                                    onClick={() => takeMedicine(med, slot.id)}
+                                    disabled={isTaken}
+                                    className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${
+                                      isTaken 
+                                        ? 'bg-green-100 border-green-200 text-green-700' 
+                                        : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-600 active:scale-95'
+                                    }`}
+                                  >
+                                    {isTaken ? <Check size={20} strokeWidth={3} /> : <slot.icon size={20} />}
+                                    <span className="text-[10px] font-bold mt-1 uppercase">{slot.label}</span>
+                                    {!isTaken && <span className="text-[9px] text-slate-400">{scheduleTime}</span>}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <button onClick={() => takeMedicine(med)} className={`w-full py-3 rounded-lg font-bold text-white shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform ${c.btn}`}>
+                              <CheckCircle size={20} /> OTA NYT
+                            </button>
+                          )
                         )}
                       </div>
                     );
                   })}
 
                   {/* ARKISTOIDUT */}
-                  {archivedMeds.length > 0 && (
+                  {archivedMeds.length > 0 && !isReordering && (
                     <div className="mt-8">
                       <button 
                         onClick={() => setShowArchived(!showArchived)}
@@ -762,7 +826,7 @@
             </button>
           </nav>
 
-          {!isAdding && activeTab === 'home' && !showHistoryFor && !deleteDialog.isOpen && !editingMed && !manualLogMed && !editingLog && !isQuickAdding && (
+          {!isAdding && activeTab === 'home' && !showHistoryFor && !deleteDialog.isOpen && !editingMed && !manualLogMed && !editingLog && !isQuickAdding && !isReordering && (
             <div className="absolute bottom-20 right-5 z-30 flex gap-3 items-end">
               <button onClick={() => setIsQuickAdding(true)} className="bg-orange-500 text-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform" title="Pikalisäys"><Zap size={24}/></button>
               <button onClick={openAddModal} className="bg-blue-600 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform"><Plus size={32}/></button>
