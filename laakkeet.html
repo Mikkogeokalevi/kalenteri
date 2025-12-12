@@ -113,39 +113,17 @@
               </h3>
               <div className="space-y-4 text-sm text-slate-600">
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                  <p className="mb-2"><strong className="text-slate-800">Lääkkeen lisääminen:</strong> Paina oikean alakulman sinistä <strong>+</strong> painiketta. Voit antaa lääkkeelle nimen, annostuksen (esim. "1 tabl"), värin ja halutessasi aikataulun.</p>
+                  <p className="mb-2"><strong className="text-slate-800">Lääkkeen lisääminen:</strong> Paina oikean alakulman sinistä <strong>+</strong> painiketta.</p>
                 </div>
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                  <p className="mb-2"><strong className="text-slate-800">Lääkkeen ottaminen:</strong></p>
-                  <ul className="list-disc list-inside space-y-1 ml-1">
-                    <li>Jos lääkkeellä ei ole aikataulua: Avaa lääkkeen kortti ja paina isoa punaista/värikästä <strong>OTA NYT</strong> -nappia.</li>
-                    <li>Jos lääkkeellä on aikataulu (esim. Aamu/Ilta): Paina vastaavaa kuvaketta (esim. <Sun size={12} className="inline"/>). Se muuttuu vihreäksi <Check size={12} className="inline text-green-600"/>, kun lääke on merkitty otetuksi tälle päivälle.</li>
-                  </ul>
+                  <p className="mb-2"><strong className="text-slate-800">Kortin toiminnot (klikkaa lääkettä avataksesi):</strong></p>
+                  <p>Lääkkeet ovat listassa kompaktisti. Klikkaa lääkkeen nimeä, niin näet "OTA NYT" -napin ja muut toiminnot.</p>
                 </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                  <p className="mb-2"><strong className="text-slate-800">Kortin toiminnot (avaa klikkaamalla):</strong></p>
-                  <div className="grid grid-cols-1 gap-3">
-                    <div className="flex items-center gap-3"><CalendarPlus size={18} className="text-blue-600"/> <span><strong>Manuaalinen lisäys:</strong> Jos unohdit merkitä lääkkeen ajoissa, tästä voit lisätä sen menneisyyteen.</span></div>
-                    <div className="flex items-center gap-3"><History size={18} className="text-blue-600"/> <span><strong>Historia:</strong> Näyttää listan tämän kyseisen lääkkeen ottokerroista.</span></div>
-                    <div className="flex items-center gap-3"><Pencil size={18} className="text-blue-600"/> <span><strong>Muokkaa:</strong> Muuta nimeä, väriä, annostusta tai aikataulua.</span></div>
-                    <div className="flex items-center gap-3"><Archive size={18} className="text-orange-500"/> <span><strong>Arkistoi:</strong> Piilottaa lääkkeen listalta poistamatta sitä kokonaan (esim. kuurin päätyttyä). Löydät sen sivun alareunasta.</span></div>
-                    <div className="flex items-center gap-3"><Trash2 size={18} className="text-red-500"/> <span><strong>Poista:</strong> Poistaa lääkkeen. Voit valita poistetaanko myös historia vai säilytetäänkö se.</span></div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section>
-              <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
-                <Zap className="text-orange-500" /> Pikalisäys
-              </h3>
-              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-sm text-slate-600">
-                <p>Oikeassa alakulmassa oleva oranssi <strong>Salama</strong>-painike on tarkoitettu satunnaisille lääkkeille (esim. päänsärkylääke), joille et halua luoda pysyvää korttia. Kirjoita vain nimi ja se tallentuu historiaan.</p>
               </div>
             </section>
 
             <div className="text-center text-xs text-slate-400 pt-4">
-              Lääkemuistio v1.3
+              Lääkemuistio v1.4
             </div>
 
           </div>
@@ -708,13 +686,9 @@
           </div>
 
           <header className="flex-none bg-white/95 backdrop-blur-sm border-b border-slate-200 px-4 py-3 z-10 shadow-sm relative">
-            <div className="flex justify-between items-center mb-1">
+            <div className="flex justify-between items-center mb-3">
               <div className="flex items-center gap-3">
                 <img src="https://img.geocaching.com:443/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" alt="Logo" className="h-8 w-auto object-contain" />
-                <h1 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                  {activeTab === 'home' ? <Pill className="text-blue-600" size={20} /> : <BarChart2 className="text-blue-600" size={20} />}
-                  {activeTab === 'home' ? 'Lääkkeet' : 'Historia'}
-                </h1>
               </div>
               <div className="flex items-center gap-1">
                 {activeTab === 'home' && (
@@ -748,18 +722,34 @@
               </div>
             </div>
 
+            {/* TABIT YLHÄÄLLÄ (SEGMENTED CONTROL) */}
+            <div className="bg-slate-100 p-1 rounded-xl flex mb-1">
+              <button 
+                onClick={() => setActiveTab('home')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === 'home' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                <Pill size={16} /> Lääkkeet
+              </button>
+              <button 
+                onClick={() => setActiveTab('stats')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === 'stats' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                <BarChart2 size={16} /> Historia
+              </button>
+            </div>
+
             {/* PÄIVÄN EDISTYMISPALKKI */}
             {activeTab === 'home' && !isReordering && dailyProgress > 0 && (
-              <div className="mt-2 w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+              <div className="mt-2 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                 <div 
-                  className="bg-blue-500 h-2 rounded-full transition-all duration-500 ease-out" 
+                  className="bg-blue-500 h-1.5 rounded-full transition-all duration-500 ease-out" 
                   style={{width: `${dailyProgress}%`}}
                 ></div>
               </div>
             )}
           </header>
 
-          <main className="flex-1 overflow-y-auto p-3 pb-32 z-10 relative">
+          <main className="flex-1 overflow-y-auto p-3 pb-20 z-10 relative">
             <div className="max-w-md mx-auto space-y-3">
               {loadingData ? (
                 <div className="text-center py-10 text-slate-400 flex flex-col items-center gap-2"><Loader2 className="animate-spin" /><span className="text-sm">Ladataan lääkkeitä...</span></div>
@@ -1006,17 +996,8 @@
             </div>
           </main>
 
-          <nav className="flex-none bg-white border-t border-slate-200 px-6 py-2 flex justify-around items-center z-20 pb-safe">
-            <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-colors ${activeTab === 'home' ? 'text-blue-600 bg-blue-50' : 'text-slate-400'}`}>
-              <Pill size={22} strokeWidth={activeTab==='home'?2.5:2} /> <span className="text-[10px] font-bold">Lääkkeet</span>
-            </button>
-            <button onClick={() => setActiveTab('stats')} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-colors ${activeTab === 'stats' ? 'text-blue-600 bg-blue-50' : 'text-slate-400'}`}>
-              <BarChart2 size={22} strokeWidth={activeTab==='stats'?2.5:2} /> <span className="text-[10px] font-bold">Historia</span>
-            </button>
-          </nav>
-
           {!isAdding && activeTab === 'home' && !showHistoryFor && !deleteDialog.isOpen && !editingMed && !manualLogMed && !editingLog && !isQuickAdding && !isReordering && (
-            <div className="absolute bottom-20 right-5 z-30 flex gap-3 items-end">
+            <div className="absolute bottom-6 right-5 z-30 flex gap-3 items-end">
               <button onClick={() => setIsQuickAdding(true)} className="bg-orange-500 text-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform" title="Pikalisäys"><Zap size={24}/></button>
               <button onClick={openAddModal} className="bg-blue-600 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform"><Plus size={32}/></button>
             </div>
