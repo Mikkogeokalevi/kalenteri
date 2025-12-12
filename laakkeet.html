@@ -36,7 +36,7 @@
   <script type="text/babel" data-type="module">
     import React, { useState, useEffect, useRef } from 'react';
     import { createRoot } from 'react-dom/client';
-    import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Info } from 'lucide-react';
+    import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Info, Package, RefreshCw } from 'lucide-react';
     
     // --- FIREBASE IMPORTS ---
     import { initializeApp } from 'firebase/app';
@@ -94,6 +94,21 @@
             
             <section>
               <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
+                <Pill className="text-blue-500" /> Uutta: Varaston seuranta
+              </h3>
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-sm text-slate-600">
+                <p className="mb-2">Voit nyt asettaa lääkkeelle varastosaldon.</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Muokkaa lääkettä ja lisää "Varastossa (kpl)".</li>
+                  <li>Määrä vähenee automaattisesti, kun merkkaat lääkkeen otetuksi.</li>
+                  <li>Kun lääkettä on alle 10 kpl, näet punaisen varoituksen.</li>
+                  <li>Voit täydentää varastoa avaamalla lääkkeen ja painamalla <strong>Täydennä</strong> -nappia.</li>
+                </ul>
+              </div>
+            </section>
+
+            <section>
+              <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
                 <Pill className="text-blue-500" /> Lääkkeet (Etusivu)
               </h3>
               <div className="space-y-4 text-sm text-slate-600">
@@ -129,33 +144,8 @@
               </div>
             </section>
 
-            <section>
-              <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
-                <BarChart2 className="text-blue-500" /> Historia & Muokkaus
-              </h3>
-              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-sm text-slate-600">
-                <p className="mb-2"><strong>Historia-välilehti</strong> näyttää kaikki tapahtumat aikajärjestyksessä.</p>
-                <p><strong>Virheen korjaus:</strong> Jos painoit nappia vahingossa tai väärään aikaan, klikkaa merkintää historiassa. Avautuvasta ikkunasta voit:</p>
-                <ul className="list-disc list-inside ml-2 mt-1">
-                  <li>Muuttaa kellonaikaa ja päivämäärää.</li>
-                  <li>Poistaa yksittäisen merkinnän (Roskakori).</li>
-                </ul>
-              </div>
-            </section>
-
-            <section>
-              <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
-                <Bell className="text-blue-500" /> Muut toiminnot
-              </h3>
-              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-sm text-slate-600 space-y-3">
-                <div className="flex items-start gap-3"><ArrowUpDown size={18} className="text-slate-500 mt-1"/> <span><strong>Järjestä:</strong> Yläpalkin nuoli-ikonista voit muuttaa lääkkeiden järjestystä listalla.</span></div>
-                <div className="flex items-start gap-3"><Bell size={18} className="text-slate-500 mt-1"/> <span><strong>Muistutukset:</strong> Yläpalkin kello-ikoni pyytää luvan lähettää ilmoituksia, kun lääkkeenottoaika koittaa.</span></div>
-                <div className="flex items-start gap-3"><LogOut size={18} className="text-slate-500 mt-1"/> <span><strong>Kirjaudu ulos:</strong> Kirjautuu ulos tililtäsi. Tiedot pysyvät tallessa pilvessä.</span></div>
-              </div>
-            </section>
-
             <div className="text-center text-xs text-slate-400 pt-4">
-              Lääkemuistio v1.2
+              Lääkemuistio v1.3
             </div>
 
           </div>
@@ -349,6 +339,11 @@
       // State UI
       const [newMedName, setNewMedName] = useState('');
       const [newMedDosage, setNewMedDosage] = useState('');
+      
+      // Stock state (NEW)
+      const [newMedStock, setNewMedStock] = useState('');
+      const [newMedTrackStock, setNewMedTrackStock] = useState(false);
+
       const [selectedColor, setSelectedColor] = useState('blue');
       const [selectedSchedule, setSelectedSchedule] = useState([]); 
       const [scheduleTimes, setScheduleTimes] = useState({});
@@ -395,6 +390,36 @@
         return colorList.find(c => !usedColors.has(c)) || colorList[medications.length % colorList.length];
       };
 
+      // --- PÄIVÄN EDISTYMINEN ---
+      const calculateDailyProgress = () => {
+        const activeMeds = medications.filter(m => !m.isArchived);
+        // Otetaan huomioon vain lääkkeet joilla on aikataulu. Yleiset lääkkeet eivät vaikuta prosenttiin.
+        const scheduledMeds = activeMeds.filter(m => m.schedule && m.schedule.length > 0);
+        
+        if (scheduledMeds.length === 0) return 0;
+
+        let totalSlots = 0;
+        let takenSlots = 0;
+
+        const today = new Date().toDateString();
+
+        scheduledMeds.forEach(med => {
+          med.schedule.forEach(slotId => {
+            totalSlots++;
+            const isTaken = logs.some(l => 
+              l.medId === med.id && 
+              l.slot === slotId && 
+              new Date(l.timestamp).toDateString() === today
+            );
+            if (isTaken) takenSlots++;
+          });
+        });
+
+        return totalSlots === 0 ? 0 : Math.round((takenSlots / totalSlots) * 100);
+      };
+
+      const dailyProgress = calculateDailyProgress();
+
       // --- TOIMINNOT ---
       const handleLogout = () => { if(window.confirm("Kirjaudutaanko ulos?")) signOut(auth); };
 
@@ -405,6 +430,8 @@
       const openAddModal = () => {
         setNewMedName('');
         setNewMedDosage('');
+        setNewMedStock('');
+        setNewMedTrackStock(false);
         setSelectedColor(getSmartColor());
         setSelectedSchedule([]);
         setScheduleTimes({});
@@ -441,7 +468,16 @@
         try {
           const maxOrder = medications.reduce((max, m) => Math.max(max, m.order || 0), 0);
           await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'medications'), {
-            name: newMedName.trim(), dosage: newMedDosage.trim(), colorKey: selectedColor, schedule: selectedSchedule, scheduleTimes: scheduleTimes, createdAt: Date.now(), order: maxOrder + 1, isArchived: false
+            name: newMedName.trim(), 
+            dosage: newMedDosage.trim(), 
+            stock: newMedTrackStock ? parseInt(newMedStock) || 0 : null,
+            trackStock: newMedTrackStock,
+            colorKey: selectedColor, 
+            schedule: selectedSchedule, 
+            scheduleTimes: scheduleTimes, 
+            createdAt: Date.now(), 
+            order: maxOrder + 1, 
+            isArchived: false
           });
           setNewMedName(''); setNewMedDosage(''); setIsAdding(false);
         } catch (error) { alert("Virhe lisäyksessä."); }
@@ -453,7 +489,13 @@
         try {
           const medRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', editingMed.id);
           await updateDoc(medRef, { 
-            name: editingMed.name.trim(), dosage: editingMed.dosage ? editingMed.dosage.trim() : '', colorKey: editingMed.colorKey, schedule: editingMed.schedule || [], scheduleTimes: editingMed.scheduleTimes || {}
+            name: editingMed.name.trim(), 
+            dosage: editingMed.dosage ? editingMed.dosage.trim() : '', 
+            stock: editingMed.trackStock ? (parseInt(editingMed.stock) || 0) : null,
+            trackStock: editingMed.trackStock || false,
+            colorKey: editingMed.colorKey, 
+            schedule: editingMed.schedule || [], 
+            scheduleTimes: editingMed.scheduleTimes || {}
           });
           setEditingMed(null);
         } catch (error) { alert("Virhe muokkauksessa."); }
@@ -490,10 +532,27 @@
       const takeMedicine = async (med, slotId = null) => {
         if (!user) return;
         try {
+          // Logi
           await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
             medId: med.id, medName: med.name, medColor: med.colorKey, slot: slotId, timestamp: new Date().toISOString()
           });
+          
+          // Vähennä varastoa jos seuranta päällä
+          if (med.trackStock && med.stock > 0) {
+             const medRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', med.id);
+             await updateDoc(medRef, { stock: med.stock - 1 });
+          }
+
         } catch (error) { console.error(error); }
+      };
+
+      const handleRefill = async (med) => {
+        if (!user) return;
+        const amount = prompt("Paljonko lisätään varastoon?", "30");
+        if (amount && !isNaN(amount)) {
+           const medRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', med.id);
+           await updateDoc(medRef, { stock: (med.stock || 0) + parseInt(amount) });
+        }
       };
 
       const handleManualLog = async (e) => {
@@ -503,6 +562,13 @@
           await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
             medId: manualLogMed.id, medName: manualLogMed.name, medColor: manualLogMed.colorKey, slot: null, timestamp: new Date(manualDate).toISOString()
           });
+          
+          // Vähennä varastoa myös manuaalisessa
+          if (manualLogMed.trackStock && manualLogMed.stock > 0) {
+             const medRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', manualLogMed.id);
+             await updateDoc(medRef, { stock: manualLogMed.stock - 1 });
+          }
+
           setManualLogMed(null); setManualDate('');
         } catch (error) { alert("Virhe lisäyksessä."); }
       };
@@ -641,44 +707,56 @@
              <img src="https://img.geocaching.com:443/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" alt="" className="w-3/4 max-w-lg opacity-[0.15] grayscale" />
           </div>
 
-          <header className="flex-none bg-white/95 backdrop-blur-sm border-b border-slate-200 px-4 py-3 flex justify-between items-center z-10 shadow-sm relative">
-            <div className="flex items-center gap-3">
-              <img src="https://img.geocaching.com:443/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" alt="Logo" className="h-8 w-auto object-contain" />
-              <h1 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                {activeTab === 'home' ? <Pill className="text-blue-600" size={20} /> : <BarChart2 className="text-blue-600" size={20} />}
-                {activeTab === 'home' ? 'Lääkkeet' : 'Historia'}
-              </h1>
+          <header className="flex-none bg-white/95 backdrop-blur-sm border-b border-slate-200 px-4 py-3 z-10 shadow-sm relative">
+            <div className="flex justify-between items-center mb-1">
+              <div className="flex items-center gap-3">
+                <img src="https://img.geocaching.com:443/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" alt="Logo" className="h-8 w-auto object-contain" />
+                <h1 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  {activeTab === 'home' ? <Pill className="text-blue-600" size={20} /> : <BarChart2 className="text-blue-600" size={20} />}
+                  {activeTab === 'home' ? 'Lääkkeet' : 'Historia'}
+                </h1>
+              </div>
+              <div className="flex items-center gap-1">
+                {activeTab === 'home' && (
+                  <>
+                    <button 
+                      onClick={() => setIsReordering(!isReordering)} 
+                      className={`p-2 rounded-full transition-colors ${isReordering ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                      title="Järjestä lääkkeet"
+                    >
+                      <ArrowUpDown size={18} />
+                    </button>
+                    <button 
+                      onClick={requestNotificationPermission} 
+                      className={`p-2 rounded-full transition-colors ${notificationsEnabled ? 'text-blue-500' : 'text-slate-400 hover:text-slate-600'}`}
+                      title={notificationsEnabled ? "Ilmoitukset päällä" : "Ota ilmoitukset käyttöön"}
+                    >
+                      {notificationsEnabled ? <Bell size={18} /> : <BellOff size={18} />}
+                    </button>
+                  </>
+                )}
+                {/* OHJE-NAPPI */}
+                <button 
+                  onClick={() => setShowHelp(true)} 
+                  className="p-2 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-full transition-colors"
+                  title="Ohjeet"
+                >
+                  <HelpCircle size={18} />
+                </button>
+                
+                <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-full transition-colors"><LogOut size={18}/></button>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              {activeTab === 'home' && (
-                <>
-                  <button 
-                    onClick={() => setIsReordering(!isReordering)} 
-                    className={`p-2 rounded-full transition-colors ${isReordering ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
-                    title="Järjestä lääkkeet"
-                  >
-                    <ArrowUpDown size={18} />
-                  </button>
-                  <button 
-                    onClick={requestNotificationPermission} 
-                    className={`p-2 rounded-full transition-colors ${notificationsEnabled ? 'text-blue-500' : 'text-slate-400 hover:text-slate-600'}`}
-                    title={notificationsEnabled ? "Ilmoitukset päällä" : "Ota ilmoitukset käyttöön"}
-                  >
-                    {notificationsEnabled ? <Bell size={18} /> : <BellOff size={18} />}
-                  </button>
-                </>
-              )}
-              {/* OHJE-NAPPI */}
-              <button 
-                onClick={() => setShowHelp(true)} 
-                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-full transition-colors"
-                title="Ohjeet"
-              >
-                <HelpCircle size={18} />
-              </button>
-              
-              <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-full transition-colors"><LogOut size={18}/></button>
-            </div>
+
+            {/* PÄIVÄN EDISTYMISPALKKI */}
+            {activeTab === 'home' && !isReordering && dailyProgress > 0 && (
+              <div className="mt-2 w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                <div 
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-500 ease-out" 
+                  style={{width: `${dailyProgress}%`}}
+                ></div>
+              </div>
+            )}
           </header>
 
           <main className="flex-1 overflow-y-auto p-3 pb-32 z-10 relative">
@@ -700,7 +778,7 @@
                     const lastLog = getLastTaken(med.id);
                     const c = getColors(med.colorKey || 'blue');
                     const hasSchedule = med.schedule && med.schedule.length > 0;
-                    const isExpanded = expandedMedId === med.id || isReordering; // Järjestäessä näytetään kompaktina mutta ilman avaamista
+                    const isExpanded = expandedMedId === med.id || isReordering; 
                     
                     // Onko kaikki päivän annokset otettu?
                     let isDoneForToday = false;
@@ -709,6 +787,9 @@
                     } else {
                       isDoneForToday = isGenericTakenToday(med.id);
                     }
+
+                    // Onko lääke vähissä? (alle 10 kpl)
+                    const isLowStock = med.trackStock && med.stock !== null && med.stock < 10;
 
                     return (
                       <div key={med.id} className={`rounded-xl shadow-sm border transition-all duration-200 overflow-hidden ${c.bg} ${c.border} ${expandedMedId === med.id ? '' : 'hover:shadow-md'} relative group`}>
@@ -745,12 +826,15 @@
                                 </h3>
                                 {/* Status-ikoni suljetussa tilassa */}
                                 {expandedMedId !== med.id && isDoneForToday && <CheckCircle size={18} className="text-green-600 shrink-0" />}
+                                {expandedMedId !== med.id && isLowStock && <AlertTriangle size={18} className="text-red-500 shrink-0" />}
                              </div>
                              
                              {/* Lisätiedot vain jos suljettu */}
                              {expandedMedId !== med.id && (
                                <div className="flex items-center gap-2 mt-1">
-                                 {med.dosage ? (
+                                 {isLowStock ? (
+                                   <span className="text-xs text-red-600 font-bold truncate">{med.stock} kpl jäljellä!</span>
+                                 ) : med.dosage ? (
                                    <span className="text-xs text-slate-600 font-medium truncate">{med.dosage}</span>
                                  ) : (
                                    <span className="text-xs text-slate-500 truncate">{lastLog ? `Viimeksi: ${formatTime(lastLog.timestamp)}` : 'Ei otettu vielä'}</span>
@@ -774,8 +858,16 @@
                              
                              {/* Annostus (jos on) */}
                              {med.dosage && (
-                               <div className="text-sm text-slate-700 mb-3 font-medium bg-white/50 p-2 rounded-lg inline-block">
+                               <div className="text-sm text-slate-700 mb-2 font-medium bg-white/50 p-2 rounded-lg inline-block mr-2">
                                  {med.dosage}
+                               </div>
+                             )}
+
+                             {/* Varastotilanne (jos seurannassa) */}
+                             {med.trackStock && (
+                               <div className={`text-sm mb-3 font-medium bg-white/50 p-2 rounded-lg inline-flex items-center gap-2 ${isLowStock ? 'text-red-600 border border-red-200' : 'text-slate-700'}`}>
+                                 <Package size={14} /> 
+                                 <span>{med.stock !== null ? med.stock : 0} kpl</span>
                                </div>
                              )}
 
@@ -784,7 +876,12 @@
                              </div>
 
                              {/* Toiminnot rivissä */}
-                             <div className="flex gap-2 mb-4 justify-end">
+                             <div className="flex gap-2 mb-4 justify-end flex-wrap">
+                                {med.trackStock && (
+                                  <button onClick={() => handleRefill(med)} className="p-2 bg-white/60 rounded-lg hover:text-green-600 hover:bg-white flex items-center gap-1" title="Täydennä varastoa">
+                                    <RefreshCw size={18}/>
+                                  </button>
+                                )}
                                 <button onClick={() => { setManualLogMed(med); setManualDate(getCurrentDateTimeLocal()); }} className="p-2 bg-white/60 rounded-lg hover:text-blue-600 hover:bg-white" title="Lisää manuaalisesti"><CalendarPlus size={18}/></button>
                                 <button onClick={() => setShowHistoryFor(med.id)} className="p-2 bg-white/60 rounded-lg hover:text-blue-600 hover:bg-white" title="Historia"><History size={18}/></button>
                                 <button onClick={() => setEditingMed(med)} className="p-2 bg-white/60 rounded-lg hover:text-blue-600 hover:bg-white" title="Muokkaa"><Pencil size={18}/></button>
@@ -975,6 +1072,20 @@
                   <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-blue-500" placeholder="Lääkkeen nimi" value={newMedName} onChange={e => setNewMedName(e.target.value)} />
                   <input className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" placeholder="Annostus / Lisätiedot (valinnainen)" value={newMedDosage} onChange={e => setNewMedDosage(e.target.value)} />
                   
+                  {/* VARASTOSEURANTA */}
+                  <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <label className="flex items-center gap-2 mb-2 cursor-pointer">
+                      <input type="checkbox" checked={newMedTrackStock} onChange={(e) => setNewMedTrackStock(e.target.checked)} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+                      <span className="text-sm font-bold text-slate-700">Seuraa lääkevarastoa</span>
+                    </label>
+                    {newMedTrackStock && (
+                      <div className="animate-in slide-in-from-top-2">
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Varastossa (kpl)</label>
+                        <input type="number" className="w-full bg-white p-2 rounded-lg text-base outline-none border focus:border-blue-500" placeholder="Esim. 100" value={newMedStock} onChange={e => setNewMedStock(e.target.value)} />
+                      </div>
+                    )}
+                  </div>
+
                   {/* AIKATAULU */}
                   <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Otettava (valinnainen)</label>
                   <div className="grid grid-cols-1 gap-2 mb-6">
@@ -1042,6 +1153,20 @@
                   <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-blue-500" value={editingMed.name} onChange={e => setEditingMed({...editingMed, name: e.target.value})} />
                   <input className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" placeholder="Annostus / Lisätiedot" value={editingMed.dosage || ''} onChange={e => setEditingMed({...editingMed, dosage: e.target.value})} />
                   
+                  {/* VARASTOSEURANTA MUOKKAUS */}
+                  <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <label className="flex items-center gap-2 mb-2 cursor-pointer">
+                      <input type="checkbox" checked={editingMed.trackStock || false} onChange={(e) => setEditingMed({...editingMed, trackStock: e.target.checked})} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+                      <span className="text-sm font-bold text-slate-700">Seuraa lääkevarastoa</span>
+                    </label>
+                    {editingMed.trackStock && (
+                      <div className="animate-in slide-in-from-top-2">
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Varastossa (kpl)</label>
+                        <input type="number" className="w-full bg-white p-2 rounded-lg text-base outline-none border focus:border-blue-500" placeholder="Esim. 100" value={editingMed.stock !== null && editingMed.stock !== undefined ? editingMed.stock : ''} onChange={e => setEditingMed({...editingMed, stock: e.target.value})} />
+                      </div>
+                    )}
+                  </div>
+
                   {/* AIKATAULU MUOKKAUS */}
                   <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Otettava</label>
                   <div className="grid grid-cols-1 gap-2 mb-6">
