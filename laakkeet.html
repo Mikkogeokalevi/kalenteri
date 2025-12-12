@@ -1047,7 +1047,7 @@
           </main>
 
           {!isAdding && activeTab === 'home' && !showHistoryFor && !deleteDialog.isOpen && !editingMed && !manualLogMed && !editingLog && !isQuickAdding && !isReordering && (
-            <div className="absolute bottom-6 right-5 z-30 flex gap-3 items-end">
+            <div className="fixed bottom-12 right-5 z-30 flex gap-3 items-end">
               <button onClick={() => setIsQuickAdding(true)} className="bg-orange-500 text-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform" title="Pikalisäys"><Zap size={24}/></button>
               <button onClick={openAddModal} className="bg-blue-600 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform"><Plus size={32}/></button>
             </div>
