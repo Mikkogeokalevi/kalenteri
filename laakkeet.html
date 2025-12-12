@@ -36,7 +36,7 @@
   <script type="text/babel" data-type="module">
     import React, { useState, useEffect, useRef } from 'react';
     import { createRoot } from 'react-dom/client';
-    import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+    import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Info } from 'lucide-react';
     
     // --- FIREBASE IMPORTS ---
     import { initializeApp } from 'firebase/app';
@@ -74,6 +74,94 @@
       { id: 'ilta', label: 'Ilta', icon: Sunset, defaultTime: '20:00' },
       { id: 'yo', label: 'Yö', icon: Moon, defaultTime: '22:00' }
     ];
+
+    // --- OHJESIVU KOMPONENTTI ---
+    const HelpView = ({ onClose }) => {
+      return (
+        <div className="fixed inset-0 z-50 bg-slate-50 flex flex-col animate-in slide-in-from-right duration-300 overflow-hidden">
+          {/* Header */}
+          <div className="bg-white px-4 py-4 border-b border-slate-200 flex items-center justify-between shadow-sm flex-none">
+            <div className="flex items-center gap-2 text-blue-600 font-bold text-lg">
+              <HelpCircle /> Ohjeet
+            </div>
+            <button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-5 space-y-8 pb-20">
+            
+            <section>
+              <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
+                <Pill className="text-blue-500" /> Lääkkeet (Etusivu)
+              </h3>
+              <div className="space-y-4 text-sm text-slate-600">
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                  <p className="mb-2"><strong className="text-slate-800">Lääkkeen lisääminen:</strong> Paina oikean alakulman sinistä <strong>+</strong> painiketta. Voit antaa lääkkeelle nimen, annostuksen (esim. "1 tabl"), värin ja halutessasi aikataulun.</p>
+                </div>
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                  <p className="mb-2"><strong className="text-slate-800">Lääkkeen ottaminen:</strong></p>
+                  <ul className="list-disc list-inside space-y-1 ml-1">
+                    <li>Jos lääkkeellä ei ole aikataulua: Avaa lääkkeen kortti ja paina isoa punaista/värikästä <strong>OTA NYT</strong> -nappia.</li>
+                    <li>Jos lääkkeellä on aikataulu (esim. Aamu/Ilta): Paina vastaavaa kuvaketta (esim. <Sun size={12} className="inline"/>). Se muuttuu vihreäksi <Check size={12} className="inline text-green-600"/>, kun lääke on merkitty otetuksi tälle päivälle.</li>
+                  </ul>
+                </div>
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                  <p className="mb-2"><strong className="text-slate-800">Kortin toiminnot (avaa klikkaamalla):</strong></p>
+                  <div className="grid grid-cols-1 gap-3">
+                    <div className="flex items-center gap-3"><CalendarPlus size={18} className="text-blue-600"/> <span><strong>Manuaalinen lisäys:</strong> Jos unohdit merkitä lääkkeen ajoissa, tästä voit lisätä sen menneisyyteen.</span></div>
+                    <div className="flex items-center gap-3"><History size={18} className="text-blue-600"/> <span><strong>Historia:</strong> Näyttää listan tämän kyseisen lääkkeen ottokerroista.</span></div>
+                    <div className="flex items-center gap-3"><Pencil size={18} className="text-blue-600"/> <span><strong>Muokkaa:</strong> Muuta nimeä, väriä, annostusta tai aikataulua.</span></div>
+                    <div className="flex items-center gap-3"><Archive size={18} className="text-orange-500"/> <span><strong>Arkistoi:</strong> Piilottaa lääkkeen listalta poistamatta sitä kokonaan (esim. kuurin päätyttyä). Löydät sen sivun alareunasta.</span></div>
+                    <div className="flex items-center gap-3"><Trash2 size={18} className="text-red-500"/> <span><strong>Poista:</strong> Poistaa lääkkeen. Voit valita poistetaanko myös historia vai säilytetäänkö se.</span></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
+                <Zap className="text-orange-500" /> Pikalisäys
+              </h3>
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-sm text-slate-600">
+                <p>Oikeassa alakulmassa oleva oranssi <strong>Salama</strong>-painike on tarkoitettu satunnaisille lääkkeille (esim. päänsärkylääke), joille et halua luoda pysyvää korttia. Kirjoita vain nimi ja se tallentuu historiaan.</p>
+              </div>
+            </section>
+
+            <section>
+              <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
+                <BarChart2 className="text-blue-500" /> Historia & Muokkaus
+              </h3>
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-sm text-slate-600">
+                <p className="mb-2"><strong>Historia-välilehti</strong> näyttää kaikki tapahtumat aikajärjestyksessä.</p>
+                <p><strong>Virheen korjaus:</strong> Jos painoit nappia vahingossa tai väärään aikaan, klikkaa merkintää historiassa. Avautuvasta ikkunasta voit:</p>
+                <ul className="list-disc list-inside ml-2 mt-1">
+                  <li>Muuttaa kellonaikaa ja päivämäärää.</li>
+                  <li>Poistaa yksittäisen merkinnän (Roskakori).</li>
+                </ul>
+              </div>
+            </section>
+
+            <section>
+              <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
+                <Bell className="text-blue-500" /> Muut toiminnot
+              </h3>
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-sm text-slate-600 space-y-3">
+                <div className="flex items-start gap-3"><ArrowUpDown size={18} className="text-slate-500 mt-1"/> <span><strong>Järjestä:</strong> Yläpalkin nuoli-ikonista voit muuttaa lääkkeiden järjestystä listalla.</span></div>
+                <div className="flex items-start gap-3"><Bell size={18} className="text-slate-500 mt-1"/> <span><strong>Muistutukset:</strong> Yläpalkin kello-ikoni pyytää luvan lähettää ilmoituksia, kun lääkkeenottoaika koittaa.</span></div>
+                <div className="flex items-start gap-3"><LogOut size={18} className="text-slate-500 mt-1"/> <span><strong>Kirjaudu ulos:</strong> Kirjautuu ulos tililtäsi. Tiedot pysyvät tallessa pilvessä.</span></div>
+              </div>
+            </section>
+
+            <div className="text-center text-xs text-slate-400 pt-4">
+              Lääkemuistio v1.2
+            </div>
+
+          </div>
+        </div>
+      );
+    };
 
     // --- KIRJAUTUMISNÄKYMÄ ---
     const AuthScreen = () => {
@@ -166,7 +254,8 @@
       
       const [notificationsEnabled, setNotificationsEnabled] = useState(false);
       const [isReordering, setIsReordering] = useState(false);
-      const [expandedMedId, setExpandedMedId] = useState(null); // TILA: Mikä lääke on avattuna
+      const [expandedMedId, setExpandedMedId] = useState(null);
+      const [showHelp, setShowHelp] = useState(false); // OHJE-TILA
 
       // Auth Listener
       useEffect(() => {
@@ -517,7 +606,6 @@
         const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         return now.toISOString().slice(0, 16);
       };
-      
       const isSlotTakenToday = (medId, slotId) => {
         const today = new Date().toDateString();
         return logs.some(l => l.medId === medId && l.slot === slotId && new Date(l.timestamp).toDateString() === today);
@@ -580,6 +668,15 @@
                   </button>
                 </>
               )}
+              {/* OHJE-NAPPI */}
+              <button 
+                onClick={() => setShowHelp(true)} 
+                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-full transition-colors"
+                title="Ohjeet"
+              >
+                <HelpCircle size={18} />
+              </button>
+              
               <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-full transition-colors"><LogOut size={18}/></button>
             </div>
           </header>
@@ -829,6 +926,9 @@
           )}
 
           {/* --- MODALIT --- */}
+
+          {/* OHJEET */}
+          {showHelp && <HelpView onClose={() => setShowHelp(false)} />}
 
           {/* PIKALISÄYS */}
           {isQuickAdding && (
