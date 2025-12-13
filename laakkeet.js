@@ -39,7 +39,7 @@ const TIME_SLOTS = [
   { id: 'yo', label: 'Yö', icon: Moon, defaultTime: '22:00' }
 ];
 
-// --- OHJESIVU KOMPONENTTI ---
+// --- OHJESIVU KOMPONENTTI (UUSITTU TÄYSIN) ---
 const HelpView = ({ onClose }) => {
   return (
     <div className="fixed inset-0 z-[60] bg-slate-50 flex flex-col animate-in slide-in-from-right duration-300 overflow-hidden">
@@ -54,77 +54,110 @@ const HelpView = ({ onClose }) => {
 
       <div className="flex-1 overflow-y-auto p-5 space-y-8 pb-20">
         
-        {/* 1. ASENNUSOHJEET */}
-        <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
-            <PlusSquare className="text-slate-500" size={22}/> Asenna puhelimeen
-          </h3>
-          <p className="text-sm text-slate-600 mb-4">
-            Tämä on selainpohjainen sovellus. Saat parhaan käyttökokemuksen lisäämällä sen kotivalikkoon, jolloin se toimii kuin oikea sovellus (koko näyttö).
+        {/* JOHDANTO */}
+        <section className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+          <h3 className="font-bold text-blue-800 text-lg mb-2">Tervetuloa Lääkemuistioon!</h3>
+          <p className="text-sm text-slate-600">
+            Tämä sovellus auttaa sinua pitämään kirjaa lääkkeistäsi, muistamaan niiden oton ja seuraamaan lääkevarastoasi.
           </p>
-          <div className="space-y-4">
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <h4 className="font-bold text-slate-800 text-sm mb-2 flex items-center gap-2"> iPhone / iPad (Safari)</h4>
-              <ol className="list-decimal list-inside text-xs text-slate-600 space-y-1.5 ml-1">
-                <li>Paina alareunan <strong>Jaa</strong>-painiketta <Share className="inline w-3 h-3"/>.</li>
-                <li>Rullaa valikkoa alaspäin ja valitse <strong>"Lisää Koti-valikkoon"</strong>.</li>
-                <li>Paina yläkulmasta <strong>Lisää</strong>.</li>
-              </ol>
-            </div>
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <h4 className="font-bold text-slate-800 text-sm mb-2 flex items-center gap-2">🤖 Android (Chrome)</h4>
-              <ol className="list-decimal list-inside text-xs text-slate-600 space-y-1.5 ml-1">
-                <li>Paina selaimen yläkulman kolmea pistettä <MoreVertical className="inline w-3 h-3"/>.</li>
-                <li>Valitse valikosta <strong>"Asenna sovellus"</strong> tai <strong>"Lisää aloitusnäyttöön"</strong>.</li>
-              </ol>
-            </div>
-          </div>
         </section>
 
-        {/* 2. ALOITUS JA PERUSKÄYTTÖ */}
+        {/* 1. ASENNUS */}
         <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
           <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
-            <Pill className="text-blue-500" size={22}/> Lääkkeiden hallinta
+            <PlusSquare className="text-slate-500" size={22}/> 1. Asennus (tärkeä!)
           </h3>
-          <div className="space-y-4 text-sm text-slate-600">
-            <div>
-              <strong className="block text-slate-800 mb-1">Lääkkeen lisääminen:</strong>
-              <p>Paina oikean alakulman sinistä <strong>+</strong> painiketta. Voit antaa lääkkeelle nimen, annostuksen ja värin.</p>
+          <p className="text-sm text-slate-600 mb-3">
+            Saat sovelluksen toimimaan kuin oikea appi (koko näyttö, ei osoiteriviä) lisäämällä sen kotivalikkoon.
+          </p>
+          <div className="space-y-3">
+            <div className="bg-slate-50 p-3 rounded-xl">
+              <h4 className="font-bold text-slate-800 text-sm mb-1"> iPhone / iPad</h4>
+              <p className="text-xs text-slate-600">Paina <strong>Jaa</strong> <Share className="inline w-3 h-3"/> &rarr; Valitse <strong>"Lisää Koti-valikkoon"</strong>.</p>
             </div>
-            <div>
-              <strong className="block text-slate-800 mb-1">Lääkkeen ottaminen:</strong>
-              <ul className="list-disc list-inside space-y-1 ml-1">
-                <li><strong>Aikataulutetut:</strong> Paina aikakuvaketta (esim. Aurinko). Se muuttuu vihreäksi.</li>
-                <li><strong>Tarvittaessa otettavat:</strong> Avaa lääkkeen kortti ja paina <strong>OTA NYT</strong>. Voit kirjata samalla syyn (esim. "Kipu").</li>
-              </ul>
-            </div>
-            <div>
-              <strong className="block text-slate-800 mb-1">Muokkaus ja Poisto:</strong>
-              <p>Klikkaa lääkkeen nimeä avataksesi toiminnot (Kynä = Muokkaa, Roskakori = Poista, Arkisto = Piilota väliaikaisesti).</p>
+            <div className="bg-slate-50 p-3 rounded-xl">
+              <h4 className="font-bold text-slate-800 text-sm mb-1">🤖 Android</h4>
+              <p className="text-xs text-slate-600">Paina kolmea pistettä <MoreVertical className="inline w-3 h-3"/> &rarr; Valitse <strong>"Asenna sovellus"</strong>.</p>
             </div>
           </div>
         </section>
 
-        {/* 3. VARASTO JA DOSETTI */}
-        <section className="bg-blue-50 p-5 rounded-2xl border border-blue-100">
-          <h3 className="font-bold text-blue-800 text-lg mb-4 flex items-center gap-2">
-            <LayoutList className="text-blue-600" size={22}/> Varasto & Dosetit
+        {/* 2. LÄÄKKEIDEN LISÄYS */}
+        <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+          <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
+            <Plus className="text-blue-600" size={22}/> 2. Lääkkeiden lisääminen
           </h3>
-          <div className="space-y-4 text-sm text-slate-600">
-            <p>Tämä ominaisuus on hyödyllinen, jos käytät dosettia tai otat useita lääkkeitä kerralla (esim. "Iltasetti").</p>
-            <div className="bg-white p-4 rounded-xl border border-blue-100 space-y-3">
-              <h4 className="font-bold text-slate-800 text-xs uppercase">Vaihe 1: Luo Varasto</h4>
-              <p>Lisää ensin kaikki fyysiset lääkepurkit sovellukseen.</p>
+          <div className="text-sm text-slate-600 space-y-3">
+            <p>Paina oikean alakulman sinistä <strong>+</strong> painiketta.</p>
+            <ul className="list-disc list-inside space-y-2 ml-1">
+              <li><strong>Nimi:</strong> Kirjoita lääkkeen nimi (esim. Burana).</li>
+              <li><strong>Väri:</strong> Valitse väri, jotta tunnistat lääkkeen helposti.</li>
+              <li><strong>Aikataulu:</strong> Jos lääke otetaan säännöllisesti, valitse ajat (Aamu, Päivä, jne.). Voit myös asettaa tarkan kellonajan.</li>
+              <li><strong>Tarvittaessa otettava:</strong> Jos lääkettä otetaan vain tarvittaessa, älä valitse aikataulua.</li>
+            </ul>
+          </div>
+        </section>
+
+        {/* 3. LÄÄKKEEN OTTAMINEN */}
+        <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+          <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
+            <CheckCircle className="text-green-600" size={22}/> 3. Lääkkeen kuittaus
+          </h3>
+          <div className="text-sm text-slate-600 space-y-3">
+            <p><strong>Säännölliset lääkkeet:</strong> Etusivulla näkyy aikataulu (esim. Aurinko). Paina kuvaketta, kun olet ottanut lääkkeen. Se muuttuu vihreäksi.</p>
+            <p><strong>Tarvittaessa otettavat:</strong> Avaa lääkkeen kortti (nuolesta) ja paina isoa <strong>OTA NYT</strong> -painiketta.</p>
+          </div>
+        </section>
+
+        {/* 4. PIKALISÄYS JA UNOHTUNEET */}
+        <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+          <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
+            <Zap className="text-orange-500" size={22}/> 4. Pikalisäys & Unohtuneet
+          </h3>
+          <div className="text-sm text-slate-600 space-y-3">
+            <p>Paina oranssia salama-painiketta oikeassa alakulmassa.</p>
+            <ul className="list-disc list-inside space-y-2 ml-1">
+              <li><strong>Satunnainen lääke:</strong> Jos otat lääkkeen jota ei ole listalla (esim. päänsärkylääke), kirjaa se tästä.</li>
+              <li><strong>Jälkikäteen kirjaus:</strong> Jos unohdit merkitä lääkkeen aiemmin, voit vaihtaa päivämäärän ja kellonajan menneisyyteen tästä näkymästä.</li>
+            </ul>
+          </div>
+        </section>
+
+        {/* 5. VARASTO JA DOSETTI */}
+        <section className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+          <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
+            <Package className="text-slate-600" size={22}/> 5. Varasto & Dosetti (Edistynyt)
+          </h3>
+          <div className="text-sm text-slate-600 space-y-4">
+            <p>Tämä ominaisuus on hyödyllinen, jos käytät dosettia tai haluat sovelluksen varoittavan lääkkeiden loppumisesta.</p>
+            
+            <div className="bg-white p-3 rounded-xl border border-slate-200">
+              <h4 className="font-bold text-slate-800 text-xs uppercase mb-1">A) Varaston luonti</h4>
+              <p>Lisää lääke (esim. "Kalkki-purkki"). Laita täppä kohtaan <strong>"Seuraa lääkevarastoa"</strong> ja syötä purkin sisältö (esim. 100 kpl).</p>
             </div>
-            <div className="bg-white p-4 rounded-xl border border-blue-100 space-y-3">
-              <h4 className="font-bold text-slate-800 text-xs uppercase">Vaihe 2: Luo Yhdistelmä</h4>
-              <p>Luo uusi lääke (esim. "Iltasetti") ja valitse <strong>Koostumus</strong>-kohdasta varastossa olevat lääkkeet.</p>
+
+            <div className="bg-white p-3 rounded-xl border border-slate-200">
+              <h4 className="font-bold text-slate-800 text-xs uppercase mb-1">B) Dosetin/Yhdistelmän luonti</h4>
+              <p>Luo uusi lääke nimeltä "Iltasetti". Älä laita saldoa.</p>
+              <p className="mt-1">Kohdassa <strong>Koostumus</strong> valitse pudotusvalikosta varastossa oleva lääke (Kalkki) ja määrä.</p>
+              <p className="mt-1 text-blue-600 font-medium">Nyt kun kuittaat Iltasetin, Kalkki-purkin saldo vähenee automaattisesti!</p>
             </div>
+          </div>
+        </section>
+
+        {/* 6. RAPORTTI LÄÄKÄRILLE */}
+        <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+          <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
+            <FileText className="text-purple-600" size={22}/> 6. Raportti lääkärille
+          </h3>
+          <div className="text-sm text-slate-600 space-y-2">
+            <p>Mene <strong>Historia</strong>-välilehdelle ja paina <strong>"Raportti"</strong>.</p>
+            <p>Valitse aikaväli. Saat tarkan listan kaikista otetuista lääkkeistä. Voit kopioida tekstin ja lähettää sen lääkärille tai näyttää vastaanotolla.</p>
           </div>
         </section>
 
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v3.1 - {new Date().getFullYear()}
+          Lääkemuistio v3.2 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -253,9 +286,12 @@ const MedicineTracker = () => {
   const [selectedSchedule, setSelectedSchedule] = useState([]); 
   const [scheduleTimes, setScheduleTimes] = useState({});
   const [isAdding, setIsAdding] = useState(false);
+  
+  // PIKALISÄYS TILA
   const [isQuickAdding, setIsQuickAdding] = useState(false);
   const [quickAddName, setQuickAddName] = useState('');
   const [quickAddReason, setQuickAddReason] = useState('');
+  const [quickAddDate, setQuickAddDate] = useState(''); // UUSI: Päivämäärä pikalisäykselle
   
   const [takeWithReasonMed, setTakeWithReasonMed] = useState(null);
   const [takeReason, setTakeReason] = useState('');
@@ -493,9 +529,14 @@ const MedicineTracker = () => {
     } catch (e) { console.error("Järjestäminen epäonnistui", e); }
   };
 
+  const openQuickAdd = () => {
+    setQuickAddDate(getCurrentDateTimeLocal());
+    setIsQuickAdding(true);
+  };
+
   const handleQuickAdd = async (e) => {
     e.preventDefault();
-    if (!quickAddName.trim() || !user) return;
+    if (!quickAddName.trim() || !user || !quickAddDate) return;
     const stockItem = medications.find(m => m.name.toLowerCase() === quickAddName.trim().toLowerCase() && m.trackStock);
     try {
       await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
@@ -503,9 +544,9 @@ const MedicineTracker = () => {
         medName: quickAddName.trim(), 
         medColor: stockItem ? stockItem.colorKey : 'orange', 
         slot: null, 
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(quickAddDate).toISOString(), // KÄYTETÄÄN VALITTUA PÄIVÄÄ
         reason: quickAddReason.trim(),
-        ingredients: null // Quick add ei yleensä sisällä ainesosia, mutta kenttä hyvä olla
+        ingredients: null
       });
       
       if (stockItem && stockItem.stock > 0) {
@@ -517,12 +558,9 @@ const MedicineTracker = () => {
     } catch(e) { alert("Virhe pikalisäyksessä"); }
   };
 
-  // --- TÄRKEÄ MUUTOS: TALLENNETAAN AINESOSAT LOGIIN ---
   const takeMedicine = async (med, slotId = null, reasonText = '') => {
     if (!user) return;
     try {
-      // Tallennetaan lääkkeen nykyiset ainesosat logiin
-      // Näin tiedetään mitä dosetti sisälsi ottohetkellä
       const ingredientsSnapshot = med.ingredients && med.ingredients.length > 0 ? med.ingredients : null;
 
       await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
@@ -532,7 +570,7 @@ const MedicineTracker = () => {
         slot: slotId, 
         timestamp: new Date().toISOString(), 
         reason: reasonText.trim(),
-        ingredients: ingredientsSnapshot // TALLENNETAAN SNAPSHOT TÄSSÄ
+        ingredients: ingredientsSnapshot 
       });
       
       if (med.trackStock && med.stock > 0) {
@@ -781,7 +819,6 @@ const MedicineTracker = () => {
              const dStr = new Date(log.timestamp).toLocaleDateString('fi-FI', {weekday: 'short', day: 'numeric', month: 'numeric'});
              if (!days[dStr]) days[dStr] = [];
              const slotName = TIME_SLOTS.find(s => s.id === log.slot)?.label || 'Muu';
-             // Jos logissa on ainesosia (dosetti), lisätään ne sulkuihin
              let extra = '';
              if (log.ingredients && log.ingredients.length > 0) {
                const ings = log.ingredients.map(i => `${i.name} (${i.count})`).join(', ');
@@ -797,7 +834,6 @@ const MedicineTracker = () => {
              const d = new Date(log.timestamp);
              const timeStr = d.toLocaleString('fi-FI', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit'});
              const reasonStr = log.reason ? ` - "${log.reason}"` : '';
-             // Jos logissa on ainesosia
              let extra = '';
              if (log.ingredients && log.ingredients.length > 0) {
                 const ings = log.ingredients.map(i => `${i.name} (${i.count})`).join(', ');
@@ -869,6 +905,14 @@ const MedicineTracker = () => {
                 >
                   {notificationsEnabled ? <Bell size={20} /> : <BellOff size={20} />}
                 </button>
+
+                {/* UUSI OHJE-IKONI TÄSSÄ */}
+                <button 
+                  onClick={() => setShowHelp(true)} 
+                  className="p-2 rounded-full transition-colors text-slate-400 hover:text-slate-600"
+                >
+                  <HelpCircle size={20} />
+                </button>
                 
                 <div className="relative">
                   <button 
@@ -891,9 +935,7 @@ const MedicineTracker = () => {
                         <button onClick={() => {setIsReordering(!isReordering); setIsMenuOpen(false);}} className={`flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-sm font-medium text-left ${isReordering ? 'bg-blue-50 text-blue-700' : 'text-slate-700'}`}>
                           <ArrowUpDown size={18} className={isReordering ? 'text-blue-600' : 'text-slate-400'}/> Järjestä
                         </button>
-                        <button onClick={() => {setShowHelp(true); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-700 text-sm font-medium text-left">
-                          <HelpCircle size={18} className="text-slate-400"/> Ohjeet
-                        </button>
+                        {/* OHJEET POISTETTU TÄSTÄ */}
                         <div className="h-px bg-slate-100 my-1"></div>
                         <button onClick={() => {handleLogout(); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 rounded-lg hover:bg-red-50 text-red-600 text-sm font-medium text-left">
                           <LogOut size={18}/> Kirjaudu ulos
@@ -1149,7 +1191,7 @@ const MedicineTracker = () => {
         <>
           <button onClick={() => window.location.reload()} className="absolute bottom-20 left-5 z-30 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-slate-500 hover:text-blue-600 hover:rotate-180 transition-all duration-500 border border-slate-200" title="Päivitä sovellus"><RotateCcw size={24} /></button>
           <div className="absolute bottom-20 right-5 z-30 flex gap-3 items-end">
-            <button onClick={() => setIsQuickAdding(true)} className="bg-orange-500 text-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform" title="Pikalisäys"><Zap size={24}/></button>
+            <button onClick={openQuickAdd} className="bg-orange-500 text-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform" title="Pikalisäys"><Zap size={24}/></button>
             <button onClick={openAddModal} className="bg-blue-600 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform"><Plus size={32}/></button>
           </div>
         </>
@@ -1325,7 +1367,18 @@ const MedicineTracker = () => {
                 ))}
               </div>
               <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-orange-500" placeholder="Mitä otit? (esim. Burana)" value={quickAddName} onChange={e => setQuickAddName(e.target.value)} />
-              <input className="w-full bg-slate-50 p-3 rounded-xl text-sm mb-4 outline-none border focus:border-orange-500" placeholder="Syy (valinnainen, esim. Päänsärky)" value={quickAddReason} onChange={e => setQuickAddReason(e.target.value)} />
+              
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                 <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Ajankohta</label>
+                    <input type="datetime-local" className="w-full bg-slate-50 p-3 rounded-xl text-sm outline-none border focus:border-orange-500" value={quickAddDate} onChange={e => setQuickAddDate(e.target.value)} />
+                 </div>
+                 <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Syy</label>
+                    <input className="w-full bg-slate-50 p-3 rounded-xl text-sm outline-none border focus:border-orange-500" placeholder="Valinnainen" value={quickAddReason} onChange={e => setQuickAddReason(e.target.value)} />
+                 </div>
+              </div>
+
               <div className="flex gap-3">
                 <button type="button" onClick={() => setIsQuickAdding(false)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
                 <button type="submit" disabled={!quickAddName.trim()} className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold text-sm disabled:opacity-50">Kirjaa</button>
@@ -1378,7 +1431,6 @@ const MedicineTracker = () => {
                            <button key={log.id} onClick={() => openLogEdit(log)} className="w-full flex justify-between items-center p-2 bg-slate-50 rounded-lg text-left">
                               <div>
                                 <span className="font-bold text-sm text-slate-700">{formatTime(log.timestamp)}</span>
-                                {/* Jos historiassa on ainesosia (vanhat dosetit), näytetään ne tässä */}
                                 {log.ingredients && log.ingredients.length > 0 && (
                                   <div className="text-[10px] text-slate-500 mt-0.5">
                                     Sisälsi: {log.ingredients.map(ing => `${ing.name} (${ing.count})`).join(', ')}
@@ -1433,7 +1485,6 @@ const MedicineTracker = () => {
              </div>
              <form onSubmit={handleSaveLogEdit}>
                
-               {/* NÄYTETÄÄN OTETUT AINESOSAT TÄSSÄ */}
                {editingLog.ingredients && editingLog.ingredients.length > 0 && (
                  <div className="mb-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
                     <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Sisälsi</label>
