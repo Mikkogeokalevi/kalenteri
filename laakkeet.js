@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component } from 'lucide-react';
+import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
 import { initializeApp } from 'firebase/app';
@@ -105,7 +105,7 @@ const HelpView = ({ onClose }) => {
           </div>
         </section>
 
-        {/* 3. VARASTO JA DOSETTI (TÄRKEÄ UUSI OMINAISUUS) */}
+        {/* 3. VARASTO JA DOSETTI */}
         <section className="bg-blue-50 p-5 rounded-2xl border border-blue-100">
           <h3 className="font-bold text-blue-800 text-lg mb-4 flex items-center gap-2">
             <LayoutList className="text-blue-600" size={22}/> Varasto & Dosetit
@@ -118,7 +118,7 @@ const HelpView = ({ onClose }) => {
               <p>Lisää ensin kaikki fyysiset lääkepurkit sovellukseen (esim. "Kalkki", "Magnesium").</p>
               <ul className="list-disc list-inside text-xs space-y-1">
                 <li>Aseta niille <strong>Varastosaldo</strong> (esim. 100 kpl).</li>
-                <li>Jos lääke on vain osa yhdistelmää, ota täppä pois kohdasta <em>"Näytä etusivulla"</em>. Tällöin se ei sotke etusivun näkymää, vaan löytyy yläpalkin <strong>Varastolistalta</strong> (<Box size={12} className="inline"/>).</li>
+                <li>Jos lääke on vain osa yhdistelmää, ota täppä pois kohdasta <em>"Näytä etusivulla"</em>. Tällöin se ei sotke etusivun näkymää, vaan löytyy yläpalkin valikosta <strong>Varastolistalta</strong> (<Box size={12} className="inline"/>).</li>
               </ul>
             </div>
 
@@ -153,7 +153,7 @@ const HelpView = ({ onClose }) => {
         {/* 5. KUVAKKEET */}
         <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
           <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
-            <HelpCircle className="text-slate-500" size={22}/> Kuvakkeet selitettynä
+            <HelpCircle className="text-slate-500" size={22}/> Valikko & Kuvakkeet
           </h3>
           <div className="grid grid-cols-1 gap-3">
              <div className="flex items-center gap-3">
@@ -165,22 +165,14 @@ const HelpView = ({ onClose }) => {
                <div className="text-xs text-slate-600"><strong>Ostoslista:</strong> Ilmestyy yläpalkkiin, kun jonkin varastolääkkeen saldo alittaa hälytysrajan.</div>
              </div>
              <div className="flex items-center gap-3">
-               <div className="p-2 bg-slate-100 text-slate-600 rounded-full"><Box size={16}/></div>
-               <div className="text-xs text-slate-600"><strong>Varastolista:</strong> Näyttää kaikki varastossa olevat purkit ja niiden saldot yhdessä listassa.</div>
-             </div>
-             <div className="flex items-center gap-3">
-               <div className="p-2 bg-blue-50 text-blue-600 rounded-full"><LayoutList size={16}/></div>
-               <div className="text-xs text-slate-600"><strong>Dosettijako:</strong> Näyttää yksinkertaistetun listan dosetin täyttöä varten (Mitä lääkkeitä mihinkin lokeroon).</div>
-             </div>
-             <div className="flex items-center gap-3">
-               <div className="p-2 bg-white border border-slate-200 text-slate-500 rounded-full"><RotateCcw size={16}/></div>
-               <div className="text-xs text-slate-600"><strong>Päivitä:</strong> Lataa sovelluksen uudelleen (käytä jos sovellus takkuilee tai päivitykset eivät näy).</div>
+               <div className="p-2 bg-slate-100 text-slate-600 rounded-full border border-slate-200"><Menu size={16}/></div>
+               <div className="text-xs text-slate-600"><strong>Valikko (yläpalkki):</strong> Täältä löydät Varastolistan, Dosettijaon, Järjestelyn, Ohjeet ja Uloskirjauksen.</div>
              </div>
           </div>
         </section>
 
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v2.8 - {new Date().getFullYear()}
+          Lääkemuistio v2.9 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -284,6 +276,7 @@ const MedicineTracker = () => {
   const [showDosetti, setShowDosetti] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showStockList, setShowStockList] = useState(false); 
+  const [isMenuOpen, setIsMenuOpen] = useState(false); // UUSI: Hampurilaisvalikon tila
 
   // Raportin tila
   const [reportStartDate, setReportStartDate] = useState('');
@@ -939,57 +932,64 @@ const MedicineTracker = () => {
               {activeTab === 'home' ? 'Lääkkeet' : 'Historia'}
             </h1>
           </div>
+          
+          {/* HEADER ICON GROUP - HAMBURGER MENU */}
           <div className="flex items-center gap-1">
             {activeTab === 'home' && (
               <>
-                <button 
-                  onClick={() => setShowStockList(true)}
-                  className="p-2 rounded-full transition-colors text-slate-400 hover:text-slate-600"
-                  title="Varastolista"
-                >
-                  <Box size={20} />
-                </button>
-                <button 
-                  onClick={() => setShowDosetti(true)}
-                  className="p-2 rounded-full transition-colors text-slate-400 hover:text-slate-600"
-                  title="Dosettijako"
-                >
-                  <LayoutList size={20} />
-                </button>
                 <button 
                   onClick={() => setShowShoppingList(true)}
                   className={`p-2 rounded-full transition-colors relative ${shoppingListMeds.length > 0 ? 'text-red-500 hover:text-red-600 bg-red-50' : 'text-slate-400 hover:text-slate-600'}`}
                   title="Ostoslista"
                 >
-                  <ShoppingCart size={18} />
+                  <ShoppingCart size={20} />
                   {shoppingListMeds.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>}
-                </button>
-                <button 
-                  onClick={() => setIsReordering(!isReordering)} 
-                  className={`p-2 rounded-full transition-colors ${isReordering ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
-                  title="Järjestä lääkkeet"
-                >
-                  <ArrowUpDown size={18} />
                 </button>
                 <button 
                   onClick={requestNotificationPermission} 
                   className={`p-2 rounded-full transition-colors ${notificationsEnabled ? 'text-blue-500' : 'text-slate-400 hover:text-slate-600'}`}
                   title={notificationsEnabled ? "Ilmoitukset päällä" : "Ota ilmoitukset käyttöön"}
                 >
-                  {notificationsEnabled ? <Bell size={18} /> : <BellOff size={18} />}
+                  {notificationsEnabled ? <Bell size={20} /> : <BellOff size={20} />}
                 </button>
+                
+                {/* MENU BUTTON */}
+                <div className="relative">
+                  <button 
+                    onClick={() => setIsMenuOpen(!isMenuOpen)} 
+                    className={`p-2 rounded-full transition-colors ${isMenuOpen ? 'bg-slate-100 text-slate-800' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    <Menu size={24} />
+                  </button>
+
+                  {/* MENU DROPDOWN */}
+                  {isMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)}></div>
+                      <div className="absolute top-full right-0 mt-2 w-48 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-slate-100 z-50 p-1 flex flex-col gap-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <button onClick={() => {setShowStockList(true); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-700 text-sm font-medium text-left">
+                          <Box size={18} className="text-blue-500"/> Varastolista
+                        </button>
+                        <button onClick={() => {setShowDosetti(true); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-700 text-sm font-medium text-left">
+                          <LayoutList size={18} className="text-blue-500"/> Dosettijako
+                        </button>
+                        <div className="h-px bg-slate-100 my-1"></div>
+                        <button onClick={() => {setIsReordering(!isReordering); setIsMenuOpen(false);}} className={`flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-sm font-medium text-left ${isReordering ? 'bg-blue-50 text-blue-700' : 'text-slate-700'}`}>
+                          <ArrowUpDown size={18} className={isReordering ? 'text-blue-600' : 'text-slate-400'}/> Järjestä
+                        </button>
+                        <button onClick={() => {setShowHelp(true); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-700 text-sm font-medium text-left">
+                          <HelpCircle size={18} className="text-slate-400"/> Ohjeet
+                        </button>
+                        <div className="h-px bg-slate-100 my-1"></div>
+                        <button onClick={() => {handleLogout(); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 rounded-lg hover:bg-red-50 text-red-600 text-sm font-medium text-left">
+                          <LogOut size={18}/> Kirjaudu ulos
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </>
             )}
-            {/* OHJE-NAPPI */}
-            <button 
-              onClick={() => setShowHelp(true)} 
-              className="p-2 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-full transition-colors"
-              title="Ohjeet"
-            >
-              <HelpCircle size={18} />
-            </button>
-            
-            <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-full transition-colors"><LogOut size={18}/></button>
           </div>
         </div>
 
@@ -1010,7 +1010,7 @@ const MedicineTracker = () => {
         </div>
         
         {/* PÄIVÄN EDISTYMISPALKKI */}
-        {activeTab === 'home' && !isReordering && totalDosesToday > 0 && (
+        {activeTab === 'home' && !isReordering && dailyProgress > 0 && (
           <div className="mt-2 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
             <div 
               className="bg-blue-500 h-1.5 rounded-full transition-all duration-500 ease-out" 
