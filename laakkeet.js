@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu } from 'lucide-react';
+import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Menu } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
 import { initializeApp } from 'firebase/app';
@@ -96,7 +96,6 @@ const HelpView = ({ onClose }) => {
               <ul className="list-disc list-inside space-y-1 ml-1">
                 <li><strong>Aikataulutetut:</strong> Paina aikakuvaketta (esim. Aurinko). Se muuttuu vihreäksi.</li>
                 <li><strong>Tarvittaessa otettavat:</strong> Avaa lääkkeen kortti ja paina <strong>OTA NYT</strong>. Voit kirjata samalla syyn (esim. "Kipu").</li>
-                <li><strong>Pikalisäys (Salama):</strong> Jos otat lääkkeen jota ei ole listalla, paina oranssia salamaa. Voit myös vaihtaa ajan, jos kirjaat jälkikäteen.</li>
               </ul>
             </div>
             <div>
@@ -106,7 +105,7 @@ const HelpView = ({ onClose }) => {
           </div>
         </section>
 
-        {/* 3. VARASTO JA DOSETTI (TÄRKEÄ UUSI OMINAISUUS) */}
+        {/* 3. VARASTO JA DOSETTI */}
         <section className="bg-blue-50 p-5 rounded-2xl border border-blue-100">
           <h3 className="font-bold text-blue-800 text-lg mb-4 flex items-center gap-2">
             <LayoutList className="text-blue-600" size={22}/> Varasto & Dosetit
@@ -173,7 +172,7 @@ const HelpView = ({ onClose }) => {
         </section>
 
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v2.9 - {new Date().getFullYear()}
+          Lääkemuistio v2.10 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -289,12 +288,11 @@ const MedicineTracker = () => {
   const [ingredientCount, setIngredientCount] = useState('');
   const [currentIngredients, setCurrentIngredients] = useState([]); 
 
-  // Pikalisäyksen tila (Nyt sisältää myös ajan)
+  // Pikalisäyksen tila
   const [quickAddName, setQuickAddName] = useState('');
   const [quickAddReason, setQuickAddReason] = useState('');
-  const [quickAddDate, setQuickAddDate] = useState(''); // UUSI: Aika pikalisäykselle
+  const [quickAddDate, setQuickAddDate] = useState(''); 
 
-  // LISÄYS/MUOKKAUS TILA - ONKO NÄKYVISSÄ ETUSIVULLA
   const [showOnDashboard, setShowOnDashboard] = useState(true);
 
   const [takeWithReasonMed, setTakeWithReasonMed] = useState(null);
@@ -431,7 +429,7 @@ const MedicineTracker = () => {
     setNewMedLowLimit('10'); setNewMedIsCourse(false); // Oletukset
     setSelectedColor(getSmartColor()); setSelectedSchedule([]); setScheduleTimes({});
     setCurrentIngredients([]);
-    setShowOnDashboard(true); // Oletuksena näkyy etusivulla
+    setShowOnDashboard(true); 
     setIsAdding(true);
   };
 
@@ -1090,7 +1088,6 @@ const MedicineTracker = () => {
                          )}
                       </div>
                       
-                      {/* Nuoli */}
                       {!isReordering && (
                         <div className="text-slate-400">
                           {expandedMedId === med.id ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
@@ -1177,8 +1174,7 @@ const MedicineTracker = () => {
                               })}
                             </div>
                           ) : (
-                            // TÄMÄ ON SE UUSI LOGIIKKA: Klikkaus avaa syy-ikkunan, ei ota suoraan.
-                            <button onClick={() => { setTakeWithReasonMed(med); setTakeReason(''); }} className={`w-full py-3 rounded-lg font-bold text-white shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform ${c.btn}`}>
+                            <button onClick={() => takeMedicine(med)} className={`w-full py-3 rounded-lg font-bold text-white shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform ${c.btn}`}>
                               <CheckCircle size={20} /> OTA NYT
                             </button>
                           )
