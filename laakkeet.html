@@ -200,11 +200,92 @@
       );
     };
 
+    // --- KIRJAUTUMISNÄKYMÄ ---
+    const AuthScreen = () => {
+      const [isRegistering, setIsRegistering] = useState(false);
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      const [error, setError] = useState('');
+      const [loading, setLoading] = useState(false);
+
+      const handleAuth = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+        try {
+          await setPersistence(auth, browserLocalPersistence);
+          if (isRegistering) {
+            await createUserWithEmailAndPassword(auth, email, password);
+          } else {
+            await signInWithEmailAndPassword(auth, email, password);
+          }
+        } catch (err) {
+          console.error(err);
+          let msg = "Tapahtui virhe.";
+          if (err.code === 'auth/invalid-email') msg = "Virheellinen sähköposti.";
+          if (err.code === 'auth/missing-password') msg = "Syötä salasana.";
+          if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') msg = "Väärä sähköposti tai salasana.";
+          if (err.code === 'auth/weak-password') msg = "Salasanan tulee olla vähintään 6 merkkiä.";
+          if (err.code === 'auth/email-already-in-use') msg = "Sähköposti on jo käytössä.";
+          setError(msg);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      return (
+        <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative overflow-hidden">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+             <img src="https://img.geocaching.com:443/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" alt="" className="w-3/4 opacity-[0.15] grayscale" />
+          </div>
+          <div className="w-full max-w-sm bg-white/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl z-10 border border-white">
+            <div className="flex justify-center mb-6">
+              <img src="https://img.geocaching.com:443/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" alt="Logo" className="h-16 w-auto object-contain" />
+            </div>
+            <h2 className="text-2xl font-bold text-center text-slate-800 mb-2">
+              {isRegistering ? 'Luo tunnus' : 'Kirjaudu sisään'}
+            </h2>
+            <p className="text-center text-slate-400 text-sm mb-8">
+              Lääkemuistio - Pidä kirjaa lääkkeistäsi
+            </p>
+            {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 flex items-center gap-2"><AlertTriangle size={16} /> {error}</div>}
+            <form onSubmit={handleAuth} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Sähköposti</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 text-slate-400" size={18} />
+                  <input type="email" required className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all" placeholder="sinun@sahkoposti.fi" value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Salasana</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 text-slate-400" size={18} />
+                  <input type="password" required className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all" placeholder="******" value={password} onChange={(e) => setPassword(e.target.value)} />
+                </div>
+              </div>
+              <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all flex justify-center items-center gap-2 disabled:opacity-70">
+                {loading && <Loader2 size={20} className="animate-spin" />}
+                {isRegistering ? 'Rekisteröidy' : 'Kirjaudu'}
+              </button>
+            </form>
+            <div className="mt-6 text-center">
+              <button onClick={() => { setIsRegistering(!isRegistering); setError(''); }} className="text-sm text-slate-500 hover:text-blue-600 font-medium">
+                {isRegistering ? 'Onko sinulla jo tunnus? Kirjaudu' : 'Uusi käyttäjä? Luo tunnus'}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
     // --- PÄÄSOVELLUS ---
     const MedicineTracker = () => {
       const [activeTab, setActiveTab] = useState('home');
       const [user, setUser] = useState(null);
-      const [loading, setLoading] = useState(true);
+      const [authLoading, setAuthLoading] = useState(true);
+      const [loadingData, setLoadingData] = useState(true);
+
       const [medications, setMedications] = useState([]);
       const [logs, setLogs] = useState([]);
       
@@ -218,23 +299,28 @@
       const [showReport, setShowReport] = useState(false);
       const [showMenu, setShowMenu] = useState(false);
 
-      // Auth & Data loading... (Same as before)
+      // Auth & Data loading
       useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (u) => {
           setUser(u);
-          if (!u) { setLoading(false); setMedications([]); setLogs([]); }
+          setAuthLoading(false); // AINA pysäytetään auth loader tässä
+          if (!u) { 
+             setLoadingData(false); // Pysäytetään myös dataloader jos ei ole käyttäjää
+             setMedications([]); 
+             setLogs([]); 
+          }
         });
         return () => unsubscribe();
       }, []);
 
       useEffect(() => {
         if (!user) return;
-        setLoading(true);
+        setLoadingData(true);
         const u = collection(db, 'artifacts', APP_ID, 'users', user.uid, 'medications');
         const l = collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs');
         const un1 = onSnapshot(u, s => {
           const d = s.docs.map(x => ({id:x.id, ...x.data()})).sort((a,b)=>(a.order??a.createdAt)-(b.order??b.createdAt));
-          setMedications(d); setLoading(false);
+          setMedications(d); setLoadingData(false);
         });
         const un2 = onSnapshot(l, s => {
            setLogs(s.docs.map(x => ({id:x.id, ...x.data()})));
@@ -250,8 +336,8 @@
       const [newMedDosage, setNewMedDosage] = useState('');
       const [newMedStock, setNewMedStock] = useState('');
       const [newMedTrackStock, setNewMedTrackStock] = useState(false);
-      const [newMedLowLimit, setNewMedLowLimit] = useState('10'); // Oletus 10
-      const [newMedIsCourse, setNewMedIsCourse] = useState(false); // Kuuri
+      const [newMedLowLimit, setNewMedLowLimit] = useState('10'); 
+      const [newMedIsCourse, setNewMedIsCourse] = useState(false); 
 
       const [selectedColor, setSelectedColor] = useState('blue');
       const [selectedSchedule, setSelectedSchedule] = useState([]); 
@@ -293,7 +379,6 @@
       };
 
       // --- LOGIIKKA ---
-      
       const initiateTakeMedicine = (med, slotId = null) => {
         setTakeNote('');
         setTakeModal({ med, slotId });
@@ -305,7 +390,7 @@
         try {
           await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
             medId: med.id, medName: med.name, medColor: med.colorKey, slot: slotId, 
-            note: takeNote.trim(), // TALLENNA SYY/KOMMENTTI
+            note: takeNote.trim(),
             timestamp: new Date().toISOString()
           });
           if (med.trackStock && med.stock > 0) {
@@ -323,6 +408,29 @@
         setIsAdding(true);
       };
 
+      const toggleScheduleSlot = (slotId, isEdit = false) => {
+        if (isEdit) {
+          const current = editingMed.schedule || [];
+          const newSchedule = current.includes(slotId) ? current.filter(id => id !== slotId) : [...current, slotId];
+          let newTimes = { ...(editingMed.scheduleTimes || {}) };
+          if (!current.includes(slotId)) newTimes[slotId] = TIME_SLOTS.find(s => s.id === slotId).defaultTime;
+          setEditingMed({...editingMed, schedule: newSchedule, scheduleTimes: newTimes});
+        } else {
+          const newSchedule = selectedSchedule.includes(slotId) ? selectedSchedule.filter(id => id !== slotId) : [...selectedSchedule, slotId];
+          let newTimes = { ...scheduleTimes };
+          if (!selectedSchedule.includes(slotId)) newTimes[slotId] = TIME_SLOTS.find(s => s.id === slotId).defaultTime;
+          setSelectedSchedule(newSchedule); setScheduleTimes(newTimes);
+        }
+      };
+
+      const handleTimeChange = (slotId, time, isEdit = false) => {
+        if (isEdit) {
+          setEditingMed({ ...editingMed, scheduleTimes: { ...editingMed.scheduleTimes, [slotId]: time } });
+        } else {
+          setScheduleTimes({ ...scheduleTimes, [slotId]: time });
+        }
+      };
+
       const handleAddMedication = async (e) => {
         e.preventDefault();
         if (!newMedName.trim() || !user) return;
@@ -338,15 +446,17 @@
             colorKey: selectedColor, 
             schedule: selectedSchedule, 
             scheduleTimes: scheduleTimes, 
-            createdAt: Date.now(), order: maxOrder + 1, isArchived: false
+            createdAt: Date.now(), 
+            order: maxOrder + 1, 
+            isArchived: false
           });
-          setIsAdding(false);
+          setNewMedName(''); setNewMedDosage(''); setIsAdding(false);
         } catch (error) { alert("Virhe lisäyksessä."); }
       };
 
       const handleUpdateMedication = async (e) => {
         e.preventDefault();
-        if (!editingMed || !user) return;
+        if (!editingMed || !editingMed.name.trim() || !user) return;
         try {
           const medRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', editingMed.id);
           await updateDoc(medRef, { 
@@ -363,27 +473,32 @@
         } catch (error) { alert("Virhe muokkauksessa."); }
       };
 
-      // ... Muut funktiot samat kuin ennen, paitsi Auth ...
-      
-      const toggleScheduleSlot = (slotId, isEdit=false) => {
-          // Logiikka sama, kopioidaan edellisestä
-          if (isEdit) {
-            const current = editingMed.schedule || [];
-            const newSchedule = current.includes(slotId) ? current.filter(id => id !== slotId) : [...current, slotId];
-            let newTimes = { ...(editingMed.scheduleTimes || {}) };
-            if (!current.includes(slotId)) newTimes[slotId] = TIME_SLOTS.find(s => s.id === slotId).defaultTime;
-            setEditingMed({...editingMed, schedule: newSchedule, scheduleTimes: newTimes});
-          } else {
-            const newSchedule = selectedSchedule.includes(slotId) ? selectedSchedule.filter(id => id !== slotId) : [...selectedSchedule, slotId];
-            let newTimes = { ...scheduleTimes };
-            if (!selectedSchedule.includes(slotId)) newTimes[slotId] = TIME_SLOTS.find(s => s.id === slotId).defaultTime;
-            setSelectedSchedule(newSchedule); setScheduleTimes(newTimes);
-          }
+      const moveMedication = async (index, direction) => {
+        if (!user) return;
+        const activeMeds = medications.filter(m => !m.isArchived);
+        if (index + direction < 0 || index + direction >= activeMeds.length) return;
+        const currentMed = activeMeds[index];
+        const swapMed = activeMeds[index + direction];
+        let order1 = currentMed.order ?? currentMed.createdAt;
+        let order2 = swapMed.order ?? swapMed.createdAt;
+        if (order1 === order2) order2 = order1 + 1;
+        try {
+          const medRef1 = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', currentMed.id);
+          const medRef2 = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', swapMed.id);
+          await updateDoc(medRef1, { order: order2 });
+          await updateDoc(medRef2, { order: order1 });
+        } catch (e) { console.error("Järjestäminen epäonnistui", e); }
       };
-      
-      const handleTimeChange = (slotId, time, isEdit=false) => {
-        if (isEdit) setEditingMed({ ...editingMed, scheduleTimes: { ...editingMed.scheduleTimes, [slotId]: time } });
-        else setScheduleTimes({ ...scheduleTimes, [slotId]: time });
+
+      const handleQuickAdd = async (e) => {
+        e.preventDefault();
+        if (!quickAddName.trim() || !user) return;
+        try {
+          await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
+            medId: 'quick_dose', medName: quickAddName.trim(), medColor: 'orange', slot: null, timestamp: new Date().toISOString()
+          });
+          setQuickAddName(''); setIsQuickAdding(false);
+        } catch(e) { alert("Virhe pikalisäyksessä"); }
       };
 
       const handleRefill = async (med) => {
@@ -394,30 +509,6 @@
            await updateDoc(medRef, { stock: (med.stock || 0) + parseInt(amount) });
         }
       };
-      
-      // Helpers & Renders
-      const formatTime = (iso) => { try { return new Date(iso).toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' }); } catch(e) { return '--:--'; } };
-      const getDayLabel = (iso) => {
-        try { const d = new Date(iso); const today = new Date();
-          if (d.toDateString() === today.toDateString()) return 'Tänään';
-          const yest = new Date(); yest.setDate(yest.getDate() - 1);
-          if (d.toDateString() === yest.toDateString()) return 'Eilen';
-          return `${d.getDate()}.${d.getMonth()+1}.`; } catch(e) { return ''; }
-      };
-      const getLastTaken = (medId) => {
-        const l = logs.filter(x => x.medId === medId);
-        return l.length ? l.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp))[0] : null;
-      };
-      const getHistoryDates = () => [...new Set(logs.map(log => new Date(log.timestamp).toDateString()))].sort((a,b) => new Date(b) - new Date(a));
-      const getLogsForDate = (dateObj) => logs.filter(l => new Date(l.timestamp).toDateString() === dateObj.toDateString()).sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
-      const isSlotTakenToday = (medId, slotId) => logs.some(l => l.medId === medId && l.slot === slotId && new Date(l.timestamp).toDateString() === new Date().toDateString());
-      const isGenericTakenToday = (medId) => logs.some(l => l.medId === medId && new Date(l.timestamp).toDateString() === new Date().toDateString());
-      
-      const activeMeds = medications.filter(m => !m.isArchived);
-      const archivedMeds = medications.filter(m => m.isArchived);
-      
-      const getLogName = (log) => (medications.find(m => m.id === log.medId)?.name || log.medName || 'Poistettu');
-      const getLogColor = (log) => getColors(medications.find(m => m.id === log.medId)?.colorKey || log.medColor || 'blue');
 
       const handleManualLog = async (e) => {
         e.preventDefault();
@@ -507,20 +598,46 @@
          setDeleteDialog({ isOpen: false, mode: null, medId: null, logId: null });
       };
 
-      // Auth component (sama koodi kuin aiemmin, ei muutoksia logiikkaan)
-      if (!user) {
-         // Yksinkertaistettu login view tähän renderiin
-         return (
-            <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"><img src="https://img.geocaching.com:443/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" className="w-3/4 opacity-[0.15] grayscale" /></div>
-                <div className="w-full max-w-sm bg-white/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl z-10 border border-white">
-                   <h2 className="text-2xl font-bold text-center text-slate-800 mb-8">Kirjaudu Lääkemuistioon</h2>
-                   <button onClick={() => signInWithEmailAndPassword(auth, prompt("Sähköposti"), prompt("Salasana")).catch(e => alert("Virhe: " + e.message))} className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl mb-4">Kirjaudu</button>
-                   <button onClick={() => createUserWithEmailAndPassword(auth, prompt("Uusi Sähköposti"), prompt("Uusi Salasana")).catch(e => alert("Virhe: " + e.message))} className="w-full bg-slate-100 text-slate-700 font-bold py-3.5 rounded-xl">Luo tunnus</button>
-                </div>
-            </div>
-         );
-      }
+      // UI Helpers
+      const formatTime = (iso) => { try { return new Date(iso).toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' }); } catch(e) { return '--:--'; } };
+      const getDayLabel = (iso) => {
+        try { const d = new Date(iso); const today = new Date();
+          if (d.toDateString() === today.toDateString()) return 'Tänään';
+          const yest = new Date(); yest.setDate(yest.getDate() - 1);
+          if (d.toDateString() === yest.toDateString()) return 'Eilen';
+          return `${d.getDate()}.${d.getMonth()+1}.`; } catch(e) { return ''; }
+      };
+      const getLastTaken = (medId) => {
+        const l = logs.filter(x => x.medId === medId);
+        return l.length ? l.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp))[0] : null;
+      };
+      const getHistoryDates = () => [...new Set(logs.map(log => new Date(log.timestamp).toDateString()))].sort((a,b) => new Date(b) - new Date(a));
+      const getLogsForDate = (dateObj) => logs.filter(l => new Date(l.timestamp).toDateString() === dateObj.toDateString()).sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+      const getCurrentDateTimeLocal = () => {
+        const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        return now.toISOString().slice(0, 16);
+      };
+      const isSlotTakenToday = (medId, slotId) => logs.some(l => l.medId === medId && l.slot === slotId && new Date(l.timestamp).toDateString() === new Date().toDateString());
+      const isGenericTakenToday = (medId) => logs.some(l => l.medId === medId && new Date(l.timestamp).toDateString() === new Date().toDateString());
+      
+      const activeMeds = medications.filter(m => !m.isArchived);
+      const archivedMeds = medications.filter(m => m.isArchived);
+      
+      const getLogName = (log) => (medications.find(m => m.id === log.medId)?.name || log.medName || 'Poistettu');
+      const getLogColor = (log) => getColors(medications.find(m => m.id === log.medId)?.colorKey || log.medColor || 'blue');
+      const calculateDailyProgress = () => {
+         const scheduledMeds = activeMeds.filter(m => m.schedule && m.schedule.length > 0);
+         if (scheduledMeds.length === 0) return 0;
+         let total = 0; let taken = 0; const today = new Date().toDateString();
+         scheduledMeds.forEach(m => m.schedule.forEach(s => {
+           total++; if(logs.some(l => l.medId === m.id && l.slot === s && new Date(l.timestamp).toDateString() === today)) taken++;
+         }));
+         return total === 0 ? 0 : Math.round((taken/total)*100);
+      };
+      const dailyProgress = calculateDailyProgress();
+
+      if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-blue-600" size={40} /></div>;
+      if (!user) return <AuthScreen />;
 
       return (
         <div className="flex flex-col h-screen bg-slate-50 font-sans overflow-hidden select-none relative">
@@ -555,6 +672,13 @@
                <button onClick={() => setActiveTab('home')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${activeTab==='home'?'bg-white text-blue-600 shadow-sm':'text-slate-500'}`}><Pill size={16}/> Lääkkeet</button>
                <button onClick={() => setActiveTab('stats')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${activeTab==='stats'?'bg-white text-blue-600 shadow-sm':'text-slate-500'}`}><BarChart2 size={16}/> Historia</button>
              </div>
+
+             {/* PÄIVÄN EDISTYMISPALKKI */}
+             {activeTab === 'home' && !isReordering && dailyProgress > 0 && (
+               <div className="mt-2 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                 <div className="bg-blue-500 h-1.5 rounded-full transition-all duration-500 ease-out" style={{width: `${dailyProgress}%`}}></div>
+               </div>
+             )}
            </header>
 
            {/* MAIN */}
@@ -641,6 +765,13 @@
                     </div>
                   </div>
                ))}
+               {activeTab === 'home' && activeMeds.length === 0 && !isAdding && (
+                    <div className="text-center py-12 text-slate-400">
+                      <div className="bg-white p-4 rounded-full inline-block mb-3 shadow-sm"><Pill size={32} className="text-blue-200" /></div>
+                      <p className="mb-4 text-sm">Ei lääkkeitä listalla.</p>
+                      <button onClick={openAddModal} className="bg-blue-600 text-white px-5 py-2.5 rounded-full font-bold shadow-lg text-sm active:scale-95 transition-transform">Lisää ensimmäinen</button>
+                    </div>
+                  )}
              </div>
            </main>
 
@@ -735,6 +866,87 @@
            {showShoppingList && <ShoppingListView medications={medications} onClose={()=>setShowShoppingList(false)} />}
            {showReport && <ReportView medications={medications} logs={logs} onClose={()=>setShowReport(false)} />}
            {showHelp && <HelpView onClose={()=>setShowHelp(false)} />}
+           
+           {/* HISTORIA MODAL & POISTO MODAL */}
+           {showHistoryFor && (
+            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in slide-in-from-bottom-full">
+              <div className="bg-white w-full h-[85%] rounded-t-2xl flex flex-col shadow-2xl">
+                <div className="p-4 border-b flex justify-between items-center">
+                  <h2 className="text-lg font-bold">{medications.find(m => m.id === showHistoryFor)?.name}</h2>
+                  <button onClick={() => setShowHistoryFor(null)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button>
+                </div>
+                <div className="overflow-y-auto flex-1 p-4 space-y-3">
+                  {logs.filter(l => l.medId === showHistoryFor).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)).map(log => (
+                    <div key={log.id} onClick={() => openLogEdit(log)} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100 active:bg-slate-100 cursor-pointer">
+                      <div><div className="font-bold text-slate-700 text-sm">{getDayLabel(log.timestamp)}</div><div className="text-xs text-slate-400">klo {formatTime(log.timestamp)}</div>{log.note && <div className="text-[10px] text-slate-500 italic mt-1">"{log.note}"</div>}</div>
+                      <div className="p-2 text-slate-300"><Pencil size={16}/></div>
+                    </div>
+                  ))}
+                  {!logs.some(l => l.medId === showHistoryFor) && <div className="text-center text-slate-400 mt-10 text-sm">Ei merkintöjä.</div>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {deleteDialog.isOpen && (
+            <div className="fixed inset-0 z-[80] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in">
+              <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+                <div className="flex items-center gap-2 text-red-600 mb-2 font-bold text-lg"><AlertTriangle /> 
+                  {deleteDialog.mode === 'log' ? deleteDialog.title : `Poista ${deleteDialog.medName}?`}
+                </div>
+                {deleteDialog.mode === 'log' && (
+                  <>
+                    <p className="text-slate-600 mb-6 text-sm">{deleteDialog.message}</p>
+                    <div className="flex gap-3">
+                      <button onClick={() => setDeleteDialog({isOpen:false})} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-700 text-sm">Peruuta</button>
+                      <button onClick={handleDeleteSingleLog} className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold text-sm">Poista</button>
+                    </div>
+                  </>
+                )}
+                {deleteDialog.mode === 'med' && (
+                  <>
+                    {deleteDialog.hasHistory ? (
+                      <>
+                        <p className="text-slate-600 mb-6 text-sm">Tällä lääkkeellä on merkintöjä historiassa. Miten haluat toimia?</p>
+                        <div className="space-y-2">
+                          <button onClick={handleDeleteKeepHistory} className="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-bold text-sm">Säilytä historia, poista lääke</button>
+                          <button onClick={handleDeleteAll} className="w-full py-3 bg-red-500 text-white rounded-xl font-bold text-sm">Poista kaikki (lääke + historia)</button>
+                          <button onClick={() => setDeleteDialog({isOpen:false})} className="w-full py-3 text-slate-400 font-medium text-sm">Peruuta</button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-slate-600 mb-6 text-sm">Haluatko varmasti poistaa lääkkeen?</p>
+                        <div className="flex gap-3">
+                          <button onClick={() => setDeleteDialog({isOpen:false})} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-700 text-sm">Peruuta</button>
+                          <button onClick={handleDeleteAll} className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold text-sm">Poista</button>
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {editingLog && (
+            <div className="fixed inset-0 z-[75] bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
+              <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
+                <h2 className="text-lg font-bold mb-1">Muokkaa merkintää</h2>
+                <p className="text-sm text-slate-500 mb-4">{getLogName(editingLog)}</p>
+                <form onSubmit={handleSaveLogEdit}>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Aika ja päivä</label>
+                  <input type="datetime-local" className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" value={editingLogDate} onChange={e => setEditingLogDate(e.target.value)} />
+                  <div className="flex gap-3 mb-3">
+                    <button type="button" onClick={() => setEditingLog(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
+                    <button type="submit" className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-md">Tallenna</button>
+                  </div>
+                  <button type="button" onClick={requestDeleteLog} className="w-full py-3 bg-red-50 text-red-500 rounded-xl font-bold text-sm flex items-center justify-center gap-2"><Trash2 size={16}/> Poista merkintä</button>
+                </form>
+                <div className="h-6"></div>
+              </div>
+            </div>
+          )}
 
            {isQuickAdding && (
              <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end justify-center animate-in fade-in">
