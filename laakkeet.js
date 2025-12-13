@@ -39,7 +39,7 @@ const TIME_SLOTS = [
   { id: 'yo', label: 'Yö', icon: Moon, defaultTime: '22:00' }
 ];
 
-// --- OHJESIVU KOMPONENTTI ---
+// --- OHJESIVU KOMPONENTTI (KATTAVA) ---
 const HelpView = ({ onClose }) => {
   return (
     <div className="fixed inset-0 z-[60] bg-slate-50 flex flex-col animate-in slide-in-from-right duration-300 overflow-hidden">
@@ -53,47 +53,172 @@ const HelpView = ({ onClose }) => {
       </div>
 
       <div className="flex-1 overflow-y-auto p-5 space-y-8 pb-20">
+        
+        {/* JOHDANTO */}
         <section className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
           <h3 className="font-bold text-blue-800 text-lg mb-2">Tervetuloa Lääkemuistioon!</h3>
           <p className="text-sm text-slate-600 mb-2">
             Tämä sovellus auttaa sinua pitämään kirjaa lääkkeistäsi, muistamaan niiden oton ja seuraamaan lääkevarastoasi.
           </p>
+          <div className="text-xs text-blue-600 bg-white/50 p-2 rounded border border-blue-200">
+            <strong>Vinkki:</strong> Saat sovelluksen toimimaan parhaiten puhelimessa, kun lisäät sen kotivalikkoon (katso kohta 1).
+          </div>
         </section>
 
+        {/* 1. ASENNUS */}
         <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
           <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
             <PlusSquare className="text-slate-500" size={22}/> 1. Asennus (Tärkeä!)
           </h3>
           <p className="text-sm text-slate-600 mb-3">
-            Jotta ilmoitukset toimivat ja sovellus on koko näytöllä, lisää se kotivalikkoon:
+            Tämä on selainpohjainen sovellus. Jotta se toimii koko näytöllä ja ilmoitukset toimivat luotettavasti, tee näin:
           </p>
           <div className="space-y-3">
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <h4 className="font-bold text-slate-800 text-sm mb-1"> iPhone / iPad</h4>
-              <p className="text-xs text-slate-600">Paina <strong>Jaa</strong> <Share className="inline w-3 h-3"/> &rarr; Valitse <strong>"Lisää Koti-valikkoon"</strong>.</p>
+              <h4 className="font-bold text-slate-800 text-sm mb-1"> iPhone / iPad (Safari)</h4>
+              <ol className="list-decimal list-inside text-xs text-slate-600 space-y-1 ml-1">
+                <li>Paina alareunan <strong>Jaa</strong>-painiketta <Share className="inline w-3 h-3"/>.</li>
+                <li>Rullaa valikkoa alaspäin.</li>
+                <li>Valitse <strong>"Lisää Koti-valikkoon"</strong>.</li>
+              </ol>
             </div>
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <h4 className="font-bold text-slate-800 text-sm mb-1">🤖 Android</h4>
-              <p className="text-xs text-slate-600">Paina valikkoa (kolme pistettä) &rarr; <strong>"Asenna sovellus"</strong>.</p>
+              <h4 className="font-bold text-slate-800 text-sm mb-1">🤖 Android (Chrome)</h4>
+              <ol className="list-decimal list-inside text-xs text-slate-600 space-y-1 ml-1">
+                <li>Paina selaimen yläkulman kolmea pistettä <MoreVertical className="inline w-3 h-3"/>.</li>
+                <li>Valitse <strong>"Asenna sovellus"</strong> tai <strong>"Lisää aloitusnäyttöön"</strong>.</li>
+              </ol>
             </div>
           </div>
         </section>
 
+        {/* 2. PERUSTEET */}
         <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
           <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
-            <List className="text-blue-600" size={22}/> 2. Missä lääkkeeni on?
+            <Pill className="text-blue-600" size={22}/> 2. Peruskäyttö
+          </h3>
+          
+          <div className="space-y-6">
+            <div>
+              <h4 className="font-bold text-slate-700 text-sm mb-2 border-b pb-1">Lääkkeen lisääminen</h4>
+              <p className="text-sm text-slate-600 mb-2">Paina oikean alakulman sinistä <strong>+</strong> painiketta.</p>
+              <ul className="list-disc list-inside text-xs text-slate-600 space-y-1.5 ml-1">
+                <li><strong>Nimi:</strong> Lääkkeen nimi (esim. Burana).</li>
+                <li><strong>Väri:</strong> Valitse tunnistettava väri.</li>
+                <li><strong>Aikataulu:</strong> Valitse Aamu/Päivä/Ilta/Yö, jos lääke on säännöllinen. Jos lääke otetaan <em>vain tarvittaessa</em>, jätä aikataulu tyhjäksi.</li>
+                <li><strong>Näkyvyys:</strong> Jos otat lääkettä harvoin, voit ottaa "Näytä etusivulla" -valinnan pois. Löydät lääkkeen silti valikosta kohdasta "Lääkeluettelo".</li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-slate-700 text-sm mb-2 border-b pb-1">Lääkkeen ottaminen</h4>
+              <ul className="list-disc list-inside text-sm text-slate-600 space-y-2 ml-1">
+                <li>
+                  <strong>Aikataulutetut:</strong> Paina etusivulla näkyvää aikakuvaketta (esim. Aurinko). Se muuttuu vihreäksi <Check className="inline w-3 h-3 text-green-600"/>, kun lääke on otettu.
+                </li>
+                <li>
+                  <strong>Tarvittaessa otettavat:</strong> Avaa lääkkeen kortti (nuolesta tai nimeä klikkaamalla) ja paina isoa <strong>OTA NYT</strong> -painiketta.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* 3. VARASTO JA DOSETTI */}
+        <section className="bg-blue-50 p-5 rounded-2xl border border-blue-100">
+          <h3 className="font-bold text-blue-800 text-lg mb-4 flex items-center gap-2">
+            <Package className="text-blue-600" size={22}/> 3. Varasto & Dosetti (Edistynyt)
+          </h3>
+          <p className="text-sm text-slate-600 mb-4">
+            Tämä ominaisuus on hyödyllinen, jos käytät dosettia tai haluat sovelluksen varoittavan lääkkeiden loppumisesta. Idea on erottaa "varastopurkit" ja "päivittäinen dosetti".
+          </p>
+          
+          <div className="space-y-4">
+            <div className="bg-white p-3 rounded-xl border border-blue-200">
+              <h4 className="font-bold text-slate-800 text-xs uppercase mb-1">Vaihe A: Luo Varasto</h4>
+              <p className="text-xs text-slate-600 mb-2">Lisää ensin kaikki fyysiset lääkepurkit sovellukseen.</p>
+              <ul className="list-disc list-inside text-xs text-slate-600 space-y-1">
+                <li>Laita täppä kohtaan <strong>"Seuraa lääkevarastoa"</strong>.</li>
+                <li>Syötä purkin sisältö (esim. 100 kpl) ja hälytysraja.</li>
+                <li><em>Vinkki:</em> Jos lääke on vain osa yhdistelmää, ota täppä pois kohdasta "Näytä etusivulla", jotta se ei täytä päänäkymää. Löydät sen myöhemmin valikon kautta kohdasta "Varastolista".</li>
+              </ul>
+            </div>
+
+            <div className="bg-white p-3 rounded-xl border border-blue-200">
+              <h4 className="font-bold text-slate-800 text-xs uppercase mb-1">Vaihe B: Luo Yhdistelmä (Dosetti)</h4>
+              <p className="text-xs text-slate-600 mb-2">Luo uusi lääke nimeltä esim. "Iltasetti".</p>
+              <ul className="list-disc list-inside text-xs text-slate-600 space-y-1">
+                <li>Älä laita tälle saldoa. Aseta vain aikataulu (esim. Ilta).</li>
+                <li>Kohdassa <strong>Koostumus</strong> valitse pudotusvalikosta varastossa olevat lääkkeet (esim. Kalkki 1kpl, Magnesium 1kpl).</li>
+              </ul>
+            </div>
+
+            <div className="text-sm text-blue-800 font-medium bg-blue-100 p-2 rounded-lg text-center">
+              Nyt kun kuittaat Iltasetin, sovellus vähentää automaattisesti saldot Kalkki- ja Magnesium-purkeista!
+            </div>
+          </div>
+        </section>
+
+        {/* 4. HISTORIA & RAPORTIT */}
+        <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+          <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
+            <BarChart2 className="text-purple-600" size={22}/> 4. Historia & Raportit
+          </h3>
+          <div className="text-sm text-slate-600 space-y-3">
+            <p><strong>Historia-välilehti:</strong> Näet aikajanan kaikista otetuista lääkkeistä. Voit käyttää yläreunan hakukenttää etsiäksesi tiettyä lääkettä (löytää myös dosetin sisällä olevat lääkkeet).</p>
+            
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+              <h4 className="font-bold text-slate-800 text-sm mb-1 flex items-center gap-2"><FileText size={14}/> Raportti lääkärille</h4>
+              <p className="text-xs text-slate-600">
+                Paina "Raportti" -nappia historiassa. Voit valita aikavälin ja tulostaa tai kopioida tarkan listan lääkärille. Raportti näyttää myös, mitä lääkkeitä dosetti sisälsi ottohetkellä.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* 5. MUOKKAUS, POISTO & UNOHDUKSET */}
+        <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+          <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
+            <Pencil className="text-orange-500" size={22}/> 5. Muokkaus & Ongelmat
+          </h3>
+          <ul className="list-disc list-inside text-sm text-slate-600 space-y-2 ml-1">
+            <li><strong>Muokkaus:</strong> Avaa lääkkeen kortti ja paina kynä-ikonia. Voit muuttaa nimeä, annostusta tai aikataulua.</li>
+            <li><strong>Poisto:</strong> Roskakori-ikoni poistaa lääkkeen. Sovellus kysyy, haluatko poistaa myös historian vai säilyttää sen.</li>
+            <li><strong>Unohdus / Jälkikäteen kirjaus:</strong> Jos unohdit merkitä lääkkeen, voit lisätä sen jälkikäteen. Käytä "Pikalisäys"-salamaa <Zap className="inline w-3 h-3"/> ja vaihda päivämäärä menneisyyteen. Salaman kautta voit kirjata myös satunnaisen lääkkeen, jota ei ole listalla.</li>
+          </ul>
+        </section>
+
+        {/* 6. UUSI: LÄÄKELUETTELO & PIILOTETUT */}
+        <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+          <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
+            <List className="text-teal-600" size={22}/> 6. Missä lääkkeeni on?
           </h3>
           <p className="text-sm text-slate-600 mb-2">
-            Jos piilotit lääkkeen etusivulta eikä sillä ole varastosaldoa, löydät sen valikosta kohdasta <strong>Lääkeluettelo</strong>.
+            Jos olet piilottanut lääkkeen etusivulta ("Näytä etusivulla" pois päältä) eikä sillä ole varastoseurantaa, se ei näy etusivun listassa eikä varastolistassa.
           </p>
-          <p className="text-sm text-slate-600">
-            <strong>Etusivu:</strong> Näyttää vain lääkkeet, joissa on valinta "Näytä etusivulla".<br/>
-            <strong>Lääkeluettelo:</strong> Näyttää aivan kaikki lääkkeet.
+          <div className="bg-teal-50 p-3 rounded-xl border border-teal-100">
+            <p className="text-sm text-teal-800">
+              Löydät <strong>kaikki</strong> lääkkeet (myös piilotetut) painamalla yläkulman valikkoa <Menu className="inline w-3 h-3"/> ja valitsemalla <strong>Lääkeluettelo (Kaikki)</strong>.
+            </p>
+          </div>
+        </section>
+
+        {/* 7. ILMOITUKSET */}
+        <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+          <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
+            <Bell className="text-blue-500" size={22}/> 7. Ilmoitukset
+          </h3>
+          <p className="text-sm text-slate-600 mb-2">
+            Sovellus voi muistuttaa aikataulutetuista lääkkeistä.
           </p>
+          <ul className="list-disc list-inside text-sm text-slate-600 space-y-2 ml-1">
+            <li><strong>Kello-ikoni ylhäällä:</strong> Näyttää onko muistutukset päällä. Painamalla sitä voit mykistää sovelluksen.</li>
+            <li><strong>Jos ilmoituksia ei tule:</strong> Varmista, että olet sallinut ilmoitukset puhelimen asetuksista (Chrome/Safari) ja lisännyt sovelluksen Koti-valikkoon.</li>
+          </ul>
         </section>
 
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v3.7 - {new Date().getFullYear()}
+          Lääkemuistio v3.8 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
