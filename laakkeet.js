@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info } from 'lucide-react';
+import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info, List } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
 import { initializeApp } from 'firebase/app';
@@ -39,7 +39,7 @@ const TIME_SLOTS = [
   { id: 'yo', label: 'Yö', icon: Moon, defaultTime: '22:00' }
 ];
 
-// --- OHJESIVU KOMPONENTTI (LAAJENNETTU) ---
+// --- OHJESIVU KOMPONENTTI ---
 const HelpView = ({ onClose }) => {
   return (
     <div className="fixed inset-0 z-[60] bg-slate-50 flex flex-col animate-in slide-in-from-right duration-300 overflow-hidden">
@@ -53,142 +53,47 @@ const HelpView = ({ onClose }) => {
       </div>
 
       <div className="flex-1 overflow-y-auto p-5 space-y-8 pb-20">
-        
-        {/* JOHDANTO */}
         <section className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
           <h3 className="font-bold text-blue-800 text-lg mb-2">Tervetuloa Lääkemuistioon!</h3>
           <p className="text-sm text-slate-600 mb-2">
-            Tämä sovellus on suunniteltu helpottamaan lääkkeiden hallintaa. Se toimii muistilappuna, varastonhallintana ja raportointityökaluna lääkärille.
+            Tämä sovellus auttaa sinua pitämään kirjaa lääkkeistäsi, muistamaan niiden oton ja seuraamaan lääkevarastoasi.
           </p>
-          <div className="text-xs text-blue-600 bg-white/50 p-2 rounded border border-blue-200">
-            <strong>Vinkki:</strong> Saat sovelluksen toimimaan parhaiten puhelimessa, kun lisäät sen kotivalikkoon (kts. kohta 1).
-          </div>
         </section>
 
-        {/* 1. ASENNUS */}
         <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
           <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
             <PlusSquare className="text-slate-500" size={22}/> 1. Asennus (Tärkeä!)
           </h3>
           <p className="text-sm text-slate-600 mb-3">
-            Tämä on selainpohjainen sovellus. Jotta se toimii koko näytöllä ilman osoiterivejä, tee näin:
+            Jotta ilmoitukset toimivat ja sovellus on koko näytöllä, lisää se kotivalikkoon:
           </p>
           <div className="space-y-3">
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <h4 className="font-bold text-slate-800 text-sm mb-1"> iPhone / iPad (Safari)</h4>
-              <ol className="list-decimal list-inside text-xs text-slate-600 space-y-1 ml-1">
-                <li>Paina alareunan <strong>Jaa</strong>-painiketta <Share className="inline w-3 h-3"/>.</li>
-                <li>Rullaa valikkoa alaspäin.</li>
-                <li>Valitse <strong>"Lisää Koti-valikkoon"</strong>.</li>
-              </ol>
+              <h4 className="font-bold text-slate-800 text-sm mb-1"> iPhone / iPad</h4>
+              <p className="text-xs text-slate-600">Paina <strong>Jaa</strong> <Share className="inline w-3 h-3"/> &rarr; Valitse <strong>"Lisää Koti-valikkoon"</strong>.</p>
             </div>
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <h4 className="font-bold text-slate-800 text-sm mb-1">🤖 Android (Chrome)</h4>
-              <ol className="list-decimal list-inside text-xs text-slate-600 space-y-1 ml-1">
-                <li>Paina selaimen yläkulman kolmea pistettä <MoreVertical className="inline w-3 h-3"/>.</li>
-                <li>Valitse <strong>"Asenna sovellus"</strong> tai <strong>"Lisää aloitusnäyttöön"</strong>.</li>
-              </ol>
+              <h4 className="font-bold text-slate-800 text-sm mb-1">🤖 Android</h4>
+              <p className="text-xs text-slate-600">Paina valikkoa (kolme pistettä) &rarr; <strong>"Asenna sovellus"</strong>.</p>
             </div>
           </div>
         </section>
 
-        {/* 2. PERUSTEET */}
         <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
           <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
-            <Pill className="text-blue-600" size={22}/> 2. Peruskäyttö
+            <List className="text-blue-600" size={22}/> 2. Missä lääkkeeni on?
           </h3>
-          
-          <div className="space-y-6">
-            <div>
-              <h4 className="font-bold text-slate-700 text-sm mb-2 border-b pb-1">Lääkkeen lisääminen</h4>
-              <p className="text-sm text-slate-600 mb-2">Paina oikean alakulman sinistä <strong>+</strong> painiketta.</p>
-              <ul className="list-disc list-inside text-xs text-slate-600 space-y-1.5 ml-1">
-                <li><strong>Nimi:</strong> Lääkkeen nimi (esim. Burana).</li>
-                <li><strong>Väri:</strong> Valitse tunnistettava väri.</li>
-                <li><strong>Aikataulu:</strong> Valitse Aamu/Päivä/Ilta/Yö, jos lääke on säännöllinen. Jos lääke otetaan <em>vain tarvittaessa</em>, jätä aikataulu tyhjäksi.</li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold text-slate-700 text-sm mb-2 border-b pb-1">Lääkkeen ottaminen</h4>
-              <ul className="list-disc list-inside text-sm text-slate-600 space-y-2 ml-1">
-                <li>
-                  <strong>Aikataulutetut:</strong> Paina etusivulla näkyvää aikakuvaketta (esim. Aurinko). Se muuttuu vihreäksi <Check className="inline w-3 h-3 text-green-600"/>, kun lääke on otettu.
-                </li>
-                <li>
-                  <strong>Tarvittaessa otettavat:</strong> Avaa lääkkeen kortti (nuolesta tai nimeä klikkaamalla) ja paina isoa <strong>OTA NYT</strong> -painiketta.
-                </li>
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        {/* 3. VARASTO JA DOSETTI */}
-        <section className="bg-blue-50 p-5 rounded-2xl border border-blue-100">
-          <h3 className="font-bold text-blue-800 text-lg mb-4 flex items-center gap-2">
-            <Package className="text-blue-600" size={22}/> 3. Varasto & Dosetti (Edistynyt)
-          </h3>
-          <p className="text-sm text-slate-600 mb-4">
-            Tämä ominaisuus on hyödyllinen, jos käytät dosettia tai haluat sovelluksen varoittavan lääkkeiden loppumisesta. Idea on erottaa "varastopurkit" ja "päivittäinen dosetti".
+          <p className="text-sm text-slate-600 mb-2">
+            Jos piilotit lääkkeen etusivulta eikä sillä ole varastosaldoa, löydät sen valikosta kohdasta <strong>Lääkeluettelo</strong>.
           </p>
-          
-          <div className="space-y-4">
-            <div className="bg-white p-3 rounded-xl border border-blue-200">
-              <h4 className="font-bold text-slate-800 text-xs uppercase mb-1">Vaihe A: Luo Varasto</h4>
-              <p className="text-xs text-slate-600 mb-2">Lisää ensin kaikki fyysiset lääkepurkit sovellukseen.</p>
-              <ul className="list-disc list-inside text-xs text-slate-600 space-y-1">
-                <li>Laita täppä kohtaan <strong>"Seuraa lääkevarastoa"</strong>.</li>
-                <li>Syötä purkin sisältö (esim. 100 kpl) ja hälytysraja.</li>
-                <li><em>Vinkki:</em> Jos lääke on vain osa yhdistelmää, ota täppä pois kohdasta "Näytä etusivulla", jotta se ei täytä päänäkymää. Löydät sen myöhemmin valikon kautta kohdasta "Varastolista".</li>
-              </ul>
-            </div>
-
-            <div className="bg-white p-3 rounded-xl border border-blue-200">
-              <h4 className="font-bold text-slate-800 text-xs uppercase mb-1">Vaihe B: Luo Yhdistelmä (Dosetti)</h4>
-              <p className="text-xs text-slate-600 mb-2">Luo uusi lääke nimeltä esim. "Iltasetti".</p>
-              <ul className="list-disc list-inside text-xs text-slate-600 space-y-1">
-                <li>Älä laita tälle saldoa. Aseta vain aikataulu (esim. Ilta).</li>
-                <li>Kohdassa <strong>Koostumus</strong> valitse pudotusvalikosta varastossa olevat lääkkeet (esim. Kalkki 1kpl, Magnesium 1kpl).</li>
-              </ul>
-            </div>
-
-            <div className="text-sm text-blue-800 font-medium bg-blue-100 p-2 rounded-lg text-center">
-              Nyt kun kuittaat Iltasetin, sovellus vähentää automaattisesti saldot Kalkki- ja Magnesium-purkeista!
-            </div>
-          </div>
-        </section>
-
-        {/* 4. HISTORIA & RAPORTIT */}
-        <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
-            <BarChart2 className="text-purple-600" size={22}/> 4. Historia & Raportit
-          </h3>
-          <div className="text-sm text-slate-600 space-y-3">
-            <p><strong>Historia-välilehti:</strong> Näet aikajanan kaikista otetuista lääkkeistä. Voit käyttää yläreunan hakukenttää etsiäksesi tiettyä lääkettä.</p>
-            
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <h4 className="font-bold text-slate-800 text-sm mb-1 flex items-center gap-2"><FileText size={14}/> Raportti lääkärille</h4>
-              <p className="text-xs text-slate-600">
-                Paina "Raportti" -nappia historiassa. Voit valita aikavälin ja tulostaa tai kopioida tarkan listan lääkärille. Raportti näyttää myös, mitä lääkkeitä dosetti sisälsi ottohetkellä.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* 5. MUOKKAUS JA POISTO */}
-        <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
-            <Pencil className="text-orange-500" size={22}/> 5. Muokkaus & Ongelmat
-          </h3>
-          <ul className="list-disc list-inside text-sm text-slate-600 space-y-2 ml-1">
-            <li><strong>Muokkaus:</strong> Avaa lääkkeen kortti ja paina kynä-ikonia. Voit muuttaa nimeä, annostusta tai aikataulua.</li>
-            <li><strong>Poisto:</strong> Roskakori-ikoni poistaa lääkkeen. Sovellus kysyy, haluatko poistaa myös historian vai säilyttää sen.</li>
-            <li><strong>Unohdus:</strong> Jos unohdit merkitä lääkkeen, voit lisätä sen jälkikäteen. Käytä "Pikalisäys"-salamaa <Zap className="inline w-3 h-3"/> ja vaihda päivämäärä, tai avaa lääkkeen kortti ja valitse "Lisää manuaalisesti" <CalendarPlus className="inline w-3 h-3"/>.</li>
-          </ul>
+          <p className="text-sm text-slate-600">
+            <strong>Etusivu:</strong> Näyttää vain lääkkeet, joissa on valinta "Näytä etusivulla".<br/>
+            <strong>Lääkeluettelo:</strong> Näyttää aivan kaikki lääkkeet.
+          </p>
         </section>
 
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v3.5 - {new Date().getFullYear()}
+          Lääkemuistio v3.6 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -292,6 +197,7 @@ const MedicineTracker = () => {
   const [showDosetti, setShowDosetti] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showStockList, setShowStockList] = useState(false); 
+  const [showAllMedsList, setShowAllMedsList] = useState(false); // UUSI: Lääkeluettelo tila
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Raportin tila
@@ -400,12 +306,31 @@ const MedicineTracker = () => {
     if (Notification.permission === 'granted') setNotificationsEnabled(true);
   }, []);
 
+  // --- KORJATTU ILMOITUSPYYNTÖ ---
   const requestNotificationPermission = () => {
-    if (!("Notification" in window)) return;
+    if (!("Notification" in window)) {
+      alert("Selaimesi ei tue ilmoituksia.");
+      return;
+    }
+    
+    // Tarkistetaan nykyinen tila
+    if (Notification.permission === 'granted') {
+      alert("Ilmoitukset ovat jo päällä!");
+      return;
+    }
+    
+    if (Notification.permission === 'denied') {
+      alert("Olet estänyt ilmoitukset selaimen asetuksista. Käy sallimassa ne asetuksista, jos haluat ottaa ne käyttöön.");
+      return;
+    }
+
+    // Pyydetään lupaa
     Notification.requestPermission().then((permission) => {
       if (permission === "granted") {
         setNotificationsEnabled(true);
-        new Notification("Lääkemuistio", { body: "Muistutukset käytössä!" });
+        new Notification("Lääkemuistio", { body: "Ilmoitukset käytössä!" });
+      } else {
+        alert("Ilmoituslupaa ei myönnetty.");
       }
     });
   };
@@ -983,6 +908,9 @@ const MedicineTracker = () => {
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)}></div>
                       <div className="absolute top-full right-0 mt-2 w-48 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-slate-100 z-50 p-1 flex flex-col gap-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <button onClick={() => {setShowAllMedsList(true); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-700 text-sm font-medium text-left">
+                          <List size={18} className="text-blue-500"/> Lääkeluettelo (Kaikki)
+                        </button>
                         <button onClick={() => {setShowStockList(true); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-700 text-sm font-medium text-left">
                           <Box size={18} className="text-blue-500"/> Varastolista
                         </button>
@@ -1277,7 +1205,7 @@ const MedicineTracker = () => {
       </nav>
 
       {/* FAB BUTTONS - ONLY VISIBLE IF NO MODAL/OVERLAY IS ACTIVE */}
-      {!isAdding && activeTab === 'home' && !showHistoryFor && !deleteDialog.isOpen && !editingMed && !manualLogMed && !takeWithReasonMed && !editingLog && !isQuickAdding && !isReordering && !showStockList && (
+      {!isAdding && activeTab === 'home' && !showHistoryFor && !deleteDialog.isOpen && !editingMed && !manualLogMed && !takeWithReasonMed && !editingLog && !isQuickAdding && !isReordering && !showStockList && !showAllMedsList && (
         <>
           <button onClick={() => window.location.reload()} className="absolute bottom-20 left-5 z-30 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-slate-500 hover:text-blue-600 hover:rotate-180 transition-all duration-500 border border-slate-200" title="Päivitä sovellus"><RotateCcw size={24} /></button>
           <div className="absolute bottom-20 right-5 z-30 flex gap-3 items-end">
@@ -1315,6 +1243,44 @@ const MedicineTracker = () => {
                ))}
                {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).length === 0 && (
                  <p className="text-center text-slate-400 text-sm py-4">Ei varastoseurannassa olevia lääkkeitä.</p>
+               )}
+             </div>
+             <div className="h-6"></div>
+          </div>
+        </div>
+      )}
+
+      {/* LÄÄKELUETTELO MODAL (UUSI) */}
+      {showAllMedsList && (
+        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
+          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[90vh] overflow-y-auto">
+             <div className="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 className="text-lg font-bold flex items-center gap-2 text-slate-800"><List/> Lääkeluettelo</h2>
+                <button onClick={() => setShowAllMedsList(false)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button>
+             </div>
+             
+             <div className="space-y-3">
+               {medications.filter(m => !m.isArchived).sort((a,b) => a.name.localeCompare(b.name)).map(med => (
+                 <div key={med.id} className="flex justify-between items-center p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                    <div className="flex-1 min-w-0 pr-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2.5 h-2.5 rounded-full ${getColors(med.colorKey).dot}`} />
+                        <div className="font-bold text-slate-800 truncate">{med.name}</div>
+                      </div>
+                      <div className="text-[10px] text-slate-500 mt-0.5 flex gap-2">
+                        {!med.showOnDashboard && <span className="bg-slate-200 px-1.5 rounded">Piilotettu</span>}
+                        {med.trackStock && <span>Varasto: {med.stock}</span>}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => takeMedicine(med)} className="p-2 bg-white border border-slate-200 rounded-lg text-green-600 hover:bg-green-50" title="Ota"><Check size={16}/></button>
+                      <button onClick={() => { setShowHistoryFor(med.id); setShowAllMedsList(false); }} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600" title="Historia"><History size={16}/></button>
+                      <button onClick={() => openEditMed(med)} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600"><Pencil size={16}/></button>
+                    </div>
+                 </div>
+               ))}
+               {medications.filter(m => !m.isArchived).length === 0 && (
+                 <p className="text-center text-slate-400 text-sm py-4">Ei lääkkeitä.</p>
                )}
              </div>
              <div className="h-6"></div>
@@ -1786,7 +1752,15 @@ const MedicineTracker = () => {
                         <div className={`p-2 rounded-full ${isSelected ? 'bg-blue-200 text-blue-700' : 'bg-slate-100 text-slate-500'}`}><slot.icon size={20}/></div>
                         <span className={`text-sm font-bold uppercase ${isSelected ? 'text-blue-900' : 'text-slate-500'}`}>{slot.label}</span>
                       </button>
-                      {isSelected && <input type="time" className="bg-white border border-blue-200 text-blue-800 text-sm rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-400" value={currentTime} onChange={(e) => handleTimeChange(slot.id, e.target.value, true)} />}
+                      
+                      {isSelected && (
+                        <input 
+                          type="time" 
+                          className="bg-white border border-blue-200 text-blue-800 text-sm rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-400"
+                          value={currentTime}
+                          onChange={(e) => handleTimeChange(slot.id, e.target.value, true)}
+                        />
+                      )}
                     </div>
                   );
                 })}
