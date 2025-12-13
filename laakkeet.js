@@ -93,7 +93,7 @@ const HelpView = ({ onClose }) => {
         </section>
 
         <div className="text-center text-xs text-slate-400 pt-4">
-          Lääkemuistio v2.0
+          Lääkemuistio v2.1
         </div>
       </div>
     </div>
@@ -662,6 +662,22 @@ const MedicineTracker = () => {
     navigator.clipboard.writeText(text).then(() => alert("Raportti kopioitu leikepöydälle!")).catch(e => alert("Kopiointi ei onnistunut"));
   };
 
+  // --- PRORESS BAR CALCULATION ---
+  const scheduledMeds = activeMeds.filter(m => m.schedule && m.schedule.length > 0);
+  let totalDosesToday = 0;
+  let takenDosesToday = 0;
+
+  scheduledMeds.forEach(med => {
+    med.schedule.forEach(slotId => {
+      totalDosesToday++;
+      if (isSlotTakenToday(med.id, slotId)) {
+        takenDosesToday++;
+      }
+    });
+  });
+
+  const dailyProgress = totalDosesToday > 0 ? (takenDosesToday / totalDosesToday) * 100 : 0;
+
   if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-blue-600" size={40} /></div>;
   if (!user) return <AuthScreen />;
 
@@ -736,6 +752,16 @@ const MedicineTracker = () => {
             <BarChart2 size={16} /> Historia
           </button>
         </div>
+        
+        {/* PÄIVÄN EDISTYMISPALKKI */}
+        {activeTab === 'home' && !isReordering && totalDosesToday > 0 && (
+          <div className="mt-2 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+            <div 
+              className="bg-blue-500 h-1.5 rounded-full transition-all duration-500 ease-out" 
+              style={{width: `${dailyProgress}%`}}
+            ></div>
+          </div>
+        )}
       </header>
 
       <main className="flex-1 overflow-y-auto p-3 pb-20 z-10 relative">
