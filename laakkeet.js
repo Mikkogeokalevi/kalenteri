@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu } from 'lucide-react';
+import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
 import { initializeApp } from 'firebase/app';
@@ -39,7 +39,7 @@ const TIME_SLOTS = [
   { id: 'yo', label: 'Yö', icon: Moon, defaultTime: '22:00' }
 ];
 
-// --- OHJESIVU KOMPONENTTI (UUSITTU TÄYSIN) ---
+// --- OHJESIVU KOMPONENTTI ---
 const HelpView = ({ onClose }) => {
   return (
     <div className="fixed inset-0 z-[60] bg-slate-50 flex flex-col animate-in slide-in-from-right duration-300 overflow-hidden">
@@ -157,7 +157,7 @@ const HelpView = ({ onClose }) => {
         </section>
 
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v3.2 - {new Date().getFullYear()}
+          Lääkemuistio v3.3 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -268,6 +268,9 @@ const MedicineTracker = () => {
   const [reportEndDate, setReportEndDate] = useState('');
   const [reportSelectedMeds, setReportSelectedMeds] = useState(new Set());
 
+  // HAKU TILA (UUSI)
+  const [historySearch, setHistorySearch] = useState('');
+
   // Ainesosien tila lisäys/muokkaus ikkunassa
   const [ingredientName, setIngredientName] = useState('');
   const [ingredientCount, setIngredientCount] = useState('');
@@ -291,7 +294,7 @@ const MedicineTracker = () => {
   const [isQuickAdding, setIsQuickAdding] = useState(false);
   const [quickAddName, setQuickAddName] = useState('');
   const [quickAddReason, setQuickAddReason] = useState('');
-  const [quickAddDate, setQuickAddDate] = useState(''); // UUSI: Päivämäärä pikalisäykselle
+  const [quickAddDate, setQuickAddDate] = useState('');
   
   const [takeWithReasonMed, setTakeWithReasonMed] = useState(null);
   const [takeReason, setTakeReason] = useState('');
@@ -383,6 +386,7 @@ const MedicineTracker = () => {
     setEditingMed(null);
     setIsAdding(false);
     setIsQuickAdding(false);
+    setHistorySearch('');
   };
 
   // Värit
@@ -544,7 +548,7 @@ const MedicineTracker = () => {
         medName: quickAddName.trim(), 
         medColor: stockItem ? stockItem.colorKey : 'orange', 
         slot: null, 
-        timestamp: new Date(quickAddDate).toISOString(), // KÄYTETÄÄN VALITTUA PÄIVÄÄ
+        timestamp: new Date(quickAddDate).toISOString(),
         reason: quickAddReason.trim(),
         ingredients: null
       });
@@ -777,13 +781,22 @@ const MedicineTracker = () => {
     return med ? med.colorKey : (log.medColor || 'blue');
   };
 
+  // --- FILTERÖINTILOGIIKKA ---
+  const filteredLogs = logs.filter(log => {
+    if (!historySearch.trim()) return true;
+    const term = historySearch.toLowerCase();
+    const name = getLogName(log).toLowerCase();
+    const reason = (log.reason || '').toLowerCase();
+    return name.includes(term) || reason.includes(term);
+  });
+
   // --- RAPORTTI ---
   const generateReportText = () => {
     if (!reportStartDate || !reportEndDate) return "Valitse päivämäärät.";
     const start = new Date(reportStartDate); start.setHours(0,0,0,0);
     const end = new Date(reportEndDate); end.setHours(23,59,59,999);
     
-    const filteredLogs = logs.filter(l => {
+    const logsForReport = logs.filter(l => {
       const d = new Date(l.timestamp);
       const isSelected = reportSelectedMeds.has(l.medId) || l.medId === 'quick_dose';
       return d >= start && d <= end && isSelected;
@@ -795,7 +808,7 @@ const MedicineTracker = () => {
        if(med) medStats[med.name] = { count: 0, logs: [], isScheduled: med.schedule && med.schedule.length > 0 };
     });
 
-    filteredLogs.forEach(log => {
+    logsForReport.forEach(log => {
       const name = getLogName(log);
       if (!medStats[name]) medStats[name] = { count: 0, logs: [], isScheduled: false };
       medStats[name].count++;
@@ -906,7 +919,6 @@ const MedicineTracker = () => {
                   {notificationsEnabled ? <Bell size={20} /> : <BellOff size={20} />}
                 </button>
 
-                {/* UUSI OHJE-IKONI TÄSSÄ */}
                 <button 
                   onClick={() => setShowHelp(true)} 
                   className="p-2 rounded-full transition-colors text-slate-400 hover:text-slate-600"
@@ -935,7 +947,6 @@ const MedicineTracker = () => {
                         <button onClick={() => {setIsReordering(!isReordering); setIsMenuOpen(false);}} className={`flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-sm font-medium text-left ${isReordering ? 'bg-blue-50 text-blue-700' : 'text-slate-700'}`}>
                           <ArrowUpDown size={18} className={isReordering ? 'text-blue-600' : 'text-slate-400'}/> Järjestä
                         </button>
-                        {/* OHJEET POISTETTU TÄSTÄ */}
                         <div className="h-px bg-slate-100 my-1"></div>
                         <button onClick={() => {handleLogout(); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 rounded-lg hover:bg-red-50 text-red-600 text-sm font-medium text-left">
                           <LogOut size={18}/> Kirjaudu ulos
@@ -1139,10 +1150,30 @@ const MedicineTracker = () => {
               </button>
 
               <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-100">
-                <h2 className="text-base font-bold text-slate-800 mb-3 flex items-center gap-2"><Calendar className="text-blue-500" size={18}/> Koko historia</h2>
+                <div className="flex justify-between items-center mb-3">
+                   <h2 className="text-base font-bold text-slate-800 flex items-center gap-2"><Calendar className="text-blue-500" size={18}/> Koko historia</h2>
+                </div>
+                
+                {/* HAKUKENTTÄ - UUSI */}
+                <div className="relative mb-4">
+                  <Search className="absolute left-3 top-2.5 text-slate-400" size={18}/>
+                  <input 
+                    type="text" 
+                    placeholder="Etsi lääkettä (esim. Burana)..." 
+                    className="w-full bg-slate-50 pl-10 pr-4 py-2 rounded-lg text-sm border focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all"
+                    value={historySearch}
+                    onChange={(e) => setHistorySearch(e.target.value)}
+                  />
+                  {historySearch && (
+                    <button onClick={() => setHistorySearch('')} className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600">
+                      <X size={18}/>
+                    </button>
+                  )}
+                </div>
+
                 <div className="space-y-3">
-                  {getHistoryDates().map((dayStr, i) => {
-                    const logsNow = getLogsForDate(new Date(dayStr));
+                  {getHistoryDates(filteredLogs).map((dayStr, i) => {
+                    const logsNow = getLogsForDate(new Date(dayStr), filteredLogs);
                     const dayDate = new Date(dayStr);
                     const isToday = dayDate.toDateString() === new Date().toDateString();
                     
@@ -1167,7 +1198,11 @@ const MedicineTracker = () => {
                       </div>
                     );
                   })}
-                  {logs.length === 0 && <div className="text-center text-slate-400 text-sm py-4">Ei vielä historiaa.</div>}
+                  {filteredLogs.length === 0 && (
+                    <div className="text-center text-slate-400 text-sm py-4">
+                      {historySearch ? 'Ei hakutuloksia.' : 'Ei vielä historiaa.'}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1596,7 +1631,15 @@ const MedicineTracker = () => {
                         <div className={`p-2 rounded-full ${isSelected ? 'bg-blue-200 text-blue-700' : 'bg-slate-100 text-slate-500'}`}><slot.icon size={20}/></div>
                         <span className={`text-sm font-bold uppercase ${isSelected ? 'text-blue-900' : 'text-slate-500'}`}>{slot.label}</span>
                       </button>
-                      {isSelected && <input type="time" className="bg-white border border-blue-200 text-blue-800 text-sm rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-400" value={scheduleTimes[slot.id] || slot.defaultTime} onChange={(e) => handleTimeChange(slot.id, e.target.value)} />}
+                      
+                      {isSelected && (
+                        <input 
+                          type="time" 
+                          className="bg-white border border-blue-200 text-blue-800 text-sm rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-400"
+                          value={scheduleTimes[slot.id] || slot.defaultTime}
+                          onChange={(e) => handleTimeChange(slot.id, e.target.value)}
+                        />
+                      )}
                     </div>
                   );
                 })}
@@ -1696,7 +1739,15 @@ const MedicineTracker = () => {
                         <div className={`p-2 rounded-full ${isSelected ? 'bg-blue-200 text-blue-700' : 'bg-slate-100 text-slate-500'}`}><slot.icon size={20}/></div>
                         <span className={`text-sm font-bold uppercase ${isSelected ? 'text-blue-900' : 'text-slate-500'}`}>{slot.label}</span>
                       </button>
-                      {isSelected && <input type="time" className="bg-white border border-blue-200 text-blue-800 text-sm rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-400" value={currentTime} onChange={(e) => handleTimeChange(slot.id, e.target.value, true)} />}
+                      
+                      {isSelected && (
+                        <input 
+                          type="time" 
+                          className="bg-white border border-blue-200 text-blue-800 text-sm rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-400"
+                          value={currentTime}
+                          onChange={(e) => handleTimeChange(slot.id, e.target.value, true)}
+                        />
+                      )}
                     </div>
                   );
                 })}
