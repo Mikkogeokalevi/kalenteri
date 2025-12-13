@@ -4,6 +4,13 @@ body {
   user-select: none;         /* Estää tekstin valinnan (appimainen tuntu) */
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   
-  /* Mobiilioptimointi: estää "bouncen" joissain selaimissa */
+  /* Mobiilioptimointi: estää "bouncen" ja vetämällä päivityksen joissain selaimissa */
   overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Piilotetaan scrollbarit mutta sallitaan scrollaus */
+::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
 }
