@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Menu } from 'lucide-react';
+import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, RotateCcw, Share, MoreVertical, PlusSquare, Layers, LayoutList, Box, Menu } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
 import { initializeApp } from 'firebase/app';
@@ -172,7 +172,7 @@ const HelpView = ({ onClose }) => {
         </section>
 
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v2.10 - {new Date().getFullYear()}
+          Lääkemuistio v2.11 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -1088,6 +1088,7 @@ const MedicineTracker = () => {
                          )}
                       </div>
                       
+                      {/* Nuoli */}
                       {!isReordering && (
                         <div className="text-slate-400">
                           {expandedMedId === med.id ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
@@ -1095,7 +1096,7 @@ const MedicineTracker = () => {
                       )}
                     </div>
 
-                    {/* EXPANDED CONTENT */}
+                    {/* EXPANDED CONTENT - VAIN KUN AVATTU */}
                     {expandedMedId === med.id && !isReordering && (
                       <div className="px-4 pb-4 pt-0 animate-in slide-in-from-top-2 duration-200">
                          <div className="border-t border-black/5 mb-3 pt-1"></div>
@@ -1174,7 +1175,8 @@ const MedicineTracker = () => {
                               })}
                             </div>
                           ) : (
-                            <button onClick={() => takeMedicine(med)} className={`w-full py-3 rounded-lg font-bold text-white shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform ${c.btn}`}>
+                            // TÄMÄ ON SE UUSI LOGIIKKA: Klikkaus avaa syy-ikkunan, ei ota suoraan.
+                            <button onClick={() => { setTakeWithReasonMed(med); setTakeReason(''); }} className={`w-full py-3 rounded-lg font-bold text-white shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform ${c.btn}`}>
                               <CheckCircle size={20} /> OTA NYT
                             </button>
                           )
@@ -1794,120 +1796,6 @@ const MedicineTracker = () => {
               </div>
             </form>
             <div className="h-6"></div>
-          </div>
-        </div>
-      )}
-
-      {/* 3. MANUAALINEN LISÄYS */}
-      {manualLogMed && (
-        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
-          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
-            <h2 className="text-lg font-bold mb-1">Unohditko merkitä?</h2>
-            <p className="text-sm text-slate-500 mb-4">{manualLogMed.name}</p>
-            <form onSubmit={handleManualLog}>
-              <input type="datetime-local" className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-blue-500" value={manualDate} onChange={e => setManualDate(e.target.value)} />
-              <input className="w-full bg-slate-50 p-3 rounded-xl text-sm mb-4 outline-none border focus:border-blue-500" placeholder="Syy (valinnainen)" value={manualReason} onChange={e => setManualReason(e.target.value)} />
-              <div className="flex gap-3">
-                <button type="button" onClick={() => {setManualLogMed(null); setManualReason('');}} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
-                <button type="submit" disabled={!manualDate} className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm disabled:opacity-50">Tallenna</button>
-              </div>
-            </form>
-            <div className="h-6"></div>
-          </div>
-        </div>
-      )}
-
-      {/* 4. MUOKKAA MERKINTÄÄ (HISTORIA) */}
-      {editingLog && (
-        <div className="absolute inset-0 z-[55] bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
-          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
-            <h2 className="text-lg font-bold mb-1">Muokkaa merkintää</h2>
-            <p className="text-sm text-slate-500 mb-4">
-              {getLogName(editingLog)}
-            </p>
-            <form onSubmit={handleSaveLogEdit}>
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Aika ja päivä</label>
-              <input type="datetime-local" className="w-full bg-slate-50 p-3 rounded-xl text-base mb-4 outline-none border focus:border-blue-500" value={editingLogDate} onChange={e => setEditingLogDate(e.target.value)} />
-              
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Syy</label>
-              <input className="w-full bg-slate-50 p-3 rounded-xl text-sm mb-6 outline-none border focus:border-blue-500" placeholder="Esim. Päänsärky" value={editingLogReason} onChange={e => setEditingLogReason(e.target.value)} />
-              
-              <div className="flex gap-3 mb-3">
-                <button type="button" onClick={() => setEditingLog(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
-                <button type="submit" className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-md">Tallenna</button>
-              </div>
-              <button type="button" onClick={requestDeleteLog} className="w-full py-3 bg-red-50 text-red-500 rounded-xl font-bold text-sm flex items-center justify-center gap-2"><Trash2 size={16}/> Poista merkintä</button>
-            </form>
-            <div className="h-6"></div>
-          </div>
-        </div>
-      )}
-
-      {/* 5. POISTOVARMISTUS */}
-      {deleteDialog.isOpen && (
-        <div className="absolute inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in">
-          <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
-            <div className="flex items-center gap-2 text-red-600 mb-2 font-bold text-lg"><AlertTriangle /> 
-              {deleteDialog.mode === 'log' ? deleteDialog.title : `Poista ${deleteDialog.medName}?`}
-            </div>
-            
-            {deleteDialog.mode === 'log' && (
-              <>
-                <p className="text-slate-600 mb-6 text-sm">{deleteDialog.message}</p>
-                <div className="flex gap-3">
-                  <button onClick={() => setDeleteDialog({isOpen:false})} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-700 text-sm">Peruuta</button>
-                  <button onClick={handleDeleteSingleLog} className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold text-sm">Poista</button>
-                </div>
-              </>
-            )}
-
-            {deleteDialog.mode === 'med' && (
-              <>
-                {deleteDialog.hasHistory ? (
-                  <>
-                    <p className="text-slate-600 mb-6 text-sm">Tällä lääkkeellä on merkintöjä historiassa. Miten haluat toimia?</p>
-                    <div className="space-y-2">
-                      <button onClick={handleDeleteKeepHistory} className="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-bold text-sm">Säilytä historia, poista lääke</button>
-                      <button onClick={handleDeleteAll} className="w-full py-3 bg-red-500 text-white rounded-xl font-bold text-sm">Poista kaikki (lääke + historia)</button>
-                      <button onClick={() => setDeleteDialog({isOpen:false})} className="w-full py-3 text-slate-400 font-medium text-sm">Peruuta</button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-slate-600 mb-6 text-sm">Haluatko varmasti poistaa lääkkeen?</p>
-                    <div className="flex gap-3">
-                      <button onClick={() => setDeleteDialog({isOpen:false})} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-700 text-sm">Peruuta</button>
-                      <button onClick={handleDeleteAll} className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold text-sm">Poista</button>
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 6. HISTORIA (LÄÄKEKOHTAINEN) */}
-      {showHistoryFor && (
-        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center">
-          <div className="bg-white w-full h-[85%] rounded-t-2xl flex flex-col shadow-2xl animate-in slide-in-from-bottom-full duration-300">
-            <div className="p-4 border-b flex justify-between items-center">
-              <h2 className="text-lg font-bold">{medications.find(m => m.id === showHistoryFor)?.name}</h2>
-              <button onClick={() => setShowHistoryFor(null)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button>
-            </div>
-            <div className="overflow-y-auto flex-1 p-4 space-y-3">
-              {logs.filter(l => l.medId === showHistoryFor).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)).map(log => (
-                <div key={log.id} onClick={() => openLogEdit(log)} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100 active:bg-slate-100 cursor-pointer">
-                  <div>
-                    <div className="font-bold text-slate-700 text-sm">{getDayLabel(log.timestamp)}</div>
-                    <div className="text-xs text-slate-400">klo {formatTime(log.timestamp)}</div>
-                    {log.reason && <div className="text-xs text-blue-600 italic mt-1">"{log.reason}"</div>}
-                  </div>
-                  <div className="p-2 text-slate-300"><Pencil size={16}/></div>
-                </div>
-              ))}
-              {!logs.some(l => l.medId === showHistoryFor) && <div className="text-center text-slate-400 mt-10 text-sm">Ei merkintöjä.</div>}
-            </div>
           </div>
         </div>
       )}
