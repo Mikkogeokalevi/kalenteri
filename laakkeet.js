@@ -93,7 +93,7 @@ const HelpView = ({ onClose }) => {
         </section>
 
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v3.6 - {new Date().getFullYear()}
+          Lääkemuistio v3.7 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -197,7 +197,7 @@ const MedicineTracker = () => {
   const [showDosetti, setShowDosetti] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showStockList, setShowStockList] = useState(false); 
-  const [showAllMedsList, setShowAllMedsList] = useState(false); // UUSI: Lääkeluettelo tila
+  const [showAllMedsList, setShowAllMedsList] = useState(false); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Raportin tila
@@ -301,26 +301,35 @@ const MedicineTracker = () => {
     }
   }, [showReport, medications]);
 
-  // Ilmoituslogiikka
+  // Ilmoituslogiikka - ladataan tila
   useEffect(() => {
     if (Notification.permission === 'granted') setNotificationsEnabled(true);
   }, []);
 
-  // --- KORJATTU ILMOITUSPYYNTÖ ---
-  const requestNotificationPermission = () => {
+  // --- KORJATTU ILMOITUSTEN HALLINTA ---
+  const toggleNotifications = () => {
     if (!("Notification" in window)) {
       alert("Selaimesi ei tue ilmoituksia.");
       return;
     }
-    
-    // Tarkistetaan nykyinen tila
-    if (Notification.permission === 'granted') {
-      alert("Ilmoitukset ovat jo päällä!");
+
+    // Jos ilmoitukset on päällä sovelluksessa, sammutetaan ne
+    if (notificationsEnabled) {
+      setNotificationsEnabled(false);
+      alert("Ilmoitukset mykistetty. Sovellus ei lähetä muistutuksia tässä istunnossa.");
       return;
     }
-    
+
+    // Jos ilmoitukset on estetty selaimesta
     if (Notification.permission === 'denied') {
-      alert("Olet estänyt ilmoitukset selaimen asetuksista. Käy sallimassa ne asetuksista, jos haluat ottaa ne käyttöön.");
+      alert("Olet estänyt ilmoitukset selaimen asetuksista. Käy sallimassa ne asetuksista (Sivustoasetukset -> Ilmoitukset), jos haluat ottaa ne käyttöön.");
+      return;
+    }
+
+    // Jos ilmoitukset on sallittu selaimessa mutta mykistetty sovelluksessa
+    if (Notification.permission === 'granted') {
+      setNotificationsEnabled(true);
+      alert("Ilmoitukset käytössä!");
       return;
     }
 
@@ -334,6 +343,42 @@ const MedicineTracker = () => {
       }
     });
   };
+
+  // --- ILMOITUSTEN AJASTIN ---
+  useEffect(() => {
+    if (!notificationsEnabled || medications.length === 0) return;
+    
+    const checkReminders = () => {
+      const now = new Date();
+      const currentTime = now.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+      
+      medications.forEach(med => {
+        if (med.isArchived) return;
+        
+        // Tarkistetaan vain aikataulutetut
+        if (med.scheduleTimes) {
+          Object.entries(med.scheduleTimes).forEach(([slotId, time]) => {
+            if (time === currentTime) {
+              const today = now.toDateString();
+              // Onko lääke jo otettu tälle slottille tänään?
+              const alreadyTaken = logs.some(l => l.medId === med.id && l.slot === slotId && new Date(l.timestamp).toDateString() === today);
+              
+              if (!alreadyTaken) {
+                new Notification(`Lääkkeen aika: ${med.name}`, {
+                  body: `Aika ottaa ${TIME_SLOTS.find(s => s.id === slotId)?.label || ''} lääke.`,
+                  icon: "https://img.geocaching.com/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png"
+                });
+              }
+            }
+          });
+        }
+      });
+    };
+
+    const interval = setInterval(checkReminders, 60000); // Tarkista minuutin välein
+    return () => clearInterval(interval);
+  }, [medications, logs, notificationsEnabled]);
+
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -883,9 +928,12 @@ const MedicineTracker = () => {
                   <ShoppingCart size={20} />
                   {shoppingListMeds.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>}
                 </button>
+                
+                {/* --- KORJATTU ILMOITUSNAPPI --- */}
                 <button 
-                  onClick={requestNotificationPermission} 
-                  className={`p-2 rounded-full transition-colors ${notificationsEnabled ? 'text-blue-500' : 'text-slate-400 hover:text-slate-600'}`}
+                  onClick={toggleNotifications} 
+                  className={`p-2 rounded-full transition-colors ${notificationsEnabled ? 'text-blue-500 bg-blue-50' : 'text-slate-400 hover:text-slate-600'}`}
+                  title={notificationsEnabled ? "Mykistä ilmoitukset" : "Ota ilmoitukset käyttöön"}
                 >
                   {notificationsEnabled ? <Bell size={20} /> : <BellOff size={20} />}
                 </button>
@@ -908,6 +956,7 @@ const MedicineTracker = () => {
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)}></div>
                       <div className="absolute top-full right-0 mt-2 w-48 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-slate-100 z-50 p-1 flex flex-col gap-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                        {/* --- UUSI: LÄÄKELUETTELO VALIKKOON --- */}
                         <button onClick={() => {setShowAllMedsList(true); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-700 text-sm font-medium text-left">
                           <List size={18} className="text-blue-500"/> Lääkeluettelo (Kaikki)
                         </button>
@@ -1217,6 +1266,80 @@ const MedicineTracker = () => {
 
       {/* --- MODALIT --- */}
       
+      {/* LÄÄKELUETTELO MODAL (UUSI JA PARANNETTU) */}
+      {showAllMedsList && (
+        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
+          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[90vh] overflow-y-auto">
+             <div className="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 className="text-lg font-bold flex items-center gap-2 text-slate-800"><List/> Lääkeluettelo</h2>
+                <button onClick={() => setShowAllMedsList(false)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button>
+             </div>
+             
+             <div className="space-y-6">
+               {/* 1. YKSITTÄISET LÄÄKKEET */}
+               <div>
+                 <h3 className="text-xs font-bold text-slate-400 uppercase mb-2">💊 Yksittäiset lääkkeet</h3>
+                 <div className="space-y-2">
+                   {medications
+                     .filter(m => !m.isArchived && (!m.ingredients || m.ingredients.length === 0))
+                     .sort((a,b) => a.name.localeCompare(b.name))
+                     .map(med => (
+                     <div key={med.id} className="flex justify-between items-center p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                        <div className="flex-1 min-w-0 pr-2">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2.5 h-2.5 rounded-full ${getColors(med.colorKey).dot}`} />
+                            <div className="font-bold text-slate-800 truncate">{med.name}</div>
+                          </div>
+                          <div className="text-[10px] text-slate-500 mt-0.5 flex gap-2 flex-wrap">
+                            {!med.showOnDashboard && <span className="bg-slate-200 px-1.5 rounded">Piilotettu</span>}
+                            {med.trackStock && <span>Varasto: {med.stock}</span>}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => takeMedicine(med)} className="p-2 bg-white border border-slate-200 rounded-lg text-green-600 hover:bg-green-50" title="Ota"><Check size={16}/></button>
+                          <button onClick={() => { setShowHistoryFor(med.id); setShowAllMedsList(false); }} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600" title="Historia"><History size={16}/></button>
+                          <button onClick={() => openEditMed(med)} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600"><Pencil size={16}/></button>
+                        </div>
+                     </div>
+                   ))}
+                   {medications.filter(m => !m.isArchived && (!m.ingredients || m.ingredients.length === 0)).length === 0 && <p className="text-xs text-slate-400 italic">Ei yksittäisiä lääkkeitä.</p>}
+                 </div>
+               </div>
+
+               {/* 2. DOSETIT & YHDISTELMÄT */}
+               <div>
+                 <h3 className="text-xs font-bold text-slate-400 uppercase mb-2">🗓️ Dosetit & Yhdistelmät</h3>
+                 <div className="space-y-2">
+                   {medications
+                     .filter(m => !m.isArchived && m.ingredients && m.ingredients.length > 0)
+                     .sort((a,b) => a.name.localeCompare(b.name))
+                     .map(med => (
+                     <div key={med.id} className="flex justify-between items-center p-3 bg-blue-50/50 border border-blue-100 rounded-xl">
+                        <div className="flex-1 min-w-0 pr-2">
+                          <div className="flex items-center gap-2">
+                            <Layers size={14} className="text-blue-500"/>
+                            <div className="font-bold text-slate-800 truncate">{med.name}</div>
+                          </div>
+                          <div className="text-[10px] text-slate-500 mt-0.5 truncate">
+                            Sisältää: {med.ingredients.map(i => i.name).join(', ')}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => takeMedicine(med)} className="p-2 bg-white border border-slate-200 rounded-lg text-green-600 hover:bg-green-50" title="Ota"><Check size={16}/></button>
+                          <button onClick={() => { setShowHistoryFor(med.id); setShowAllMedsList(false); }} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600" title="Historia"><History size={16}/></button>
+                          <button onClick={() => openEditMed(med)} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600"><Pencil size={16}/></button>
+                        </div>
+                     </div>
+                   ))}
+                   {medications.filter(m => !m.isArchived && m.ingredients && m.ingredients.length > 0).length === 0 && <p className="text-xs text-slate-400 italic">Ei dosetteja.</p>}
+                 </div>
+               </div>
+             </div>
+             <div className="h-6"></div>
+          </div>
+        </div>
+      )}
+
       {/* VARASTOLISTA MODAL */}
       {showStockList && (
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
@@ -1243,44 +1366,6 @@ const MedicineTracker = () => {
                ))}
                {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).length === 0 && (
                  <p className="text-center text-slate-400 text-sm py-4">Ei varastoseurannassa olevia lääkkeitä.</p>
-               )}
-             </div>
-             <div className="h-6"></div>
-          </div>
-        </div>
-      )}
-
-      {/* LÄÄKELUETTELO MODAL (UUSI) */}
-      {showAllMedsList && (
-        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
-          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[90vh] overflow-y-auto">
-             <div className="flex justify-between items-center mb-4 border-b pb-2">
-                <h2 className="text-lg font-bold flex items-center gap-2 text-slate-800"><List/> Lääkeluettelo</h2>
-                <button onClick={() => setShowAllMedsList(false)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button>
-             </div>
-             
-             <div className="space-y-3">
-               {medications.filter(m => !m.isArchived).sort((a,b) => a.name.localeCompare(b.name)).map(med => (
-                 <div key={med.id} className="flex justify-between items-center p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                    <div className="flex-1 min-w-0 pr-2">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2.5 h-2.5 rounded-full ${getColors(med.colorKey).dot}`} />
-                        <div className="font-bold text-slate-800 truncate">{med.name}</div>
-                      </div>
-                      <div className="text-[10px] text-slate-500 mt-0.5 flex gap-2">
-                        {!med.showOnDashboard && <span className="bg-slate-200 px-1.5 rounded">Piilotettu</span>}
-                        {med.trackStock && <span>Varasto: {med.stock}</span>}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => takeMedicine(med)} className="p-2 bg-white border border-slate-200 rounded-lg text-green-600 hover:bg-green-50" title="Ota"><Check size={16}/></button>
-                      <button onClick={() => { setShowHistoryFor(med.id); setShowAllMedsList(false); }} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600" title="Historia"><History size={16}/></button>
-                      <button onClick={() => openEditMed(med)} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600"><Pencil size={16}/></button>
-                    </div>
-                 </div>
-               ))}
-               {medications.filter(m => !m.isArchived).length === 0 && (
-                 <p className="text-center text-slate-400 text-sm py-4">Ei lääkkeitä.</p>
                )}
              </div>
              <div className="h-6"></div>
@@ -1417,12 +1502,37 @@ const MedicineTracker = () => {
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Zap className="text-orange-500"/> Kirjaa kertaluontoinen</h2>
             <form onSubmit={handleQuickAdd}>
+              
+              {/* UUSI: VETOVALIKKO KAIKILLE LÄÄKKEILLE */}
+              <div className="mb-4">
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Valitse listalta (valinnainen)</label>
+                <select 
+                  className="w-full bg-slate-50 p-3 rounded-xl text-base border focus:border-orange-500 outline-none appearance-none"
+                  onChange={(e) => {
+                    const selected = medications.find(m => m.id === e.target.value);
+                    if(selected) setQuickAddName(selected.name);
+                  }}
+                  defaultValue=""
+                >
+                  <option value="" disabled>Valitse lääke...</option>
+                  {medications
+                    .filter(m => !m.isArchived)
+                    .sort((a,b) => a.name.localeCompare(b.name))
+                    .map(m => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))
+                  }
+                </select>
+              </div>
+
+              {/* PIKA-NAPIT (SÄILYTETTY VARASTOTUOTTEILLE) */}
               <div className="flex flex-wrap gap-2 mb-3 max-h-32 overflow-y-auto">
                 {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).map(m => (
                   <button key={m.id} type="button" onClick={() => setQuickAddName(m.name)} className="px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-600 active:bg-blue-100 active:border-blue-300 active:text-blue-700">{m.name}</button>
                 ))}
               </div>
-              <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-orange-500" placeholder="Mitä otit? (esim. Burana)" value={quickAddName} onChange={e => setQuickAddName(e.target.value)} />
+
+              <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-orange-500" placeholder="Tai kirjoita nimi (esim. Burana)" value={quickAddName} onChange={e => setQuickAddName(e.target.value)} />
               
               <div className="grid grid-cols-2 gap-3 mb-4">
                  <div>
