@@ -1,21 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { 
-  Plus, Pill, Trash2, X, BarChart2, Pencil, LogOut, Loader2, ArchiveRestore, 
-  ChevronDown, ChevronUp, Zap, Bell, BellOff, ArrowUpDown, Package, Clipboard, 
-  RotateCcw, ShoppingCart, LayoutList, Box, Menu 
+  Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, 
+  Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, 
+  ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, 
+  ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, Layers, 
+  LayoutList, Box, Menu, PlusSquare, RotateCcw
 } from 'lucide-react';
 
 import { initializeApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
+import { 
+  getAuth, 
+  onAuthStateChanged, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut,
+  setPersistence,
+  browserLocalPersistence
+} from 'firebase/auth';
 import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot } from 'firebase/firestore';
 
-// Tuodaan omat moduulit
-import { TIME_SLOTS, getColors, colorList, getCurrentDateTimeLocal } from './utils.js';
-import { AuthScreen } from './auth.js';
-import { MedicationCard, StatsView, HelpView } from './components.js';
+// ==========================================
+// OSA 1: ASETUKSET JA UTILS
+// ==========================================
 
-// --- FIREBASE ASETUKSET ---
 const firebaseConfig = {
   apiKey: "AIzaSyCZIupycr2puYrPK2KajAW7PcThW9Pjhb0",
   authDomain: "perhekalenteri-projekti.firebaseapp.com",
@@ -31,7 +39,288 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const APP_ID = 'laakemuistio';
 
-// --- PÄÄSOVELLUS (MedicineTracker) ---
+const TIME_SLOTS = [
+  { id: 'aamu', label: 'Aamu', icon: Sunrise, defaultTime: '08:00' },
+  { id: 'paiva', label: 'Päivä', icon: Sun, defaultTime: '12:00' },
+  { id: 'ilta', label: 'Ilta', icon: Sunset, defaultTime: '20:00' },
+  { id: 'yo', label: 'Yö', icon: Moon, defaultTime: '22:00' }
+];
+
+const colorMap = {
+  'blue':   { bg: 'bg-blue-100',   border: 'border-blue-300',   dot: 'bg-blue-600',   text: 'text-blue-800',   btn: 'bg-blue-600 active:bg-blue-700' },
+  'green':  { bg: 'bg-green-100',  border: 'border-green-300',  dot: 'bg-green-600',  text: 'text-green-800',  btn: 'bg-green-600 active:bg-green-700' },
+  'purple': { bg: 'bg-purple-100', border: 'border-purple-300', dot: 'bg-purple-600', text: 'text-purple-800', btn: 'bg-purple-600 active:bg-purple-700' },
+  'orange': { bg: 'bg-orange-100', border: 'border-orange-300', dot: 'bg-orange-500', text: 'text-orange-800', btn: 'bg-orange-500 active:bg-orange-600' },
+  'rose':   { bg: 'bg-red-100',    border: 'border-red-300',    dot: 'bg-red-600',    text: 'text-red-800',    btn: 'bg-red-600 active:bg-red-700' },
+  'cyan':   { bg: 'bg-cyan-100',   border: 'border-cyan-300',   dot: 'bg-cyan-600',   text: 'text-cyan-800',   btn: 'bg-cyan-600 active:bg-cyan-700' },
+  'amber':  { bg: 'bg-amber-100',  border: 'border-amber-300',  dot: 'bg-amber-500',  text: 'text-amber-800',  btn: 'bg-amber-500 active:bg-amber-600' },
+  'teal':   { bg: 'bg-teal-100',   border: 'border-teal-300',   dot: 'bg-teal-600',   text: 'text-teal-800',   btn: 'bg-teal-600 active:bg-teal-700' },
+  'indigo': { bg: 'bg-indigo-100', border: 'border-indigo-300', dot: 'bg-indigo-600', text: 'text-indigo-800', btn: 'bg-indigo-600 active:bg-indigo-700' },
+  'lime':   { bg: 'bg-lime-100',   border: 'border-lime-300',   dot: 'bg-lime-600',   text: 'text-lime-800',   btn: 'bg-lime-600 active:bg-lime-700' },
+  'fuchsia':{ bg: 'bg-fuchsia-100',border: 'border-fuchsia-300',dot: 'bg-fuchsia-600',text: 'text-fuchsia-800',btn: 'bg-fuchsia-600 active:bg-fuchsia-700' },
+  'slate':  { bg: 'bg-slate-200',  border: 'border-slate-300',  dot: 'bg-slate-600',  text: 'text-slate-800',  btn: 'bg-slate-600 active:bg-slate-700' },
+};
+const colorList = Object.keys(colorMap);
+
+const getColors = (key) => colorMap[key] || colorMap['blue'];
+
+const formatTime = (iso) => { try { return new Date(iso).toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' }); } catch(e) { return '--:--'; } };
+
+const getDayLabel = (iso) => {
+  try { const d = new Date(iso); const today = new Date();
+    if (d.toDateString() === today.toDateString()) return 'Tänään';
+    const yest = new Date(); yest.setDate(yest.getDate() - 1);
+    if (d.toDateString() === yest.toDateString()) return 'Eilen';
+    return `${d.getDate()}.${d.getMonth()+1}.`; } catch(e) { return ''; }
+};
+
+const getCurrentDateTimeLocal = () => {
+    const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
+};
+
+// ==========================================
+// OSA 2: PIENET KOMPONENTIT (Auth, Help)
+// ==========================================
+
+const HelpView = ({ onClose }) => {
+  return (
+    <div className="fixed inset-0 z-[60] bg-slate-50 flex flex-col animate-in slide-in-from-right duration-300 overflow-hidden">
+      <div className="bg-white px-4 py-4 border-b border-slate-200 flex items-center justify-between shadow-sm flex-none">
+        <div className="flex items-center gap-2 text-blue-600 font-bold text-lg">
+          <HelpCircle /> Käyttöopas
+        </div>
+        <button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
+          <X size={20} />
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto p-5 space-y-8 pb-20">
+        <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+          <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
+            <PlusSquare className="text-slate-500" size={22}/> Asenna puhelimeen
+          </h3>
+          <p className="text-sm text-slate-600 mb-4">
+            Tämä on selainpohjainen sovellus. Saat parhaan käyttökokemuksen lisäämällä sen kotivalikkoon.
+          </p>
+        </section>
+        <div className="text-center text-xs text-slate-400 pt-6 pb-2">
+          Lääkemuistio v3.2 - {new Date().getFullYear()}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AuthScreen = () => {
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      await setPersistence(auth, browserLocalPersistence);
+      if (isRegistering) {
+        await createUserWithEmailAndPassword(auth, email, password);
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+      }
+    } catch (err) {
+      console.error(err);
+      let msg = "Tapahtui virhe.";
+      if (err.code === 'auth/invalid-email') msg = "Virheellinen sähköposti.";
+      if (err.code === 'auth/missing-password') msg = "Syötä salasana.";
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') msg = "Väärä sähköposti tai salasana.";
+      if (err.code === 'auth/weak-password') msg = "Salasanan tulee olla vähintään 6 merkkiä.";
+      if (err.code === 'auth/email-already-in-use') msg = "Sähköposti on jo käytössä.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative overflow-hidden">
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+         <img src="https://img.geocaching.com/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" alt="" className="w-3/4 opacity-[0.15] grayscale" />
+      </div>
+      <div className="w-full max-w-sm bg-white/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl z-10 border border-white">
+        <div className="flex justify-center mb-6">
+          <img src="https://img.geocaching.com/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" alt="Logo" className="h-16 w-auto object-contain" />
+        </div>
+        <h2 className="text-2xl font-bold text-center text-slate-800 mb-2">
+          {isRegistering ? 'Luo tunnus' : 'Kirjaudu sisään'}
+        </h2>
+        {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 flex items-center gap-2"><AlertTriangle size={16} /> {error}</div>}
+        <form onSubmit={handleAuth} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Sähköposti</label>
+            <div className="relative">
+              <User className="absolute left-3 top-3 text-slate-400" size={18} />
+              <input type="email" required className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all" placeholder="sinun@sahkoposti.fi" value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Salasana</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 text-slate-400" size={18} />
+              <input type="password" required className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all" placeholder="******" value={password} onChange={(e) => setPassword(e.target.value)} />
+            </div>
+          </div>
+          <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all flex justify-center items-center gap-2 disabled:opacity-70">
+            {loading && <Loader2 size={20} className="animate-spin" />}
+            {isRegistering ? 'Rekisteröidy' : 'Kirjaudu'}
+          </button>
+        </form>
+        <div className="mt-6 text-center">
+          <button onClick={() => { setIsRegistering(!isRegistering); setError(''); }} className="text-sm text-slate-500 hover:text-blue-600 font-medium">
+            {isRegistering ? 'Onko sinulla jo tunnus? Kirjaudu' : 'Uusi käyttäjä? Luo tunnus'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// OSA 3: UI-KOMPONENTIT (Kortti, Stats)
+// ==========================================
+
+const MedicationCard = ({ 
+  med, index, isReordering, isExpanded, toggleExpand, moveMedication, 
+  activeMedsLength, logs, takeMedicine, setManualLogMed, setShowHistoryFor, 
+  setEditingMed, toggleArchive, requestDeleteMed, handleRefill 
+}) => {
+  const lastLog = logs.filter(x => x.medId === med.id).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp))[0];
+  const c = getColors(med.colorKey || 'blue');
+  const hasSchedule = med.schedule && med.schedule.length > 0;
+  const isCombo = med.ingredients && med.ingredients.length > 0;
+  const isLowStock = !isCombo && med.trackStock && !med.isCourse && med.stock !== null && med.stock <= (med.lowStockLimit || 10);
+  
+  let isDoneForToday = false;
+  const todayStr = new Date().toDateString();
+  if (hasSchedule) {
+    isDoneForToday = med.schedule.every(slotId => 
+      logs.some(l => l.medId === med.id && l.slot === slotId && new Date(l.timestamp).toDateString() === todayStr)
+    );
+  } else {
+    isDoneForToday = logs.some(l => l.medId === med.id && new Date(l.timestamp).toDateString() === todayStr);
+  }
+
+  return (
+    <div className={`rounded-xl shadow-sm border transition-all duration-200 overflow-hidden ${c.bg} ${c.border} ${!isExpanded?'hover:shadow-md':''} relative group`}>
+      {isReordering && (
+        <div className="absolute right-0 top-0 bottom-0 w-14 flex flex-col justify-center gap-2 pr-2 bg-gradient-to-l from-white/80 via-white/50 to-transparent z-30">
+          <button onClick={(e) => { e.stopPropagation(); moveMedication(index, -1); }} disabled={index === 0} className="p-2 bg-white rounded-full shadow-sm text-slate-500 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed mx-auto"><ArrowUp size={18} /></button>
+          <button onClick={(e) => { e.stopPropagation(); moveMedication(index, 1); }} disabled={index === activeMedsLength - 1} className="p-2 bg-white rounded-full shadow-sm text-slate-500 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed mx-auto"><ArrowDown size={18} /></button>
+        </div>
+      )}
+      <div onClick={() => !isReordering && toggleExpand(med.id)} className={`p-4 flex justify-between items-center ${!isReordering ? 'cursor-pointer active:bg-black/5' : ''}`}>
+        <div className="flex-1 min-w-0 pr-3">
+           <div className="flex items-center gap-2">
+              {isCombo && <Layers size={20} className="text-slate-600" />}
+              <h3 className="text-lg font-bold text-slate-800 leading-tight">{med.name}</h3>
+              {!isExpanded && isDoneForToday && <CheckCircle size={18} className="text-green-600 shrink-0" />}
+              {!isExpanded && isLowStock && <AlertTriangle size={18} className="text-red-500 shrink-0" />}
+           </div>
+           {!isExpanded && (
+             <div className="flex items-center gap-2 mt-1">
+               {isCombo ? <span className="text-xs font-bold text-slate-500 bg-white/50 px-1.5 py-0.5 rounded uppercase tracking-wider">Dosetti</span> : isLowStock ? <span className="text-xs text-red-600 font-bold truncate">{med.stock} kpl jäljellä!</span> : med.trackStock && med.isCourse ? <span className="text-xs text-slate-500 font-bold truncate">Kuuri: {med.stock} kpl</span> : med.dosage ? <span className="text-xs text-slate-600 font-medium truncate">{med.dosage}</span> : <span className="text-xs text-slate-500 truncate">{lastLog ? `Viimeksi: ${formatTime(lastLog.timestamp)}` : 'Ei otettu vielä'}</span>}
+             </div>
+           )}
+        </div>
+        {!isReordering && (<div className="text-slate-400">{isExpanded ? <ChevronUp size={24} /> : <ChevronDown size={24} />}</div>)}
+      </div>
+
+      {isExpanded && !isReordering && (
+        <div className="px-4 pb-4 pt-0 animate-in slide-in-from-top-2 duration-200">
+           <div className="border-t border-black/5 mb-3 pt-1"></div>
+           {isCombo && (
+             <div className="text-xs text-slate-600 bg-white/60 p-2.5 rounded-lg mb-3 border border-slate-100">
+               <div className="flex items-center gap-2 mb-2"><Layers size={14} className="text-slate-400"/><span className="font-bold uppercase text-[10px] text-slate-500">Sisältö</span></div>
+               <div className="space-y-1">{med.ingredients.map((ing, idx) => (<div key={idx} className="flex justify-between border-b border-slate-200 last:border-0 pb-1 last:pb-0"><span className="font-medium">{ing.name}</span><span className="text-slate-500">{ing.count} kpl</span></div>))}</div>
+             </div>
+           )}
+           {!isCombo && med.dosage && <div className="text-sm text-slate-700 mb-2 font-medium bg-white/50 p-2 rounded-lg inline-block mr-2">{med.dosage}</div>}
+           {!isCombo && med.trackStock && <div className={`text-sm mb-3 font-medium bg-white/50 p-2 rounded-lg inline-flex items-center gap-2 ${isLowStock ? 'text-red-600 border border-red-200' : 'text-slate-700'}`}><Package size={14} /> <span>{med.stock !== null ? med.stock : 0} kpl</span></div>}
+           <div className="flex items-center gap-1.5 text-xs text-slate-600 mt-1 font-medium mb-4"><Clock size={12} /><span>{lastLog ? `${getDayLabel(lastLog.timestamp)} klo ${formatTime(lastLog.timestamp)}` : 'Ei otettu vielä'}</span></div>
+           <div className="flex gap-2 mb-4 justify-end flex-wrap">
+              {!isCombo && med.trackStock && <button onClick={() => handleRefill(med)} className="p-2 bg-white/60 rounded-lg hover:text-green-600 hover:bg-white flex items-center gap-1" title="Täydennä varastoa"><RefreshCw size={18}/></button>}
+              <button onClick={() => { setManualLogMed(med); }} className="p-2 bg-white/60 rounded-lg hover:text-blue-600 hover:bg-white" title="Lisää manuaalisesti"><CalendarPlus size={18}/></button>
+              <button onClick={() => setShowHistoryFor(med.id)} className="p-2 bg-white/60 rounded-lg hover:text-blue-600 hover:bg-white" title="Historia"><History size={18}/></button>
+              <button onClick={() => setEditingMed(med)} className="p-2 bg-white/60 rounded-lg hover:text-blue-600 hover:bg-white" title="Muokkaa"><Pencil size={18}/></button>
+              <button onClick={() => toggleArchive(med)} className="p-2 bg-white/60 rounded-lg hover:text-orange-500 hover:bg-white" title="Arkistoi"><Archive size={18}/></button>
+              <button onClick={() => requestDeleteMed(med)} className="p-2 bg-white/60 rounded-lg hover:text-red-500 hover:bg-white" title="Poista"><Trash2 size={18}/></button>
+           </div>
+           {hasSchedule ? (
+              <div className="grid grid-cols-4 gap-2">
+                {TIME_SLOTS.filter(slot => med.schedule.includes(slot.id)).map(slot => {
+                  const isTaken = logs.some(l => l.medId === med.id && l.slot === slot.id && new Date(l.timestamp).toDateString() === todayStr);
+                  const scheduleTime = med.scheduleTimes?.[slot.id] || slot.defaultTime;
+                  return (
+                    <button key={slot.id} onClick={() => takeMedicine(med, slot.id)} disabled={isTaken} className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${isTaken ? 'bg-green-100 border-green-200 text-green-700' : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-600 active:scale-95'}`}>
+                      {isTaken ? <Check size={20} strokeWidth={3} /> : <slot.icon size={20} />}
+                      <span className="text-[10px] font-bold mt-1 uppercase">{slot.label}</span>
+                      {!isTaken && <span className="text-[9px] text-slate-400">{scheduleTime}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <button onClick={() => takeMedicine(med)} className={`w-full py-3 rounded-lg font-bold text-white shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform ${c.btn}`}><CheckCircle size={20} /> OTA NYT</button>
+            )
+           }
+        </div>
+      )}
+    </div>
+  );
+};
+
+const StatsView = ({ medications, logs, setShowReport, openLogEdit }) => {
+  const getLogName = (log) => { const med = medications.find(m => m.id === log.medId); return med ? med.name : (log.medName || 'Poistettu lääke'); };
+  const getLogColorKey = (log) => { const med = medications.find(m => m.id === log.medId); return med ? med.colorKey : (log.medColor || 'blue'); };
+  const getHistoryDates = () => { const dates = [...new Set(logs.map(log => new Date(log.timestamp).toDateString()))]; return dates.sort((a, b) => new Date(b) - new Date(a)); };
+  const getLogsForDate = (dateObj) => logs.filter(l => new Date(l.timestamp).toDateString() === dateObj.toDateString()).sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+
+  return (
+    <div className="space-y-4">
+      <button onClick={() => setShowReport(true)} className="w-full bg-white border border-blue-200 text-blue-600 p-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-transform"><FileText size={20}/> Raportti (Valitse & Tulosta)</button>
+      <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-100">
+        <h3 className="text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-wider">Lääkkeet</h3>
+        <div className="flex flex-wrap gap-2">{medications.map(med => { const c = getColors(med.colorKey || 'blue'); return (<div key={med.id} className={`px-2 py-1 rounded-md border flex items-center gap-1.5 ${c.bg} ${c.border} ${med.isArchived ? 'opacity-50' : ''}`}><div className={`w-2.5 h-2.5 rounded-full ${c.dot}`} /><span className="text-xs font-bold text-slate-700">{med.name} {med.isArchived && '(arkisto)'}</span></div>); })}</div>
+      </div>
+      <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-100">
+        <h2 className="text-base font-bold text-slate-800 mb-3 flex items-center gap-2"><Calendar className="text-blue-500" size={18}/> Koko historia</h2>
+        <div className="space-y-3">
+          {getHistoryDates().map((dayStr, i) => {
+            const logsNow = getLogsForDate(new Date(dayStr)); const dayDate = new Date(dayStr); const isToday = dayDate.toDateString() === new Date().toDateString();
+            return (
+              <div key={i} className={`border-b border-slate-50 pb-2 last:border-0 ${isToday ? 'bg-blue-50/40 -mx-2 px-2 rounded-lg py-2 border-none' : ''}`}>
+                <div className={`text-[10px] font-bold uppercase mb-1.5 ${isToday ? 'text-blue-600' : 'text-slate-400'}`}>{getDayLabel(dayDate.toISOString())}</div>
+                <div className="flex flex-wrap gap-2">
+                  {logsNow.map(log => {
+                    const cKey = getLogColorKey(log); const c = getColors(cKey);
+                    return (<button key={log.id} onClick={() => openLogEdit(log)} className={`flex flex-col items-start gap-0.5 px-2.5 py-1.5 rounded-xl border shadow-sm active:scale-95 ${c.bg} ${c.border} max-w-full text-left`}><div className="flex items-center gap-1.5"><div className={`w-1.5 h-1.5 rounded-full ${c.dot}`} /><span className="text-xs font-bold text-slate-700">{getLogName(log)} {formatTime(log.timestamp)}</span></div>{log.reason && (<span className="text-[10px] text-slate-500 italic ml-3 truncate max-w-[150px]">"{log.reason}"</span>)}</button>);
+                  })}
+                </div>
+              </div>
+            );
+          })}
+          {logs.length === 0 && <div className="text-center text-slate-400 text-sm py-4">Ei vielä historiaa.</div>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// OSA 4: PÄÄSOVELLUS (Main App Logic)
+// ==========================================
+
 const MedicineTracker = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [user, setUser] = useState(null);
@@ -490,7 +779,7 @@ const MedicineTracker = () => {
   const dailyProgress = totalDoses > 0 ? (takenDoses / totalDoses) * 100 : 0;
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-blue-600" size={40} /></div>;
-  if (!user) return <AuthScreen auth={auth} />;
+  if (!user) return <AuthScreen />;
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 font-sans overflow-hidden select-none relative">
