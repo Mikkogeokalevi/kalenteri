@@ -124,7 +124,7 @@ const HelpView = ({ onClose }) => {
         </section>
 
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v3.0 - {new Date().getFullYear()}
+          Lääkemuistio v3.1 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -240,14 +240,10 @@ const MedicineTracker = () => {
   const [ingredientCount, setIngredientCount] = useState('');
   const [currentIngredients, setCurrentIngredients] = useState([]); 
 
-  // LISÄYS/MUOKKAUS TILA - ONKO NÄKYVISSÄ ETUSIVULLA
+  // LISÄYS/MUOKKAUS TILA
   const [showOnDashboard, setShowOnDashboard] = useState(true);
-
-  // UI STATE LISTS
   const [newMedName, setNewMedName] = useState('');
   const [newMedDosage, setNewMedDosage] = useState('');
-  
-  // Stock state
   const [newMedStock, setNewMedStock] = useState('');
   const [newMedTrackStock, setNewMedTrackStock] = useState(false);
   const [newMedLowLimit, setNewMedLowLimit] = useState('10'); 
@@ -265,7 +261,6 @@ const MedicineTracker = () => {
   const [takeReason, setTakeReason] = useState('');
 
   const [editingMed, setEditingMed] = useState(null);
-  
   const [manualLogMed, setManualLogMed] = useState(null);
   const [manualDate, setManualDate] = useState('');
   const [manualReason, setManualReason] = useState('');
@@ -276,7 +271,7 @@ const MedicineTracker = () => {
 
   const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, mode: null, medId: null, medName: '', logId: null, hasHistory: false, message: '' });
   const [showArchived, setShowArchived] = useState(false);
-  const [showHistoryFor, setShowHistoryFor] = useState(null); // Näyttää historian yhdelle lääkkeelle
+  const [showHistoryFor, setShowHistoryFor] = useState(null);
 
   // Auth Listener
   useEffect(() => {
@@ -345,7 +340,6 @@ const MedicineTracker = () => {
     });
   };
 
-  // Nollaa tilat kun vaihtaa tabia
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setEditingLog(null);
@@ -371,7 +365,6 @@ const MedicineTracker = () => {
     'fuchsia':{ bg: 'bg-fuchsia-100',border: 'border-fuchsia-300',dot: 'bg-fuchsia-600',text: 'text-fuchsia-800',btn: 'bg-fuchsia-600 active:bg-fuchsia-700' },
     'slate':  { bg: 'bg-slate-200',  border: 'border-slate-300',  dot: 'bg-slate-600',  text: 'text-slate-800',  btn: 'bg-slate-600 active:bg-slate-700' },
   };
-  
   const getColors = (key) => colorMap[key] || colorMap['blue'];
   const getSmartColor = () => {
     const activeMeds = medications.filter(m => !m.isArchived);
@@ -379,7 +372,7 @@ const MedicineTracker = () => {
     return colorList.find(c => !usedColors.has(c)) || colorList[medications.length % colorList.length];
   };
 
-  // --- TOIMINNOT ---
+  // --- LOGIIKKA ---
   const handleLogout = () => { if(window.confirm("Kirjaudutaanko ulos?")) signOut(auth); };
 
   const toggleExpand = (id) => {
@@ -388,14 +381,13 @@ const MedicineTracker = () => {
 
   const openAddModal = () => {
     setNewMedName(''); setNewMedDosage(''); setNewMedStock(''); setNewMedTrackStock(false);
-    setNewMedLowLimit('10'); setNewMedIsCourse(false); // Oletukset
+    setNewMedLowLimit('10'); setNewMedIsCourse(false);
     setSelectedColor(getSmartColor()); setSelectedSchedule([]); setScheduleTimes({});
     setCurrentIngredients([]);
-    setShowOnDashboard(true); // Oletuksena näkyy etusivulla
+    setShowOnDashboard(true);
     setIsAdding(true);
   };
 
-  // Ingredients handlers
   const addIngredient = () => {
     if(!ingredientName.trim()) return;
     setCurrentIngredients([...currentIngredients, {name: ingredientName.trim(), count: ingredientCount.trim() || '1'}]);
@@ -512,7 +504,8 @@ const MedicineTracker = () => {
         medColor: stockItem ? stockItem.colorKey : 'orange', 
         slot: null, 
         timestamp: new Date().toISOString(),
-        reason: quickAddReason.trim()
+        reason: quickAddReason.trim(),
+        ingredients: null // Quick add ei yleensä sisällä ainesosia, mutta kenttä hyvä olla
       });
       
       if (stockItem && stockItem.stock > 0) {
@@ -524,16 +517,22 @@ const MedicineTracker = () => {
     } catch(e) { alert("Virhe pikalisäyksessä"); }
   };
 
+  // --- TÄRKEÄ MUUTOS: TALLENNETAAN AINESOSAT LOGIIN ---
   const takeMedicine = async (med, slotId = null, reasonText = '') => {
     if (!user) return;
     try {
+      // Tallennetaan lääkkeen nykyiset ainesosat logiin
+      // Näin tiedetään mitä dosetti sisälsi ottohetkellä
+      const ingredientsSnapshot = med.ingredients && med.ingredients.length > 0 ? med.ingredients : null;
+
       await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
         medId: med.id, 
         medName: med.name, 
         medColor: med.colorKey, 
         slot: slotId, 
         timestamp: new Date().toISOString(), 
-        reason: reasonText.trim()
+        reason: reasonText.trim(),
+        ingredients: ingredientsSnapshot // TALLENNETAAN SNAPSHOT TÄSSÄ
       });
       
       if (med.trackStock && med.stock > 0) {
@@ -577,13 +576,16 @@ const MedicineTracker = () => {
     e.preventDefault();
     if (!manualLogMed || !manualDate || !user) return;
     try {
+      const ingredientsSnapshot = manualLogMed.ingredients && manualLogMed.ingredients.length > 0 ? manualLogMed.ingredients : null;
+
       await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
         medId: manualLogMed.id, 
         medName: manualLogMed.name, 
         medColor: manualLogMed.colorKey, 
         slot: null, 
         timestamp: new Date(manualDate).toISOString(),
-        reason: manualReason.trim()
+        reason: manualReason.trim(),
+        ingredients: ingredientsSnapshot
       });
       
       if (manualLogMed.trackStock && manualLogMed.stock > 0) {
@@ -779,7 +781,13 @@ const MedicineTracker = () => {
              const dStr = new Date(log.timestamp).toLocaleDateString('fi-FI', {weekday: 'short', day: 'numeric', month: 'numeric'});
              if (!days[dStr]) days[dStr] = [];
              const slotName = TIME_SLOTS.find(s => s.id === log.slot)?.label || 'Muu';
-             days[dStr].push(slotName);
+             // Jos logissa on ainesosia (dosetti), lisätään ne sulkuihin
+             let extra = '';
+             if (log.ingredients && log.ingredients.length > 0) {
+               const ings = log.ingredients.map(i => `${i.name} (${i.count})`).join(', ');
+               extra = ` [Sisälsi: ${ings}]`;
+             }
+             days[dStr].push(slotName + extra);
           });
           Object.entries(days).forEach(([day, slots]) => {
              text += `${day}: ${slots.join(', ')}\n`;
@@ -789,7 +797,13 @@ const MedicineTracker = () => {
              const d = new Date(log.timestamp);
              const timeStr = d.toLocaleString('fi-FI', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit'});
              const reasonStr = log.reason ? ` - "${log.reason}"` : '';
-             text += `${timeStr}${reasonStr}\n`;
+             // Jos logissa on ainesosia
+             let extra = '';
+             if (log.ingredients && log.ingredients.length > 0) {
+                const ings = log.ingredients.map(i => `${i.name} (${i.count})`).join(', ');
+                extra = `\n    Sisälsi: ${ings}`;
+             }
+             text += `${timeStr}${reasonStr}${extra}\n`;
           });
        }
        text += `\n`;
@@ -1362,7 +1376,15 @@ const MedicineTracker = () => {
                        <div className="space-y-2">
                          {filteredLogs.map(log => (
                            <button key={log.id} onClick={() => openLogEdit(log)} className="w-full flex justify-between items-center p-2 bg-slate-50 rounded-lg text-left">
-                              <span className="font-bold text-sm text-slate-700">{formatTime(log.timestamp)}</span>
+                              <div>
+                                <span className="font-bold text-sm text-slate-700">{formatTime(log.timestamp)}</span>
+                                {/* Jos historiassa on ainesosia (vanhat dosetit), näytetään ne tässä */}
+                                {log.ingredients && log.ingredients.length > 0 && (
+                                  <div className="text-[10px] text-slate-500 mt-0.5">
+                                    Sisälsi: {log.ingredients.map(ing => `${ing.name} (${ing.count})`).join(', ')}
+                                  </div>
+                                )}
+                              </div>
                               {log.reason && <span className="text-xs text-slate-500 italic">"{log.reason}"</span>}
                            </button>
                          ))}
@@ -1406,10 +1428,26 @@ const MedicineTracker = () => {
         <div className="absolute inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in">
            <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold">Muokkaa merkintää</h2>
+                <h2 className="text-lg font-bold">Merkinnän tiedot</h2>
                 <button onClick={() => setEditingLog(null)} className="p-1 bg-slate-100 rounded-full"><X size={18}/></button>
              </div>
              <form onSubmit={handleSaveLogEdit}>
+               
+               {/* NÄYTETÄÄN OTETUT AINESOSAT TÄSSÄ */}
+               {editingLog.ingredients && editingLog.ingredients.length > 0 && (
+                 <div className="mb-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Sisälsi</label>
+                    <ul className="space-y-1">
+                      {editingLog.ingredients.map((ing, idx) => (
+                        <li key={idx} className="flex justify-between text-sm">
+                          <span className="font-medium text-slate-700">{ing.name}</span>
+                          <span className="text-slate-500">{ing.count} kpl</span>
+                        </li>
+                      ))}
+                    </ul>
+                 </div>
+               )}
+
                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Aika</label>
                <input type="datetime-local" required className="w-full bg-slate-50 p-3 rounded-xl mb-4 border" value={editingLogDate} onChange={e => setEditingLogDate(e.target.value)} />
                
