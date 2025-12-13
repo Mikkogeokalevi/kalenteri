@@ -1,0 +1,20 @@
+{
+  "name": "Lääkemuistio",
+  "short_name": "Lääkkeet",
+  "start_url": "./laakkeet.html",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "https://img.geocaching.com/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://img.geocaching.com/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
