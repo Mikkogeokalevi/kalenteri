@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw } from 'lucide-react';
+import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
 import { initializeApp } from 'firebase/app';
@@ -45,80 +45,124 @@ const HelpView = ({ onClose }) => {
     <div className="fixed inset-0 z-[60] bg-slate-50 flex flex-col animate-in slide-in-from-right duration-300 overflow-hidden">
       <div className="bg-white px-4 py-4 border-b border-slate-200 flex items-center justify-between shadow-sm flex-none">
         <div className="flex items-center gap-2 text-blue-600 font-bold text-lg">
-          <HelpCircle /> Ohjekirja
+          <HelpCircle /> Käyttöopas
         </div>
         <button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
           <X size={20} />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 space-y-6 pb-20">
+      <div className="flex-1 overflow-y-auto p-5 space-y-8 pb-20">
         
-        {/* 1. PERUSKÄYTTÖ */}
-        <section className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-          <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
-            <CheckCircle className="text-green-500" size={20}/> Lääkkeen ottaminen
+        {/* 1. ASENNUSOHJEET */}
+        <section className="bg-blue-50 p-5 rounded-2xl border border-blue-100">
+          <h3 className="font-bold text-blue-800 text-lg mb-4 flex items-center gap-2">
+            <PlusSquare className="text-blue-600" size={22}/> Asenna puhelimeen
           </h3>
-          <ul className="space-y-3 text-sm text-slate-600">
-            <li className="flex gap-2">
-              <span className="font-bold text-slate-800 min-w-[80px]">Aikataulu:</span>
-              <span>Jos lääkkeellä on kellonaika (esim. Aamu), paina vastaavaa kuvaketta. Se muuttuu vihreäksi, kun lääke on merkitty otetuksi tälle päivälle.</span>
-            </li>
-            <li className="flex gap-2">
-              <span className="font-bold text-slate-800 min-w-[80px]">Tarvittaessa:</span>
-              <span>Lääkkeet ilman aikataulua näkyvät listalla. Avaa lääkkeen kortti ja paina <strong>OTA NYT</strong>. Sovellus kysyy halutessasi syyn (esim. "Päänsärky").</span>
-            </li>
-             <li className="flex gap-2">
-              <span className="font-bold text-slate-800 min-w-[80px]">Pikalisäys:</span>
-              <span>Jos otat lääkkeen, jota ei ole listalla (esim. satunnainen särkylääke), käytä oikean alakulman oranssia <Zap className="inline w-3 h-3"/> -painiketta.</span>
-            </li>
-          </ul>
-        </section>
+          <p className="text-sm text-slate-600 mb-4">
+            Saat parhaan käyttökokemuksen, kun lisäät tämän sivun puhelimesi kotivalikkoon. Se toimii silloin kuin oikea sovellus.
+          </p>
+          
+          <div className="space-y-4">
+            <div className="bg-white p-3 rounded-xl border border-blue-100">
+              <h4 className="font-bold text-slate-800 text-sm mb-2 flex items-center gap-2">
+                  iPhone / iPad (Safari)
+              </h4>
+              <ol className="list-decimal list-inside text-xs text-slate-600 space-y-1.5 ml-1">
+                <li>Paina selaimen alareunassa olevaa <strong>Jaa</strong>-painiketta <Share className="inline w-3 h-3"/>.</li>
+                <li>Rullaa valikkoa alaspäin ja valitse <strong>"Lisää Koti-valikkoon"</strong>.</li>
+                <li>Paina yläkulmasta <strong>Lisää</strong>.</li>
+              </ol>
+            </div>
 
-        {/* 2. VARASTO & OSTOSLISTA */}
-        <section className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-          <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
-            <Package className="text-blue-500" size={20}/> Varasto & Ostoslista
-          </h3>
-          <div className="space-y-3 text-sm text-slate-600">
-            <p>Voit asettaa lääkkeelle varastosaldon muokkaamalla lääkettä.</p>
-            <ul className="list-disc list-inside space-y-1 ml-1">
-              <li><strong>Hälytysraja:</strong> Kun lääkkeen määrä alittaa rajan (oletus 10), se muuttuu punaiseksi ja ilmestyy <strong>Ostoslistalle</strong> (kärry-ikoni yläpalkissa).</li>
-              <li><strong>Kuurit:</strong> Jos merkitset lääkkeen "Kuuriksi", sen saldo vähenee, mutta se ei hälytä loppumisesta eikä mene ostoslistalle.</li>
-              <li><strong>Täydennys:</strong> Paina lääkkeen kortissa vihreää <RefreshCw className="inline w-3 h-3"/> -nappia lisätäksesi varastoon lisää lääkettä.</li>
-            </ul>
-          </div>
-        </section>
-
-        {/* 3. HISTORIA & RAPORTIT */}
-        <section className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-          <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
-            <FileText className="text-purple-500" size={20}/> Historia & Lääkäri
-          </h3>
-          <div className="space-y-3 text-sm text-slate-600">
-            <p><strong>Historia-välilehti:</strong> Näet kaikki otetut lääkkeet aikajärjestyksessä. Klikkaamalla merkintää voit muokata aikaa, syytä tai poistaa virheellisen kirjauksen.</p>
-            <p><strong>Raportti lääkärille:</strong> Historiassa on nappi <strong>"Yhteenveto (30pv)"</strong>. Se luo tekstilistan viimeisen kuukauden lääkkeistä, jonka voit kopioida ja näyttää lääkärille.</p>
-          </div>
-        </section>
-
-        {/* 4. MUOKKAUS JA POISTO */}
-        <section className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-          <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
-            <Pencil className="text-orange-500" size={20}/> Hallinta
-          </h3>
-           <div className="space-y-3 text-sm text-slate-600">
-            <p>Klikkaa lääkkeen nimeä avataksesi toiminnot:</p>
-            <div className="grid grid-cols-2 gap-2 text-xs font-bold">
-               <div className="flex items-center gap-2"><CalendarPlus size={14} className="text-blue-600"/> Unohdettu kirjaus</div>
-               <div className="flex items-center gap-2"><Pencil size={14} className="text-blue-600"/> Muokkaa tietoja</div>
-               <div className="flex items-center gap-2"><Archive size={14} className="text-orange-500"/> Arkistoi (piilota)</div>
-               <div className="flex items-center gap-2"><Trash2 size={14} className="text-red-500"/> Poista kokonaan</div>
+            <div className="bg-white p-3 rounded-xl border border-blue-100">
+              <h4 className="font-bold text-slate-800 text-sm mb-2 flex items-center gap-2">
+                 🤖 Android (Chrome)
+              </h4>
+              <ol className="list-decimal list-inside text-xs text-slate-600 space-y-1.5 ml-1">
+                <li>Paina selaimen yläkulmassa olevaa kolmea pistettä <MoreVertical className="inline w-3 h-3"/>.</li>
+                <li>Valitse valikosta <strong>"Asenna sovellus"</strong> tai <strong>"Lisää aloitusnäyttöön"</strong>.</li>
+                <li>Vahvista painamalla <strong>Asenna/Lisää</strong>.</li>
+              </ol>
             </div>
           </div>
         </section>
 
+        {/* 2. MITÄ MIKIN TARKOITTAA */}
+        <section>
+          <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
+            <HelpCircle className="text-slate-500" size={20}/> Mitä nämä ovat?
+          </h3>
+          <div className="grid grid-cols-1 gap-3">
+             <div className="flex items-start gap-3 bg-white p-3 rounded-xl shadow-sm border border-slate-100">
+               <div className="p-2 bg-orange-100 text-orange-600 rounded-full"><Zap size={20}/></div>
+               <div>
+                 <p className="font-bold text-slate-800 text-sm">Pikalisäys (Salama)</p>
+                 <p className="text-xs text-slate-500">Käytä tätä, kun otat satunnaisen lääkkeen (esim. särkylääke), jota et halua lisätä pysyvästi listalle. Voit kirjoittaa myös syyn.</p>
+               </div>
+             </div>
+             
+             <div className="flex items-start gap-3 bg-white p-3 rounded-xl shadow-sm border border-slate-100">
+               <div className="p-2 bg-red-100 text-red-600 rounded-full"><ShoppingCart size={20}/></div>
+               <div>
+                 <p className="font-bold text-slate-800 text-sm">Ostoslista</p>
+                 <p className="text-xs text-slate-500">Tämä ilmestyy yläpalkkiin, jos jokin lääke on vähissä (alle hälytysrajan). Klikkaa nähdäksesi mitä pitää ostaa.</p>
+               </div>
+             </div>
+
+             <div className="flex items-start gap-3 bg-white p-3 rounded-xl shadow-sm border border-slate-100">
+               <div className="p-2 bg-white border border-slate-200 text-slate-500 rounded-full"><RotateCcw size={20}/></div>
+               <div>
+                 <p className="font-bold text-slate-800 text-sm">Päivitä (Vasen alhaalla)</p>
+                 <p className="text-xs text-slate-500">Jos sovellus takkuilee tai et näe uusimpia muutoksia, tämä nappi lataa sovelluksen uudelleen.</p>
+               </div>
+             </div>
+          </div>
+        </section>
+
+        {/* 3. LÄÄKKEIDEN HALLINTA */}
+        <section>
+          <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
+            <Pill className="text-blue-500" size={20}/> Lääkkeiden käyttö
+          </h3>
+          <ul className="space-y-3 text-sm text-slate-600 list-disc list-inside ml-2">
+            <li><strong>Lääkkeen lisääminen:</strong> Paina isoa sinistä <strong>+</strong> nappia oikeassa alakulmassa.</li>
+            <li><strong>Lääkkeen ottaminen:</strong>
+               <ul className="pl-6 pt-1 space-y-1 list-[circle]">
+                 <li>Jos lääkkeellä on kellonaika, paina <Sun className="inline w-3 h-3"/> -kuvaketta.</li>
+                 <li>Jos lääke otetaan tarvittaessa, avaa lääkkeen tiedot ja paina <strong>OTA NYT</strong>. Voit samalla kirjata syyn (esim. "Kipu").</li>
+               </ul>
+            </li>
+            <li><strong>Muokkaus & Poisto:</strong> Klikkaa lääkkeen nimeä, niin näet lisätoiminnot (kynä, roskakori, arkisto).</li>
+          </ul>
+        </section>
+
+        {/* 4. VARASTOSALDOT */}
+        <section>
+           <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
+            <Package className="text-green-600" size={20}/> Varasto & Kuurit
+          </h3>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-sm text-slate-600 space-y-2">
+            <p>Voit laittaa lääkkeelle saldon päälle muokkaustilassa.</p>
+            <p><strong>Hälytysraja:</strong> Kun lääkettä on vähemmän kuin raja (oletus 10), se muuttuu punaiseksi ja menee ostoslistalle.</p>
+            <p><strong>Kuuri:</strong> Jos valitset "Tämä on kuuri", lääke vähenee varastosta, mutta ei mene punaiselle kun se loppuu.</p>
+            <p><strong>Täydennys:</strong> Paina lääkkeen kortissa vihreää <RefreshCw className="inline w-3 h-3"/> -nappia lisätäksesi varastoon lisää.</p>
+          </div>
+        </section>
+
+         {/* 5. RAPORTIT */}
+         <section>
+           <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
+            <FileText className="text-purple-600" size={20}/> Lääkäri & Historia
+          </h3>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-sm text-slate-600 space-y-2">
+            <p><strong>Historia-välilehdeltä</strong> näet kaikki otetut lääkkeet.</p>
+            <p>Paina <strong>"Yhteenveto (30pv)"</strong> -nappia saadaksesi selkeän listan viimeisen kuukauden lääkkeistä. Voit kopioida sen ja näyttää lääkärille.</p>
+          </div>
+        </section>
+
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v2.3
+          Lääkemuistio v2.3 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
