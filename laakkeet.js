@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, RotateCcw, Share, MoreVertical, PlusSquare, Layers, LayoutList, Box, Menu } from 'lucide-react';
+import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
 import { initializeApp } from 'firebase/app';
@@ -105,7 +105,7 @@ const HelpView = ({ onClose }) => {
           </div>
         </section>
 
-        {/* 3. VARASTO JA DOSETTI */}
+        {/* 3. VARASTO JA DOSETTI (TÄRKEÄ UUSI OMINAISUUS) */}
         <section className="bg-blue-50 p-5 rounded-2xl border border-blue-100">
           <h3 className="font-bold text-blue-800 text-lg mb-4 flex items-center gap-2">
             <LayoutList className="text-blue-600" size={22}/> Varasto & Dosetit
@@ -172,7 +172,7 @@ const HelpView = ({ onClose }) => {
         </section>
 
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v2.11 - {new Date().getFullYear()}
+          Lääkemuistio v2.9 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -276,7 +276,7 @@ const MedicineTracker = () => {
   const [showDosetti, setShowDosetti] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showStockList, setShowStockList] = useState(false); 
-  const [isMenuOpen, setIsMenuOpen] = useState(false); 
+  const [isMenuOpen, setIsMenuOpen] = useState(false); // UUSI: Hampurilaisvalikon tila
 
   // Raportin tila
   const [reportStartDate, setReportStartDate] = useState('');
@@ -288,32 +288,8 @@ const MedicineTracker = () => {
   const [ingredientCount, setIngredientCount] = useState('');
   const [currentIngredients, setCurrentIngredients] = useState([]); 
 
-  // Pikalisäyksen tila
-  const [quickAddName, setQuickAddName] = useState('');
-  const [quickAddReason, setQuickAddReason] = useState('');
-  const [quickAddDate, setQuickAddDate] = useState(''); 
-
+  // LISÄYS/MUOKKAUS TILA - ONKO NÄKYVISSÄ ETUSIVULLA
   const [showOnDashboard, setShowOnDashboard] = useState(true);
-
-  const [takeWithReasonMed, setTakeWithReasonMed] = useState(null);
-  const [takeReason, setTakeReason] = useState('');
-
-  const [editingMed, setEditingMed] = useState(null);
-  
-  const [manualLogMed, setManualLogMed] = useState(null);
-  const [manualDate, setManualDate] = useState('');
-  const [manualReason, setManualReason] = useState('');
-
-  const [editingLog, setEditingLog] = useState(null);
-  const [editingLogDate, setEditingLogDate] = useState('');
-  const [editingLogReason, setEditingLogReason] = useState('');
-
-  const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, mode: null, medId: null, medName: '', logId: null, hasHistory: false });
-  const [showArchived, setShowArchived] = useState(false);
-  const [showHistoryFor, setShowHistoryFor] = useState(null);
-  const [isAdding, setIsAdding] = useState(false);
-  const [isQuickAdding, setIsQuickAdding] = useState(false);
-
 
   // Auth Listener
   useEffect(() => {
@@ -410,12 +386,64 @@ const MedicineTracker = () => {
   }, [medications, logs, notificationsEnabled]);
 
 
-  // Helper
-  const getCurrentDateTimeLocal = () => {
-    const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    return now.toISOString().slice(0, 16);
-  };
+  // State UI
+  const [newMedName, setNewMedName] = useState('');
+  const [newMedDosage, setNewMedDosage] = useState('');
+  
+  // Stock state
+  const [newMedStock, setNewMedStock] = useState('');
+  const [newMedTrackStock, setNewMedTrackStock] = useState(false);
+  const [newMedLowLimit, setNewMedLowLimit] = useState('10'); 
+  const [newMedIsCourse, setNewMedIsCourse] = useState(false); 
 
+  const [selectedColor, setSelectedColor] = useState('blue');
+  const [selectedSchedule, setSelectedSchedule] = useState([]); 
+  const [scheduleTimes, setScheduleTimes] = useState({});
+  const [isAdding, setIsAdding] = useState(false);
+  const [isQuickAdding, setIsQuickAdding] = useState(false);
+  const [quickAddName, setQuickAddName] = useState('');
+  const [quickAddReason, setQuickAddReason] = useState('');
+  
+  const [takeWithReasonMed, setTakeWithReasonMed] = useState(null);
+  const [takeReason, setTakeReason] = useState('');
+
+  const [editingMed, setEditingMed] = useState(null);
+  
+  const [manualLogMed, setManualLogMed] = useState(null);
+  const [manualDate, setManualDate] = useState('');
+  const [manualReason, setManualReason] = useState('');
+
+  const [editingLog, setEditingLog] = useState(null);
+  const [editingLogDate, setEditingLogDate] = useState('');
+  const [editingLogReason, setEditingLogReason] = useState('');
+
+  const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, mode: null, medId: null, medName: '', logId: null, hasHistory: false });
+  const [showArchived, setShowArchived] = useState(false);
+  const [showHistoryFor, setShowHistoryFor] = useState(null);
+
+  // Värit
+  const colorList = ['blue', 'green', 'purple', 'orange', 'rose', 'cyan', 'amber', 'teal', 'indigo', 'lime', 'fuchsia', 'slate'];
+  const colorMap = {
+    'blue':   { bg: 'bg-blue-100',   border: 'border-blue-300',   dot: 'bg-blue-600',   text: 'text-blue-800',   btn: 'bg-blue-600 active:bg-blue-700' },
+    'green':  { bg: 'bg-green-100',  border: 'border-green-300',  dot: 'bg-green-600',  text: 'text-green-800',  btn: 'bg-green-600 active:bg-green-700' },
+    'purple': { bg: 'bg-purple-100', border: 'border-purple-300', dot: 'bg-purple-600', text: 'text-purple-800', btn: 'bg-purple-600 active:bg-purple-700' },
+    'orange': { bg: 'bg-orange-100', border: 'border-orange-300', dot: 'bg-orange-500', text: 'text-orange-800', btn: 'bg-orange-500 active:bg-orange-600' },
+    'rose':   { bg: 'bg-red-100',    border: 'border-red-300',    dot: 'bg-red-600',    text: 'text-red-800',    btn: 'bg-red-600 active:bg-red-700' },
+    'cyan':   { bg: 'bg-cyan-100',   border: 'border-cyan-300',   dot: 'bg-cyan-600',   text: 'text-cyan-800',   btn: 'bg-cyan-600 active:bg-cyan-700' },
+    'amber':  { bg: 'bg-amber-100',  border: 'border-amber-300',  dot: 'bg-amber-500',  text: 'text-amber-800',  btn: 'bg-amber-500 active:bg-amber-600' },
+    'teal':   { bg: 'bg-teal-100',   border: 'border-teal-300',   dot: 'bg-teal-600',   text: 'text-teal-800',   btn: 'bg-teal-600 active:bg-teal-700' },
+    'indigo': { bg: 'bg-indigo-100', border: 'border-indigo-300', dot: 'bg-indigo-600', text: 'text-indigo-800', btn: 'bg-indigo-600 active:bg-indigo-700' },
+    'lime':   { bg: 'bg-lime-100',   border: 'border-lime-300',   dot: 'bg-lime-600',   text: 'text-lime-800',   btn: 'bg-lime-600 active:bg-lime-700' },
+    'fuchsia':{ bg: 'bg-fuchsia-100',border: 'border-fuchsia-300',dot: 'bg-fuchsia-600',text: 'text-fuchsia-800',btn: 'bg-fuchsia-600 active:bg-fuchsia-700' },
+    'slate':  { bg: 'bg-slate-200',  border: 'border-slate-300',  dot: 'bg-slate-600',  text: 'text-slate-800',  btn: 'bg-slate-600 active:bg-slate-700' },
+  };
+  
+  const getColors = (key) => colorMap[key] || colorMap['blue'];
+  const getSmartColor = () => {
+    const activeMeds = medications.filter(m => !m.isArchived);
+    const usedColors = new Set(activeMeds.map(m => m.colorKey));
+    return colorList.find(c => !usedColors.has(c)) || colorList[medications.length % colorList.length];
+  };
 
   // --- TOIMINNOT ---
   const handleLogout = () => { if(window.confirm("Kirjaudutaanko ulos?")) signOut(auth); };
@@ -429,7 +457,7 @@ const MedicineTracker = () => {
     setNewMedLowLimit('10'); setNewMedIsCourse(false); // Oletukset
     setSelectedColor(getSmartColor()); setSelectedSchedule([]); setScheduleTimes({});
     setCurrentIngredients([]);
-    setShowOnDashboard(true); 
+    setShowOnDashboard(true); // Oletuksena näkyy etusivulla
     setIsAdding(true);
   };
 
@@ -546,16 +574,13 @@ const MedicineTracker = () => {
     // Yritetään löytää varastotuote nimellä
     const stockItem = medications.find(m => m.name.toLowerCase() === quickAddName.trim().toLowerCase() && m.trackStock);
     
-    // Käytä käyttäjän valitsemaa aikaa tai nykyhetkeä
-    const timestamp = quickAddDate ? new Date(quickAddDate).toISOString() : new Date().toISOString();
-
     try {
       await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
         medId: stockItem ? stockItem.id : 'quick_dose', 
         medName: quickAddName.trim(), 
         medColor: stockItem ? stockItem.colorKey : 'orange', 
         slot: null, 
-        timestamp: timestamp,
+        timestamp: new Date().toISOString(),
         reason: quickAddReason.trim()
       });
       
@@ -1088,7 +1113,6 @@ const MedicineTracker = () => {
                          )}
                       </div>
                       
-                      {/* Nuoli */}
                       {!isReordering && (
                         <div className="text-slate-400">
                           {expandedMedId === med.id ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
@@ -1096,7 +1120,7 @@ const MedicineTracker = () => {
                       )}
                     </div>
 
-                    {/* EXPANDED CONTENT - VAIN KUN AVATTU */}
+                    {/* EXPANDED CONTENT */}
                     {expandedMedId === med.id && !isReordering && (
                       <div className="px-4 pb-4 pt-0 animate-in slide-in-from-top-2 duration-200">
                          <div className="border-t border-black/5 mb-3 pt-1"></div>
@@ -1175,8 +1199,7 @@ const MedicineTracker = () => {
                               })}
                             </div>
                           ) : (
-                            // TÄMÄ ON SE UUSI LOGIIKKA: Klikkaus avaa syy-ikkunan, ei ota suoraan.
-                            <button onClick={() => { setTakeWithReasonMed(med); setTakeReason(''); }} className={`w-full py-3 rounded-lg font-bold text-white shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform ${c.btn}`}>
+                            <button onClick={() => takeMedicine(med)} className={`w-full py-3 rounded-lg font-bold text-white shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform ${c.btn}`}>
                               <CheckCircle size={20} /> OTA NYT
                             </button>
                           )
@@ -1303,7 +1326,7 @@ const MedicineTracker = () => {
 
           {/* LISÄYSNAPIT (OIKEA ALAKULMA) */}
           <div className="absolute bottom-20 right-5 z-30 flex gap-3 items-end">
-            <button onClick={() => { setQuickAddDate(getCurrentDateTimeLocal()); setIsQuickAdding(true); }} className="bg-orange-500 text-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform" title="Pikalisäys"><Zap size={24}/></button>
+            <button onClick={() => setIsQuickAdding(true)} className="bg-orange-500 text-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform" title="Pikalisäys"><Zap size={24}/></button>
             <button onClick={openAddModal} className="bg-blue-600 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform"><Plus size={32}/></button>
           </div>
         </>
@@ -1500,16 +1523,8 @@ const MedicineTracker = () => {
                   </button>
                 ))}
               </div>
-              
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Mitä otit?</label>
-              <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-orange-500" placeholder="Esim. Burana" value={quickAddName} onChange={e => setQuickAddName(e.target.value)} />
-              
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Aika</label>
-              <input type="datetime-local" className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-orange-500" value={quickAddDate} onChange={e => setQuickAddDate(e.target.value)} />
-
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Syy (valinnainen)</label>
-              <input className="w-full bg-slate-50 p-3 rounded-xl text-sm mb-4 outline-none border focus:border-orange-500" placeholder="Esim. Päänsärky" value={quickAddReason} onChange={e => setQuickAddReason(e.target.value)} />
-              
+              <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-orange-500" placeholder="Mitä otit? (esim. Burana)" value={quickAddName} onChange={e => setQuickAddName(e.target.value)} />
+              <input className="w-full bg-slate-50 p-3 rounded-xl text-sm mb-4 outline-none border focus:border-orange-500" placeholder="Syy (valinnainen, esim. Päänsärky)" value={quickAddReason} onChange={e => setQuickAddReason(e.target.value)} />
               <div className="flex gap-3">
                 <button type="button" onClick={() => setIsQuickAdding(false)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
                 <button type="submit" disabled={!quickAddName.trim()} className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold text-sm disabled:opacity-50">Kirjaa</button>
