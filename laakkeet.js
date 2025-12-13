@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare } from 'lucide-react';
+import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
 import { initializeApp } from 'firebase/app';
@@ -143,7 +143,7 @@ const HelpView = ({ onClose }) => {
             <Package className="text-green-600" size={20}/> Varasto & Kuurit
           </h3>
           <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-sm text-slate-600 space-y-2">
-            <p>Voit laittaa lääkkeelle saldon päälle muokkaustilassa.</p>
+            <p>Voit laittaa lääkkeelle saldon päälle muokkaamalla lääkettä.</p>
             <p><strong>Hälytysraja:</strong> Kun lääkettä on vähemmän kuin raja (oletus 10), se muuttuu punaiseksi ja menee ostoslistalle.</p>
             <p><strong>Kuuri:</strong> Jos valitset "Tämä on kuuri", lääke vähenee varastosta, mutta ei mene punaiselle kun se loppuu.</p>
             <p><strong>Täydennys:</strong> Paina lääkkeen kortissa vihreää <RefreshCw className="inline w-3 h-3"/> -nappia lisätäksesi varastoon lisää.</p>
@@ -153,16 +153,17 @@ const HelpView = ({ onClose }) => {
          {/* 5. RAPORTIT */}
          <section>
            <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
-            <FileText className="text-purple-600" size={20}/> Lääkäri & Historia
+            <FileText className="text-purple-600" size={20}/> Lääkäri & Raportit
           </h3>
           <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-sm text-slate-600 space-y-2">
-            <p><strong>Historia-välilehdeltä</strong> näet kaikki otetut lääkkeet.</p>
-            <p>Paina <strong>"Yhteenveto (30pv)"</strong> -nappia saadaksesi selkeän listan viimeisen kuukauden lääkkeistä. Voit kopioida sen ja näyttää lääkärille.</p>
+            <p><strong>Historia-välilehdeltä</strong> löydät Raportti-painikkeen.</p>
+            <p>Voit valita <strong>aikavälin</strong> (esim. edellinen viikko) ja <strong>lääkkeet</strong>, jotka raporttiin otetaan mukaan.</p>
+            <p>Raportti näyttää tarvittaessa otettavien syyt ja kellonajat sekä säännöllisten lääkkeiden osalta päivät, jolloin ne on otettu.</p>
           </div>
         </section>
 
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v2.3 - {new Date().getFullYear()}
+          Lääkemuistio v2.4 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -265,6 +266,11 @@ const MedicineTracker = () => {
   const [showShoppingList, setShowShoppingList] = useState(false);
   const [showReport, setShowReport] = useState(false);
 
+  // Raportin tila
+  const [reportStartDate, setReportStartDate] = useState('');
+  const [reportEndDate, setReportEndDate] = useState('');
+  const [reportSelectedMeds, setReportSelectedMeds] = useState(new Set());
+
   // Auth Listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -304,6 +310,19 @@ const MedicineTracker = () => {
 
     return () => { unsubMeds(); unsubLogs(); };
   }, [user]);
+
+  // Aseta oletusarvot raportille kun se avataan
+  useEffect(() => {
+    if (showReport) {
+      const end = new Date();
+      const start = new Date();
+      start.setDate(end.getDate() - 30);
+      setReportStartDate(start.toISOString().split('T')[0]);
+      setReportEndDate(end.toISOString().split('T')[0]);
+      // Oletuksena kaikki aktiiviset lääkkeet valittuna
+      setReportSelectedMeds(new Set(medications.filter(m => !m.isArchived).map(m => m.id)));
+    }
+  }, [showReport, medications]);
 
   // --- ILMOITUSLOGIIKKA ---
   useEffect(() => {
@@ -720,24 +739,85 @@ const MedicineTracker = () => {
     return med ? med.colorKey : (log.medColor || 'blue');
   };
 
-  // RAPORTIN LUONTI
+  // --- RAPORTIN LUONTI LOGIIKKA ---
   const generateReportText = () => {
-    const now = new Date();
-    const monthAgo = new Date();
-    monthAgo.setDate(now.getDate() - 30);
+    if (!reportStartDate || !reportEndDate) return "Valitse päivämäärät.";
+
+    const start = new Date(reportStartDate); start.setHours(0,0,0,0);
+    const end = new Date(reportEndDate); end.setHours(23,59,59,999);
     
-    const recentLogs = logs.filter(l => new Date(l.timestamp) >= monthAgo);
-    
-    // Group
-    const counts = {};
-    recentLogs.forEach(log => {
-      const name = getLogName(log);
-      counts[name] = (counts[name] || 0) + 1;
+    // Suodata logit aikavälin ja valinnan mukaan
+    const filteredLogs = logs.filter(l => {
+      const d = new Date(l.timestamp);
+      const isSelected = reportSelectedMeds.has(l.medId) || l.medId === 'quick_dose'; // Aina mukana pikalisäykset jos niitä on
+      return d >= start && d <= end && isSelected;
     });
     
-    let text = `LÄÄKKEIDEN KÄYTTÖ (30pv)\n${monthAgo.toLocaleDateString()} - ${now.toLocaleDateString()}\n\n`;
-    Object.entries(counts).sort((a,b) => b[1] - a[1]).forEach(([name, count]) => {
-      text += `- ${name}: ${count} kertaa\n`;
+    // Group: Laske määrät ja kerää tiedot
+    const medStats = {};
+    
+    // Alusta valitut lääkkeet nollille (jotta näkyy myös ne joita EI otettu)
+    Array.from(reportSelectedMeds).forEach(medId => {
+       const med = medications.find(m => m.id === medId);
+       if(med) {
+         medStats[med.name] = { count: 0, logs: [], isScheduled: med.schedule && med.schedule.length > 0 };
+       }
+    });
+
+    // Täytä logeista
+    filteredLogs.forEach(log => {
+      const name = getLogName(log);
+      if (!medStats[name]) {
+         medStats[name] = { count: 0, logs: [], isScheduled: false };
+      }
+      medStats[name].count++;
+      medStats[name].logs.push(log);
+    });
+    
+    // Header
+    let text = `LÄÄKKEIDEN KÄYTTÖ\n`;
+    text += `Aikaväli: ${start.toLocaleDateString()} - ${end.toLocaleDateString()}\n\n`;
+    
+    // Osa 1: Yhteenveto
+    text += `YHTEENVETO:\n`;
+    Object.entries(medStats).sort((a,b) => b[1].count - a[1].count).forEach(([name, data]) => {
+      text += `- ${name}: ${data.count} kpl\n`;
+    });
+    text += `\n-----------------------------\n`;
+    text += `ERITTELY:\n\n`;
+
+    // Osa 2: Tarkempi listaus
+    Object.entries(medStats).forEach(([name, data]) => {
+       if (data.count === 0) return; // Ei tulosteta tyhjiä erittelyyn
+
+       text += `--- ${name.toUpperCase()} (${data.count} kpl) ---\n`;
+       
+       // SÄÄNNÖLLISET (Listaa päivät)
+       if (data.isScheduled) {
+          // Group by date
+          const days = {};
+          data.logs.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp)).forEach(log => {
+             const dStr = new Date(log.timestamp).toLocaleDateString('fi-FI', {weekday: 'short', day: 'numeric', month: 'numeric'});
+             if (!days[dStr]) days[dStr] = [];
+             // Etsi slotti nimi
+             const slotName = TIME_SLOTS.find(s => s.id === log.slot)?.label || 'Muu';
+             days[dStr].push(slotName);
+          });
+
+          Object.entries(days).forEach(([day, slots]) => {
+             text += `${day}: ${slots.join(', ')}\n`;
+          });
+
+       } else {
+          // TARVITTAESSA (Listaa aika + syy)
+          data.logs.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp)).forEach(log => {
+             const d = new Date(log.timestamp);
+             const timeStr = d.toLocaleString('fi-FI', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit'});
+             const reasonStr = log.reason ? ` - "${log.reason}"` : '';
+             text += `${timeStr}${reasonStr}\n`;
+          });
+       }
+       text += `\n`;
     });
     
     return text;
@@ -746,6 +826,13 @@ const MedicineTracker = () => {
   const copyReport = () => {
     const text = generateReportText();
     navigator.clipboard.writeText(text).then(() => alert("Raportti kopioitu leikepöydälle!")).catch(e => alert("Kopiointi ei onnistunut"));
+  };
+
+  const toggleReportMedSelection = (medId) => {
+    const newSet = new Set(reportSelectedMeds);
+    if (newSet.has(medId)) newSet.delete(medId);
+    else newSet.add(medId);
+    setReportSelectedMeds(newSet);
   };
 
   // --- PRORESS BAR CALCULATION ---
@@ -1050,7 +1137,7 @@ const MedicineTracker = () => {
                 onClick={() => setShowReport(true)}
                 className="w-full bg-white border border-blue-200 text-blue-600 p-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-transform"
               >
-                <FileText size={20}/> Yhteenveto (30pv)
+                <FileText size={20}/> Raportti (Valitse & Tulosta)
               </button>
 
               <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-100">
@@ -1141,17 +1228,60 @@ const MedicineTracker = () => {
       {/* RAPORTTI MODAL */}
       {showReport && (
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in">
-           <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl flex flex-col max-h-[80vh]">
-             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold">Raportti (30pv)</h2>
+           <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
+             <div className="flex justify-between items-center mb-4 flex-none">
+                <h2 className="text-lg font-bold">Luo raportti</h2>
                 <button onClick={() => setShowReport(false)} className="p-1 bg-slate-100 rounded-full"><X size={18}/></button>
              </div>
-             <pre className="bg-slate-50 p-3 rounded-xl text-xs font-mono overflow-auto flex-1 whitespace-pre-wrap mb-4 border">
-               {generateReportText()}
-             </pre>
-             <button onClick={copyReport} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95">
-               <Clipboard size={18} /> Kopioi leikepöydälle
-             </button>
+             
+             <div className="flex-1 overflow-y-auto pr-2">
+                <div className="space-y-4">
+                  {/* PÄIVÄMÄÄRÄT */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Alkaen</label>
+                      <input type="date" className="w-full bg-slate-50 p-2 rounded-lg text-sm border" value={reportStartDate} onChange={e => setReportStartDate(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Päättyen</label>
+                      <input type="date" className="w-full bg-slate-50 p-2 rounded-lg text-sm border" value={reportEndDate} onChange={e => setReportEndDate(e.target.value)} />
+                    </div>
+                  </div>
+
+                  {/* LÄÄKEVALINTA */}
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                       <label className="block text-xs font-bold text-slate-500 uppercase">Valitse lääkkeet</label>
+                       <button onClick={() => {
+                         const allIds = medications.filter(m => !m.isArchived).map(m => m.id);
+                         setReportSelectedMeds(reportSelectedMeds.size === allIds.length ? new Set() : new Set(allIds));
+                       }} className="text-xs text-blue-600 font-bold">Valitse/Poista kaikki</button>
+                    </div>
+                    <div className="space-y-2 max-h-40 overflow-y-auto border rounded-xl p-2 bg-slate-50">
+                      {medications.filter(m => !m.isArchived).map(med => (
+                        <label key={med.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-100 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            className="w-4 h-4 text-blue-600 rounded"
+                            checked={reportSelectedMeds.has(med.id)}
+                            onChange={() => toggleReportMedSelection(med.id)}
+                          />
+                          <span className="text-sm font-medium text-slate-700 truncate">{med.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+             </div>
+
+             <div className="flex-none pt-4 mt-2 border-t">
+               <pre className="bg-slate-50 p-3 rounded-xl text-[10px] font-mono overflow-auto h-32 whitespace-pre-wrap mb-3 border">
+                 {generateReportText()}
+               </pre>
+               <button onClick={copyReport} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95">
+                 <Clipboard size={18} /> Kopioi leikepöydälle
+               </button>
+             </div>
            </div>
         </div>
       )}
