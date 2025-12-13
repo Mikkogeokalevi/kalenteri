@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box } from 'lucide-react';
+import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
 import { initializeApp } from 'firebase/app';
@@ -57,46 +57,22 @@ const HelpView = ({ onClose }) => {
         {/* DOSETTI JA KOOSTUMUS */}
         <section className="bg-blue-50 p-5 rounded-2xl border border-blue-100">
           <h3 className="font-bold text-blue-800 text-lg mb-4 flex items-center gap-2">
-            <LayoutList className="text-blue-600" size={22}/> Varasto & Yhdistelmät
+            <LayoutList className="text-blue-600" size={22}/> Dosetti & Varasto
           </h3>
           <div className="space-y-3 text-sm text-slate-600">
             <p><strong>1. Varastotuotteet (Fyysiset lääkkeet):</strong></p>
-            <p>Lisää ensin kaikki fyysiset lääkepurkit sovellukseen (esim. Burana, Kalkki). Aseta niille saldo.</p>
-            <p>Jos lääke on vain osa yhdistelmää (et ota sitä koskaan erikseen), ota täppä pois kohdasta <em>"Näytä etusivulla"</em>. Tällöin se näkyy vain <strong>Varastolistalla</strong> (<Box size={14} className="inline"/>).</p>
+            <p>Lisää ensin kaikki fyysiset lääkepurkit (esim. Burana, Kalkki) ja aseta niille saldo.</p>
+            <p>Jos lääke on vain osa yhdistelmää, ota täppä pois kohdasta <em>"Näytä etusivulla"</em>. Se siirtyy silloin <strong>Varastolistalle</strong> (<Box size={14} className="inline"/>).</p>
 
-            <p><strong>2. Yhdistelmät / Dosetti:</strong></p>
-            <p>Luo uusi lääke nimeltä "Iltasetti". Älä laita sille saldoa. Lisää sille aikataulu.</p>
-            <p>Kohdassa <strong>Koostumus</strong> valitse pudotusvalikosta varastossa olevat lääkkeet (esim. Kalkki 2kpl).</p>
-            <p>Kun otat Iltasetin, kalkin saldo vähenee automaattisesti.</p>
-          </div>
-        </section>
-
-        {/* 1. ASENNUSOHJEET */}
-        <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
-            <PlusSquare className="text-slate-500" size={22}/> Asenna puhelimeen
-          </h3>
-          <div className="space-y-4">
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <h4 className="font-bold text-slate-800 text-sm mb-2 flex items-center gap-2"> iPhone / iPad (Safari)</h4>
-              <ol className="list-decimal list-inside text-xs text-slate-600 space-y-1.5 ml-1">
-                <li>Paina <strong>Jaa</strong>-painiketta <Share className="inline w-3 h-3"/>.</li>
-                <li>Valitse <strong>"Lisää Koti-valikkoon"</strong>.</li>
-                <li>Paina <strong>Lisää</strong>.</li>
-              </ol>
-            </div>
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <h4 className="font-bold text-slate-800 text-sm mb-2 flex items-center gap-2">🤖 Android (Chrome)</h4>
-              <ol className="list-decimal list-inside text-xs text-slate-600 space-y-1.5 ml-1">
-                <li>Paina kolmea pistettä yläkulmassa <MoreVertical className="inline w-3 h-3"/>.</li>
-                <li>Valitse <strong>"Asenna sovellus"</strong>.</li>
-              </ol>
-            </div>
+            <p><strong>2. Dosetit / Yhdistelmät:</strong></p>
+            <p>Luo lääke nimeltä "Iltasetti". Lisää sille aikataulu.</p>
+            <p>Kohdassa <strong>Koostumus</strong> valitse pudotusvalikosta varastossa olevat lääkkeet.</p>
+            <p><strong>Etusivulla:</strong> Nämä näkyvät erillisinä "Dosetti"-kortteina, joissa näkyy sisältö (esim. Kalkki 2kpl, Magnesium 1kpl). Kun otat setin, yksittäisten lääkkeiden saldo vähenee automaattisesti.</p>
           </div>
         </section>
 
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v2.7 - {new Date().getFullYear()}
+          Lääkemuistio v2.8 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -199,7 +175,7 @@ const MedicineTracker = () => {
   const [showShoppingList, setShowShoppingList] = useState(false);
   const [showDosetti, setShowDosetti] = useState(false);
   const [showReport, setShowReport] = useState(false);
-  const [showStockList, setShowStockList] = useState(false); // VARASTOLISTA MODAL
+  const [showStockList, setShowStockList] = useState(false); 
 
   // Raportin tila
   const [reportStartDate, setReportStartDate] = useState('');
@@ -722,10 +698,11 @@ const MedicineTracker = () => {
   };
 
   // Datan valmistelu
+  // Nyt suodatetaan pois ne, joita ei haluta etusivulle
   const activeMeds = medications.filter(m => !m.isArchived && (m.showOnDashboard !== false));
   const archivedMeds = medications.filter(m => m.isArchived);
   
-  // OSTOSLISTA LOGIIKKA
+  // OSTOSLISTA LOGIIKKA (Näyttää kaikki varastolääkkeet, riippumatta onko etusivulla)
   const shoppingListMeds = medications.filter(m => 
     !m.isArchived &&
     m.trackStock && 
@@ -954,10 +931,11 @@ const MedicineTracker = () => {
                 const lastLog = getLastTaken(med.id);
                 const c = getColors(med.colorKey || 'blue');
                 const hasSchedule = med.schedule && med.schedule.length > 0;
-                // VAROITUS LOGIIKKA
-                const isLowStock = med.trackStock && !med.isCourse && med.stock !== null && med.stock <= (med.lowStockLimit || 10);
                 const isExpanded = expandedMedId === med.id || isReordering; 
                 
+                // Onko kyseessä yhdistelmä / dosetti?
+                const isCombo = med.ingredients && med.ingredients.length > 0;
+
                 // Onko kaikki päivän annokset otettu?
                 let isDoneForToday = false;
                 if (hasSchedule) {
@@ -965,6 +943,9 @@ const MedicineTracker = () => {
                 } else {
                   isDoneForToday = isGenericTakenToday(med.id);
                 }
+
+                // Normaalin lääkkeen hälytys (yhdistelmillä ei omaa saldoa)
+                const isLowStock = !isCombo && med.trackStock && !med.isCourse && med.stock !== null && med.stock <= (med.lowStockLimit || 10);
 
                 return (
                   <div key={med.id} className={`rounded-xl shadow-sm border transition-all duration-200 overflow-hidden ${c.bg} ${c.border} ${!isExpanded?'hover:shadow-md':''} relative group`}>
@@ -996,6 +977,9 @@ const MedicineTracker = () => {
                     >
                       <div className="flex-1 min-w-0 pr-3">
                          <div className="flex items-center gap-2">
+                            {/* Eri ikoni jos dosetti */}
+                            {isCombo && <Layers size={20} className="text-slate-600" />}
+                            
                             <h3 className="text-lg font-bold text-slate-800 leading-tight">
                               {med.name}
                             </h3>
@@ -1006,7 +990,10 @@ const MedicineTracker = () => {
                          {/* Lisätiedot vain jos suljettu */}
                          {expandedMedId !== med.id && (
                            <div className="flex items-center gap-2 mt-1">
-                             {isLowStock ? (
+                             {isCombo ? (
+                               // YHDISTELMÄN TIEDOT SULJETTUNA
+                               <span className="text-xs font-bold text-slate-500 bg-white/50 px-1.5 py-0.5 rounded uppercase tracking-wider">Dosetti</span>
+                             ) : isLowStock ? (
                                <span className="text-xs text-red-600 font-bold truncate">{med.stock} kpl jäljellä!</span>
                              ) : med.trackStock && med.isCourse ? (
                                <span className="text-xs text-slate-500 font-bold truncate">Kuuri: {med.stock} kpl</span>
@@ -1031,27 +1018,31 @@ const MedicineTracker = () => {
                       <div className="px-4 pb-4 pt-0 animate-in slide-in-from-top-2 duration-200">
                          <div className="border-t border-black/5 mb-3 pt-1"></div>
                          
-                         {/* AINESOSAT / KOOSTUMUS NÄKYVIIN */}
-                         {med.ingredients && med.ingredients.length > 0 && (
-                           <div className="text-xs text-slate-600 bg-white/60 p-2 rounded-lg mb-2">
-                             <span className="font-bold uppercase text-[10px] text-slate-400 block mb-1">Sisältö</span>
-                             <div className="flex flex-wrap gap-2">
+                         {/* AINESOSAT / KOOSTUMUS NÄKYVIIN (Jos on dosetti) */}
+                         {isCombo && (
+                           <div className="text-xs text-slate-600 bg-white/60 p-2.5 rounded-lg mb-3 border border-slate-100">
+                             <div className="flex items-center gap-2 mb-2">
+                               <Layers size={14} className="text-slate-400"/>
+                               <span className="font-bold uppercase text-[10px] text-slate-500">Sisältö</span>
+                             </div>
+                             <div className="space-y-1">
                                {med.ingredients.map((ing, idx) => (
-                                 <span key={idx} className="bg-white border border-slate-200 px-1.5 py-0.5 rounded-md font-medium">
-                                   {ing.name} <span className="text-slate-400">x{ing.count}</span>
-                                 </span>
+                                 <div key={idx} className="flex justify-between border-b border-slate-200 last:border-0 pb-1 last:pb-0">
+                                   <span className="font-medium">{ing.name}</span>
+                                   <span className="text-slate-500">{ing.count} kpl</span>
+                                 </div>
                                ))}
                              </div>
                            </div>
                          )}
 
-                         {med.dosage && (
+                         {!isCombo && med.dosage && (
                            <div className="text-sm text-slate-700 mb-2 font-medium bg-white/50 p-2 rounded-lg inline-block mr-2">
                              {med.dosage}
                            </div>
                          )}
 
-                         {med.trackStock && (
+                         {!isCombo && med.trackStock && (
                            <div className={`text-sm mb-3 font-medium bg-white/50 p-2 rounded-lg inline-flex items-center gap-2 ${isLowStock ? 'text-red-600 border border-red-200' : 'text-slate-700'}`}>
                              <Package size={14} /> 
                              <span>{med.stock !== null ? med.stock : 0} kpl {med.isCourse && '(Kuuri)'}</span>
@@ -1064,7 +1055,7 @@ const MedicineTracker = () => {
 
                          {/* Toiminnot rivissä */}
                          <div className="flex gap-2 mb-4 justify-end flex-wrap">
-                            {med.trackStock && (
+                            {!isCombo && med.trackStock && (
                               <button onClick={() => handleRefill(med)} className="p-2 bg-white/60 rounded-lg hover:text-green-600 hover:bg-white flex items-center gap-1" title="Täydennä varastoa">
                                 <RefreshCw size={18}/>
                               </button>
@@ -1237,7 +1228,7 @@ const MedicineTracker = () => {
 
       {/* --- MODALIT --- */}
       
-      {/* VARASTOLISTA MODAL (UUSI) */}
+      {/* VARASTOLISTA MODAL */}
       {showStockList && (
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[90vh] overflow-y-auto">
@@ -1267,7 +1258,7 @@ const MedicineTracker = () => {
         </div>
       )}
 
-      {/* DOSETTI MODAL (UUSI) */}
+      {/* DOSETTI MODAL */}
       {showDosetti && (
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] overflow-y-auto">
