@@ -157,7 +157,7 @@ const HelpView = ({ onClose }) => {
         </section>
 
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v3.3 - {new Date().getFullYear()}
+          Lääkemuistio v3.4 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -268,7 +268,7 @@ const MedicineTracker = () => {
   const [reportEndDate, setReportEndDate] = useState('');
   const [reportSelectedMeds, setReportSelectedMeds] = useState(new Set());
 
-  // HAKU TILA (UUSI)
+  // HAKU TILA
   const [historySearch, setHistorySearch] = useState('');
 
   // Ainesosien tila lisäys/muokkaus ikkunassa
@@ -781,13 +781,28 @@ const MedicineTracker = () => {
     return med ? med.colorKey : (log.medColor || 'blue');
   };
 
-  // --- FILTERÖINTILOGIIKKA ---
+  // --- FILTERÖINTILOGIIKKA (KORJATTU) ---
   const filteredLogs = logs.filter(log => {
     if (!historySearch.trim()) return true;
     const term = historySearch.toLowerCase();
+    
+    // 1. Tarkista lääkkeen nimi
     const name = getLogName(log).toLowerCase();
+    if (name.includes(term)) return true;
+
+    // 2. Tarkista kirjaamisen syy/viesti
     const reason = (log.reason || '').toLowerCase();
-    return name.includes(term) || reason.includes(term);
+    if (reason.includes(term)) return true;
+
+    // 3. Tarkista lääkkeen sisältö (jos kyseessä on dosetti/yhdistelmä)
+    if (log.ingredients && Array.isArray(log.ingredients)) {
+      const hasIngredient = log.ingredients.some(ing => 
+        ing.name.toLowerCase().includes(term)
+      );
+      if (hasIngredient) return true;
+    }
+
+    return false;
   });
 
   // --- RAPORTTI ---
@@ -1154,7 +1169,7 @@ const MedicineTracker = () => {
                    <h2 className="text-base font-bold text-slate-800 flex items-center gap-2"><Calendar className="text-blue-500" size={18}/> Koko historia</h2>
                 </div>
                 
-                {/* HAKUKENTTÄ - UUSI */}
+                {/* HAKUKENTTÄ */}
                 <div className="relative mb-4">
                   <Search className="absolute left-3 top-2.5 text-slate-400" size={18}/>
                   <input 
