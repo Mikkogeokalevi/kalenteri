@@ -96,6 +96,7 @@ const HelpView = ({ onClose }) => {
               <ul className="list-disc list-inside space-y-1 ml-1">
                 <li><strong>Aikataulutetut:</strong> Paina aikakuvaketta (esim. Aurinko). Se muuttuu vihreäksi.</li>
                 <li><strong>Tarvittaessa otettavat:</strong> Avaa lääkkeen kortti ja paina <strong>OTA NYT</strong>. Voit kirjata samalla syyn (esim. "Kipu").</li>
+                <li><strong>Pikalisäys (Salama):</strong> Jos otat lääkkeen jota ei ole listalla, paina oranssia salamaa. Voit myös vaihtaa ajan, jos kirjaat jälkikäteen.</li>
               </ul>
             </div>
             <div>
@@ -276,7 +277,7 @@ const MedicineTracker = () => {
   const [showDosetti, setShowDosetti] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showStockList, setShowStockList] = useState(false); 
-  const [isMenuOpen, setIsMenuOpen] = useState(false); // UUSI: Hampurilaisvalikon tila
+  const [isMenuOpen, setIsMenuOpen] = useState(false); 
 
   // Raportin tila
   const [reportStartDate, setReportStartDate] = useState('');
@@ -288,8 +289,33 @@ const MedicineTracker = () => {
   const [ingredientCount, setIngredientCount] = useState('');
   const [currentIngredients, setCurrentIngredients] = useState([]); 
 
+  // Pikalisäyksen tila (Nyt sisältää myös ajan)
+  const [quickAddName, setQuickAddName] = useState('');
+  const [quickAddReason, setQuickAddReason] = useState('');
+  const [quickAddDate, setQuickAddDate] = useState(''); // UUSI: Aika pikalisäykselle
+
   // LISÄYS/MUOKKAUS TILA - ONKO NÄKYVISSÄ ETUSIVULLA
   const [showOnDashboard, setShowOnDashboard] = useState(true);
+
+  const [takeWithReasonMed, setTakeWithReasonMed] = useState(null);
+  const [takeReason, setTakeReason] = useState('');
+
+  const [editingMed, setEditingMed] = useState(null);
+  
+  const [manualLogMed, setManualLogMed] = useState(null);
+  const [manualDate, setManualDate] = useState('');
+  const [manualReason, setManualReason] = useState('');
+
+  const [editingLog, setEditingLog] = useState(null);
+  const [editingLogDate, setEditingLogDate] = useState('');
+  const [editingLogReason, setEditingLogReason] = useState('');
+
+  const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, mode: null, medId: null, medName: '', logId: null, hasHistory: false });
+  const [showArchived, setShowArchived] = useState(false);
+  const [showHistoryFor, setShowHistoryFor] = useState(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [isQuickAdding, setIsQuickAdding] = useState(false);
+
 
   // Auth Listener
   useEffect(() => {
@@ -386,64 +412,12 @@ const MedicineTracker = () => {
   }, [medications, logs, notificationsEnabled]);
 
 
-  // State UI
-  const [newMedName, setNewMedName] = useState('');
-  const [newMedDosage, setNewMedDosage] = useState('');
-  
-  // Stock state
-  const [newMedStock, setNewMedStock] = useState('');
-  const [newMedTrackStock, setNewMedTrackStock] = useState(false);
-  const [newMedLowLimit, setNewMedLowLimit] = useState('10'); 
-  const [newMedIsCourse, setNewMedIsCourse] = useState(false); 
-
-  const [selectedColor, setSelectedColor] = useState('blue');
-  const [selectedSchedule, setSelectedSchedule] = useState([]); 
-  const [scheduleTimes, setScheduleTimes] = useState({});
-  const [isAdding, setIsAdding] = useState(false);
-  const [isQuickAdding, setIsQuickAdding] = useState(false);
-  const [quickAddName, setQuickAddName] = useState('');
-  const [quickAddReason, setQuickAddReason] = useState('');
-  
-  const [takeWithReasonMed, setTakeWithReasonMed] = useState(null);
-  const [takeReason, setTakeReason] = useState('');
-
-  const [editingMed, setEditingMed] = useState(null);
-  
-  const [manualLogMed, setManualLogMed] = useState(null);
-  const [manualDate, setManualDate] = useState('');
-  const [manualReason, setManualReason] = useState('');
-
-  const [editingLog, setEditingLog] = useState(null);
-  const [editingLogDate, setEditingLogDate] = useState('');
-  const [editingLogReason, setEditingLogReason] = useState('');
-
-  const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, mode: null, medId: null, medName: '', logId: null, hasHistory: false });
-  const [showArchived, setShowArchived] = useState(false);
-  const [showHistoryFor, setShowHistoryFor] = useState(null);
-
-  // Värit
-  const colorList = ['blue', 'green', 'purple', 'orange', 'rose', 'cyan', 'amber', 'teal', 'indigo', 'lime', 'fuchsia', 'slate'];
-  const colorMap = {
-    'blue':   { bg: 'bg-blue-100',   border: 'border-blue-300',   dot: 'bg-blue-600',   text: 'text-blue-800',   btn: 'bg-blue-600 active:bg-blue-700' },
-    'green':  { bg: 'bg-green-100',  border: 'border-green-300',  dot: 'bg-green-600',  text: 'text-green-800',  btn: 'bg-green-600 active:bg-green-700' },
-    'purple': { bg: 'bg-purple-100', border: 'border-purple-300', dot: 'bg-purple-600', text: 'text-purple-800', btn: 'bg-purple-600 active:bg-purple-700' },
-    'orange': { bg: 'bg-orange-100', border: 'border-orange-300', dot: 'bg-orange-500', text: 'text-orange-800', btn: 'bg-orange-500 active:bg-orange-600' },
-    'rose':   { bg: 'bg-red-100',    border: 'border-red-300',    dot: 'bg-red-600',    text: 'text-red-800',    btn: 'bg-red-600 active:bg-red-700' },
-    'cyan':   { bg: 'bg-cyan-100',   border: 'border-cyan-300',   dot: 'bg-cyan-600',   text: 'text-cyan-800',   btn: 'bg-cyan-600 active:bg-cyan-700' },
-    'amber':  { bg: 'bg-amber-100',  border: 'border-amber-300',  dot: 'bg-amber-500',  text: 'text-amber-800',  btn: 'bg-amber-500 active:bg-amber-600' },
-    'teal':   { bg: 'bg-teal-100',   border: 'border-teal-300',   dot: 'bg-teal-600',   text: 'text-teal-800',   btn: 'bg-teal-600 active:bg-teal-700' },
-    'indigo': { bg: 'bg-indigo-100', border: 'border-indigo-300', dot: 'bg-indigo-600', text: 'text-indigo-800', btn: 'bg-indigo-600 active:bg-indigo-700' },
-    'lime':   { bg: 'bg-lime-100',   border: 'border-lime-300',   dot: 'bg-lime-600',   text: 'text-lime-800',   btn: 'bg-lime-600 active:bg-lime-700' },
-    'fuchsia':{ bg: 'bg-fuchsia-100',border: 'border-fuchsia-300',dot: 'bg-fuchsia-600',text: 'text-fuchsia-800',btn: 'bg-fuchsia-600 active:bg-fuchsia-700' },
-    'slate':  { bg: 'bg-slate-200',  border: 'border-slate-300',  dot: 'bg-slate-600',  text: 'text-slate-800',  btn: 'bg-slate-600 active:bg-slate-700' },
+  // Helper
+  const getCurrentDateTimeLocal = () => {
+    const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
   };
-  
-  const getColors = (key) => colorMap[key] || colorMap['blue'];
-  const getSmartColor = () => {
-    const activeMeds = medications.filter(m => !m.isArchived);
-    const usedColors = new Set(activeMeds.map(m => m.colorKey));
-    return colorList.find(c => !usedColors.has(c)) || colorList[medications.length % colorList.length];
-  };
+
 
   // --- TOIMINNOT ---
   const handleLogout = () => { if(window.confirm("Kirjaudutaanko ulos?")) signOut(auth); };
@@ -574,13 +548,16 @@ const MedicineTracker = () => {
     // Yritetään löytää varastotuote nimellä
     const stockItem = medications.find(m => m.name.toLowerCase() === quickAddName.trim().toLowerCase() && m.trackStock);
     
+    // Käytä käyttäjän valitsemaa aikaa tai nykyhetkeä
+    const timestamp = quickAddDate ? new Date(quickAddDate).toISOString() : new Date().toISOString();
+
     try {
       await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
         medId: stockItem ? stockItem.id : 'quick_dose', 
         medName: quickAddName.trim(), 
         medColor: stockItem ? stockItem.colorKey : 'orange', 
         slot: null, 
-        timestamp: new Date().toISOString(),
+        timestamp: timestamp,
         reason: quickAddReason.trim()
       });
       
@@ -1113,6 +1090,7 @@ const MedicineTracker = () => {
                          )}
                       </div>
                       
+                      {/* Nuoli */}
                       {!isReordering && (
                         <div className="text-slate-400">
                           {expandedMedId === med.id ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
@@ -1199,7 +1177,8 @@ const MedicineTracker = () => {
                               })}
                             </div>
                           ) : (
-                            <button onClick={() => takeMedicine(med)} className={`w-full py-3 rounded-lg font-bold text-white shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform ${c.btn}`}>
+                            // TÄMÄ ON SE UUSI LOGIIKKA: Klikkaus avaa syy-ikkunan, ei ota suoraan.
+                            <button onClick={() => { setTakeWithReasonMed(med); setTakeReason(''); }} className={`w-full py-3 rounded-lg font-bold text-white shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform ${c.btn}`}>
                               <CheckCircle size={20} /> OTA NYT
                             </button>
                           )
@@ -1326,7 +1305,7 @@ const MedicineTracker = () => {
 
           {/* LISÄYSNAPIT (OIKEA ALAKULMA) */}
           <div className="absolute bottom-20 right-5 z-30 flex gap-3 items-end">
-            <button onClick={() => setIsQuickAdding(true)} className="bg-orange-500 text-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform" title="Pikalisäys"><Zap size={24}/></button>
+            <button onClick={() => { setQuickAddDate(getCurrentDateTimeLocal()); setIsQuickAdding(true); }} className="bg-orange-500 text-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform" title="Pikalisäys"><Zap size={24}/></button>
             <button onClick={openAddModal} className="bg-blue-600 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform"><Plus size={32}/></button>
           </div>
         </>
@@ -1523,8 +1502,16 @@ const MedicineTracker = () => {
                   </button>
                 ))}
               </div>
-              <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-orange-500" placeholder="Mitä otit? (esim. Burana)" value={quickAddName} onChange={e => setQuickAddName(e.target.value)} />
-              <input className="w-full bg-slate-50 p-3 rounded-xl text-sm mb-4 outline-none border focus:border-orange-500" placeholder="Syy (valinnainen, esim. Päänsärky)" value={quickAddReason} onChange={e => setQuickAddReason(e.target.value)} />
+              
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Mitä otit?</label>
+              <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-orange-500" placeholder="Esim. Burana" value={quickAddName} onChange={e => setQuickAddName(e.target.value)} />
+              
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Aika</label>
+              <input type="datetime-local" className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-orange-500" value={quickAddDate} onChange={e => setQuickAddDate(e.target.value)} />
+
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Syy (valinnainen)</label>
+              <input className="w-full bg-slate-50 p-3 rounded-xl text-sm mb-4 outline-none border focus:border-orange-500" placeholder="Esim. Päänsärky" value={quickAddReason} onChange={e => setQuickAddReason(e.target.value)} />
+              
               <div className="flex gap-3">
                 <button type="button" onClick={() => setIsQuickAdding(false)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
                 <button type="submit" disabled={!quickAddName.trim()} className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold text-sm disabled:opacity-50">Kirjaa</button>
@@ -1811,6 +1798,120 @@ const MedicineTracker = () => {
               </div>
             </form>
             <div className="h-6"></div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. MANUAALINEN LISÄYS */}
+      {manualLogMed && (
+        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
+          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
+            <h2 className="text-lg font-bold mb-1">Unohditko merkitä?</h2>
+            <p className="text-sm text-slate-500 mb-4">{manualLogMed.name}</p>
+            <form onSubmit={handleManualLog}>
+              <input type="datetime-local" className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-blue-500" value={manualDate} onChange={e => setManualDate(e.target.value)} />
+              <input className="w-full bg-slate-50 p-3 rounded-xl text-sm mb-4 outline-none border focus:border-blue-500" placeholder="Syy (valinnainen)" value={manualReason} onChange={e => setManualReason(e.target.value)} />
+              <div className="flex gap-3">
+                <button type="button" onClick={() => {setManualLogMed(null); setManualReason('');}} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
+                <button type="submit" disabled={!manualDate} className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm disabled:opacity-50">Tallenna</button>
+              </div>
+            </form>
+            <div className="h-6"></div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. MUOKKAA MERKINTÄÄ (HISTORIA) */}
+      {editingLog && (
+        <div className="absolute inset-0 z-[55] bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
+          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
+            <h2 className="text-lg font-bold mb-1">Muokkaa merkintää</h2>
+            <p className="text-sm text-slate-500 mb-4">
+              {getLogName(editingLog)}
+            </p>
+            <form onSubmit={handleSaveLogEdit}>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Aika ja päivä</label>
+              <input type="datetime-local" className="w-full bg-slate-50 p-3 rounded-xl text-base mb-4 outline-none border focus:border-blue-500" value={editingLogDate} onChange={e => setEditingLogDate(e.target.value)} />
+              
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Syy</label>
+              <input className="w-full bg-slate-50 p-3 rounded-xl text-sm mb-6 outline-none border focus:border-blue-500" placeholder="Esim. Päänsärky" value={editingLogReason} onChange={e => setEditingLogReason(e.target.value)} />
+              
+              <div className="flex gap-3 mb-3">
+                <button type="button" onClick={() => setEditingLog(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
+                <button type="submit" className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-md">Tallenna</button>
+              </div>
+              <button type="button" onClick={requestDeleteLog} className="w-full py-3 bg-red-50 text-red-500 rounded-xl font-bold text-sm flex items-center justify-center gap-2"><Trash2 size={16}/> Poista merkintä</button>
+            </form>
+            <div className="h-6"></div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. POISTOVARMISTUS */}
+      {deleteDialog.isOpen && (
+        <div className="absolute inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in">
+          <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+            <div className="flex items-center gap-2 text-red-600 mb-2 font-bold text-lg"><AlertTriangle /> 
+              {deleteDialog.mode === 'log' ? deleteDialog.title : `Poista ${deleteDialog.medName}?`}
+            </div>
+            
+            {deleteDialog.mode === 'log' && (
+              <>
+                <p className="text-slate-600 mb-6 text-sm">{deleteDialog.message}</p>
+                <div className="flex gap-3">
+                  <button onClick={() => setDeleteDialog({isOpen:false})} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-700 text-sm">Peruuta</button>
+                  <button onClick={handleDeleteSingleLog} className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold text-sm">Poista</button>
+                </div>
+              </>
+            )}
+
+            {deleteDialog.mode === 'med' && (
+              <>
+                {deleteDialog.hasHistory ? (
+                  <>
+                    <p className="text-slate-600 mb-6 text-sm">Tällä lääkkeellä on merkintöjä historiassa. Miten haluat toimia?</p>
+                    <div className="space-y-2">
+                      <button onClick={handleDeleteKeepHistory} className="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-bold text-sm">Säilytä historia, poista lääke</button>
+                      <button onClick={handleDeleteAll} className="w-full py-3 bg-red-500 text-white rounded-xl font-bold text-sm">Poista kaikki (lääke + historia)</button>
+                      <button onClick={() => setDeleteDialog({isOpen:false})} className="w-full py-3 text-slate-400 font-medium text-sm">Peruuta</button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-slate-600 mb-6 text-sm">Haluatko varmasti poistaa lääkkeen?</p>
+                    <div className="flex gap-3">
+                      <button onClick={() => setDeleteDialog({isOpen:false})} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-700 text-sm">Peruuta</button>
+                      <button onClick={handleDeleteAll} className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold text-sm">Poista</button>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 6. HISTORIA (LÄÄKEKOHTAINEN) */}
+      {showHistoryFor && (
+        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center">
+          <div className="bg-white w-full h-[85%] rounded-t-2xl flex flex-col shadow-2xl animate-in slide-in-from-bottom-full duration-300">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h2 className="text-lg font-bold">{medications.find(m => m.id === showHistoryFor)?.name}</h2>
+              <button onClick={() => setShowHistoryFor(null)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-4 space-y-3">
+              {logs.filter(l => l.medId === showHistoryFor).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)).map(log => (
+                <div key={log.id} onClick={() => openLogEdit(log)} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100 active:bg-slate-100 cursor-pointer">
+                  <div>
+                    <div className="font-bold text-slate-700 text-sm">{getDayLabel(log.timestamp)}</div>
+                    <div className="text-xs text-slate-400">klo {formatTime(log.timestamp)}</div>
+                    {log.reason && <div className="text-xs text-blue-600 italic mt-1">"{log.reason}"</div>}
+                  </div>
+                  <div className="p-2 text-slate-300"><Pencil size={16}/></div>
+                </div>
+              ))}
+              {!logs.some(l => l.medId === showHistoryFor) && <div className="text-center text-slate-400 mt-10 text-sm">Ei merkintöjä.</div>}
+            </div>
           </div>
         </div>
       )}
