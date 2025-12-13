@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare } from 'lucide-react';
+import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
 import { initializeApp } from 'firebase/app';
@@ -45,55 +45,80 @@ const HelpView = ({ onClose }) => {
     <div className="fixed inset-0 z-[60] bg-slate-50 flex flex-col animate-in slide-in-from-right duration-300 overflow-hidden">
       <div className="bg-white px-4 py-4 border-b border-slate-200 flex items-center justify-between shadow-sm flex-none">
         <div className="flex items-center gap-2 text-blue-600 font-bold text-lg">
-          <HelpCircle /> Ohjeet
+          <HelpCircle /> Ohjekirja
         </div>
         <button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
           <X size={20} />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 space-y-8 pb-20">
-        <section>
+      <div className="flex-1 overflow-y-auto p-5 space-y-6 pb-20">
+        
+        {/* 1. PERUSKÄYTTÖ */}
+        <section className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
           <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
-            <Pill className="text-blue-500" /> Varasto & Kuurit
+            <CheckCircle className="text-green-500" size={20}/> Lääkkeen ottaminen
           </h3>
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-sm text-slate-600 space-y-2">
-            <p><strong>Hälytysraja:</strong> Voit nyt asettaa jokaiselle lääkkeelle oman rajan (oletus 10 kpl). Kun määrä alittaa tämän, lääke menee punaiselle ja ilmestyy ostoslistalle.</p>
-            <p><strong>Kuuri:</strong> Jos merkitset lääkkeen kuuriksi, sen saldo vähenee, mutta se ei hälytä punaisella eikä mene ostoslistalle. Hyvä esim. antibiooteille.</p>
-            <p><strong>Ostoslista:</strong> Etusivun kärry-ikonista näet yhdellä silmäyksellä kaikki vähissä olevat lääkkeet.</p>
+          <ul className="space-y-3 text-sm text-slate-600">
+            <li className="flex gap-2">
+              <span className="font-bold text-slate-800 min-w-[80px]">Aikataulu:</span>
+              <span>Jos lääkkeellä on kellonaika (esim. Aamu), paina vastaavaa kuvaketta. Se muuttuu vihreäksi, kun lääke on merkitty otetuksi tälle päivälle.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="font-bold text-slate-800 min-w-[80px]">Tarvittaessa:</span>
+              <span>Lääkkeet ilman aikataulua näkyvät listalla. Avaa lääkkeen kortti ja paina <strong>OTA NYT</strong>. Sovellus kysyy halutessasi syyn (esim. "Päänsärky").</span>
+            </li>
+             <li className="flex gap-2">
+              <span className="font-bold text-slate-800 min-w-[80px]">Pikalisäys:</span>
+              <span>Jos otat lääkkeen, jota ei ole listalla (esim. satunnainen särkylääke), käytä oikean alakulman oranssia <Zap className="inline w-3 h-3"/> -painiketta.</span>
+            </li>
+          </ul>
+        </section>
+
+        {/* 2. VARASTO & OSTOSLISTA */}
+        <section className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+          <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
+            <Package className="text-blue-500" size={20}/> Varasto & Ostoslista
+          </h3>
+          <div className="space-y-3 text-sm text-slate-600">
+            <p>Voit asettaa lääkkeelle varastosaldon muokkaamalla lääkettä.</p>
+            <ul className="list-disc list-inside space-y-1 ml-1">
+              <li><strong>Hälytysraja:</strong> Kun lääkkeen määrä alittaa rajan (oletus 10), se muuttuu punaiseksi ja ilmestyy <strong>Ostoslistalle</strong> (kärry-ikoni yläpalkissa).</li>
+              <li><strong>Kuurit:</strong> Jos merkitset lääkkeen "Kuuriksi", sen saldo vähenee, mutta se ei hälytä loppumisesta eikä mene ostoslistalle.</li>
+              <li><strong>Täydennys:</strong> Paina lääkkeen kortissa vihreää <RefreshCw className="inline w-3 h-3"/> -nappia lisätäksesi varastoon lisää lääkettä.</li>
+            </ul>
           </div>
         </section>
 
-        <section>
+        {/* 3. HISTORIA & RAPORTIT */}
+        <section className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
           <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
-            <FileText className="text-blue-500" /> Raportit & Syyt
+            <FileText className="text-purple-500" size={20}/> Historia & Lääkäri
           </h3>
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-sm text-slate-600 space-y-2">
-            <p><strong>Lääkärin raportti:</strong> Historia-välilehdellä on nappi "Yhteenveto". Se tekee listan viimeisen 30 päivän lääkkeistä, jonka voit kopioida ja näyttää lääkärille.</p>
-            <p><strong>Syyn kirjaaminen:</strong> Kun lisäät lääkkeen manuaalisesti tai pikalisäyksellä, voit kirjoittaa syyn (esim. "Päänsärky"). Tämä näkyy historiassa.</p>
+          <div className="space-y-3 text-sm text-slate-600">
+            <p><strong>Historia-välilehti:</strong> Näet kaikki otetut lääkkeet aikajärjestyksessä. Klikkaamalla merkintää voit muokata aikaa, syytä tai poistaa virheellisen kirjauksen.</p>
+            <p><strong>Raportti lääkärille:</strong> Historiassa on nappi <strong>"Yhteenveto (30pv)"</strong>. Se luo tekstilistan viimeisen kuukauden lääkkeistä, jonka voit kopioida ja näyttää lääkärille.</p>
           </div>
         </section>
 
-        <section>
+        {/* 4. MUOKKAUS JA POISTO */}
+        <section className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
           <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
-            <Pill className="text-blue-500" /> Peruskäyttö
+            <Pencil className="text-orange-500" size={20}/> Hallinta
           </h3>
-          <div className="space-y-4 text-sm text-slate-600">
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-              <p className="mb-2"><strong className="text-slate-800">Lääkkeen ottaminen:</strong> Paina aikataulun kuvaketta tai "OTA NYT" -painiketta.</p>
+           <div className="space-y-3 text-sm text-slate-600">
+            <p>Klikkaa lääkkeen nimeä avataksesi toiminnot:</p>
+            <div className="grid grid-cols-2 gap-2 text-xs font-bold">
+               <div className="flex items-center gap-2"><CalendarPlus size={14} className="text-blue-600"/> Unohdettu kirjaus</div>
+               <div className="flex items-center gap-2"><Pencil size={14} className="text-blue-600"/> Muokkaa tietoja</div>
+               <div className="flex items-center gap-2"><Archive size={14} className="text-orange-500"/> Arkistoi (piilota)</div>
+               <div className="flex items-center gap-2"><Trash2 size={14} className="text-red-500"/> Poista kokonaan</div>
             </div>
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-              <p className="mb-2"><strong className="text-slate-800">Kortin toiminnot (avaa klikkaamalla):</strong></p>
-              <div className="grid grid-cols-1 gap-3">
-                <div className="flex items-center gap-3"><CalendarPlus size={18} className="text-blue-600"/> <span><strong>Manuaalinen lisäys:</strong> Unohditko merkitä? Lisää tästä myös syyn kera.</span></div>
-                <div className="flex items-center gap-3"><RefreshCw size={18} className="text-green-600"/> <span><strong>Täydennä:</strong> Lisää varastoon lisää lääkettä.</span></div>
-              </div>
-            </div>
           </div>
         </section>
 
-        <div className="text-center text-xs text-slate-400 pt-4">
-          Lääkemuistio v2.1
+        <div className="text-center text-xs text-slate-400 pt-6 pb-2">
+          Lääkemuistio v2.2
         </div>
       </div>
     </div>
@@ -302,6 +327,10 @@ const MedicineTracker = () => {
   const [quickAddName, setQuickAddName] = useState('');
   const [quickAddReason, setQuickAddReason] = useState('');
   
+  // Take with reason state
+  const [takeWithReasonMed, setTakeWithReasonMed] = useState(null);
+  const [takeReason, setTakeReason] = useState('');
+
   const [editingMed, setEditingMed] = useState(null);
   
   const [manualLogMed, setManualLogMed] = useState(null);
@@ -452,12 +481,17 @@ const MedicineTracker = () => {
     } catch(e) { alert("Virhe pikalisäyksessä"); }
   };
 
-  const takeMedicine = async (med, slotId = null) => {
+  const takeMedicine = async (med, slotId = null, reasonText = '') => {
     if (!user) return;
     try {
       // Logi
       await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
-        medId: med.id, medName: med.name, medColor: med.colorKey, slot: slotId, timestamp: new Date().toISOString(), reason: ''
+        medId: med.id, 
+        medName: med.name, 
+        medColor: med.colorKey, 
+        slot: slotId, 
+        timestamp: new Date().toISOString(), 
+        reason: reasonText.trim()
       });
       
       // Vähennä varastoa jos seuranta päällä
@@ -467,6 +501,14 @@ const MedicineTracker = () => {
       }
 
     } catch (error) { console.error(error); }
+  };
+
+  const handleConfirmTakeWithReason = async (e) => {
+    e.preventDefault();
+    if(!takeWithReasonMed) return;
+    await takeMedicine(takeWithReasonMed, null, takeReason);
+    setTakeWithReasonMed(null);
+    setTakeReason('');
   };
 
   const handleRefill = async (med) => {
@@ -916,7 +958,8 @@ const MedicineTracker = () => {
                               })}
                             </div>
                           ) : (
-                            <button onClick={() => takeMedicine(med)} className={`w-full py-3 rounded-lg font-bold text-white shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform ${c.btn}`}>
+                            // TÄMÄ ON SE UUSI LOGIIKKA: Klikkaus avaa syy-ikkunan, ei ota suoraan.
+                            <button onClick={() => { setTakeWithReasonMed(med); setTakeReason(''); }} className={`w-full py-3 rounded-lg font-bold text-white shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform ${c.btn}`}>
                               <CheckCircle size={20} /> OTA NYT
                             </button>
                           )
@@ -1030,7 +1073,7 @@ const MedicineTracker = () => {
         </button>
       </nav>
 
-      {!isAdding && activeTab === 'home' && !showHistoryFor && !deleteDialog.isOpen && !editingMed && !manualLogMed && !editingLog && !isQuickAdding && !isReordering && (
+      {!isAdding && activeTab === 'home' && !showHistoryFor && !deleteDialog.isOpen && !editingMed && !manualLogMed && !takeWithReasonMed && !editingLog && !isQuickAdding && !isReordering && (
         <div className="absolute bottom-20 right-5 z-30 flex gap-3 items-end">
           <button onClick={() => setIsQuickAdding(true)} className="bg-orange-500 text-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform" title="Pikalisäys"><Zap size={24}/></button>
           <button onClick={openAddModal} className="bg-blue-600 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform"><Plus size={32}/></button>
@@ -1099,6 +1142,27 @@ const MedicineTracker = () => {
               <div className="flex gap-3">
                 <button type="button" onClick={() => setIsQuickAdding(false)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
                 <button type="submit" disabled={!quickAddName.trim()} className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold text-sm disabled:opacity-50">Kirjaa</button>
+              </div>
+            </form>
+            <div className="h-6"></div>
+          </div>
+        </div>
+      )}
+
+      {/* OTA SYYLLÄ (UUSI) */}
+      {takeWithReasonMed && (
+        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
+          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
+            <div className="flex justify-between items-center mb-1">
+               <h2 className="text-lg font-bold">Ota lääke</h2>
+               <button onClick={() => setTakeWithReasonMed(null)} className="p-1 bg-slate-100 rounded-full"><X size={16}/></button>
+            </div>
+            <p className="text-sm text-slate-500 mb-4">{takeWithReasonMed.name}</p>
+            <form onSubmit={handleConfirmTakeWithReason}>
+              <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-4 outline-none border focus:border-blue-500" placeholder="Syy (valinnainen, esim. Kipu)" value={takeReason} onChange={e => setTakeReason(e.target.value)} />
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setTakeWithReasonMed(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
+                <button type="submit" className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-lg">Kirjaa</button>
               </div>
             </form>
             <div className="h-6"></div>
