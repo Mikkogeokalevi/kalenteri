@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link } from 'lucide-react';
+import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
 import { initializeApp } from 'firebase/app';
@@ -57,21 +57,17 @@ const HelpView = ({ onClose }) => {
         {/* DOSETTI JA KOOSTUMUS */}
         <section className="bg-blue-50 p-5 rounded-2xl border border-blue-100">
           <h3 className="font-bold text-blue-800 text-lg mb-4 flex items-center gap-2">
-            <LayoutList className="text-blue-600" size={22}/> Dosetti & Varasto
+            <LayoutList className="text-blue-600" size={22}/> Varasto & Yhdistelmät
           </h3>
           <div className="space-y-3 text-sm text-slate-600">
-            <p><strong>Automaattinen saldon vähennys:</strong></p>
-            <p>Jos sinulla on yhdistelmälääke (esim. "Iltasetti"), voit määritellä sen sisällön. Kun otat Iltasetin, sovellus vähentää automaattisesti varastosta ne lääkkeet, jotka siihen kuuluvat.</p>
-            
-            <div className="bg-white p-3 rounded-xl border border-blue-100 text-xs">
-              <p className="font-bold mb-1">Näin otat käyttöön:</p>
-              <ol className="list-decimal list-inside space-y-1">
-                <li>Luo ensin peruslääkkeet (esim. "Kalkki" ja "Magnesium") ja aseta niille varastosaldo.</li>
-                <li>Luo tai muokkaa yhdistelmää (esim. "Iltasetti").</li>
-                <li>Kohdassa <strong>Koostumus / Dosetti</strong>, lisää ainesosat. <strong>Tärkeää:</strong> Kirjoita ainesosan nimi juuri samalla tavalla kuin peruslääkkeen nimi on (sovellus ehdottaa nimiä).</li>
-                <li>Kun nyt kirjaat Iltasetin otetuksi, myös Kalkin ja Magnesiumin saldo vähenee!</li>
-              </ol>
-            </div>
+            <p><strong>1. Varastotuotteet (Fyysiset lääkkeet):</strong></p>
+            <p>Lisää ensin kaikki fyysiset lääkepurkit sovellukseen (esim. Burana, Kalkki). Aseta niille saldo.</p>
+            <p>Jos lääke on vain osa yhdistelmää (et ota sitä koskaan erikseen), ota täppä pois kohdasta <em>"Näytä etusivulla"</em>. Tällöin se näkyy vain <strong>Varastolistalla</strong> (<Box size={14} className="inline"/>).</p>
+
+            <p><strong>2. Yhdistelmät / Dosetti:</strong></p>
+            <p>Luo uusi lääke nimeltä "Iltasetti". Älä laita sille saldoa. Lisää sille aikataulu.</p>
+            <p>Kohdassa <strong>Koostumus</strong> valitse pudotusvalikosta varastossa olevat lääkkeet (esim. Kalkki 2kpl).</p>
+            <p>Kun otat Iltasetin, kalkin saldo vähenee automaattisesti.</p>
           </div>
         </section>
 
@@ -99,31 +95,8 @@ const HelpView = ({ onClose }) => {
           </div>
         </section>
 
-        {/* 2. MITÄ MIKIN TARKOITTAA */}
-        <section>
-          <h3 className="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
-            <HelpCircle className="text-slate-500" size={20}/> Toiminnot
-          </h3>
-          <div className="grid grid-cols-1 gap-3">
-             <div className="flex items-start gap-3 bg-white p-3 rounded-xl shadow-sm border border-slate-100">
-               <div className="p-2 bg-orange-100 text-orange-600 rounded-full"><Zap size={20}/></div>
-               <div>
-                 <p className="font-bold text-slate-800 text-sm">Pikalisäys</p>
-                 <p className="text-xs text-slate-500">Satunnaisille lääkkeille (esim. särkylääke), joita ei ole listalla.</p>
-               </div>
-             </div>
-             <div className="flex items-start gap-3 bg-white p-3 rounded-xl shadow-sm border border-slate-100">
-               <div className="p-2 bg-red-100 text-red-600 rounded-full"><ShoppingCart size={20}/></div>
-               <div>
-                 <p className="font-bold text-slate-800 text-sm">Ostoslista</p>
-                 <p className="text-xs text-slate-500">Näyttää lääkkeet, joiden saldo on alle hälytysrajan.</p>
-               </div>
-             </div>
-          </div>
-        </section>
-
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v2.6 - {new Date().getFullYear()}
+          Lääkemuistio v2.7 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -226,6 +199,7 @@ const MedicineTracker = () => {
   const [showShoppingList, setShowShoppingList] = useState(false);
   const [showDosetti, setShowDosetti] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [showStockList, setShowStockList] = useState(false); // VARASTOLISTA MODAL
 
   // Raportin tila
   const [reportStartDate, setReportStartDate] = useState('');
@@ -236,6 +210,9 @@ const MedicineTracker = () => {
   const [ingredientName, setIngredientName] = useState('');
   const [ingredientCount, setIngredientCount] = useState('');
   const [currentIngredients, setCurrentIngredients] = useState([]); 
+
+  // LISÄYS/MUOKKAUS TILA - ONKO NÄKYVISSÄ ETUSIVULLA
+  const [showOnDashboard, setShowOnDashboard] = useState(true);
 
   // Auth Listener
   useEffect(() => {
@@ -403,6 +380,7 @@ const MedicineTracker = () => {
     setNewMedLowLimit('10'); setNewMedIsCourse(false); // Oletukset
     setSelectedColor(getSmartColor()); setSelectedSchedule([]); setScheduleTimes({});
     setCurrentIngredients([]);
+    setShowOnDashboard(true); // Oletuksena näkyy etusivulla
     setIsAdding(true);
   };
 
@@ -459,6 +437,7 @@ const MedicineTracker = () => {
         schedule: selectedSchedule, 
         scheduleTimes: scheduleTimes,
         ingredients: currentIngredients, 
+        showOnDashboard: showOnDashboard,
         createdAt: Date.now(), 
         order: maxOrder + 1, 
         isArchived: false
@@ -482,7 +461,8 @@ const MedicineTracker = () => {
         colorKey: editingMed.colorKey, 
         schedule: editingMed.schedule || [], 
         scheduleTimes: editingMed.scheduleTimes || {},
-        ingredients: currentIngredients 
+        ingredients: currentIngredients,
+        showOnDashboard: editingMed.showOnDashboard !== undefined ? editingMed.showOnDashboard : true
       });
       setEditingMed(null);
     } catch (error) { alert("Virhe muokkauksessa."); }
@@ -495,7 +475,7 @@ const MedicineTracker = () => {
 
   const moveMedication = async (index, direction) => {
     if (!user) return;
-    const activeMeds = medications.filter(m => !m.isArchived);
+    const activeMeds = medications.filter(m => !m.isArchived && (m.showOnDashboard !== false));
     if (index + direction < 0 || index + direction >= activeMeds.length) return;
     const currentMed = activeMeds[index];
     const swapMed = activeMeds[index + direction];
@@ -513,15 +493,26 @@ const MedicineTracker = () => {
   const handleQuickAdd = async (e) => {
     e.preventDefault();
     if (!quickAddName.trim() || !user) return;
+    
+    // Yritetään löytää varastotuote nimellä
+    const stockItem = medications.find(m => m.name.toLowerCase() === quickAddName.trim().toLowerCase() && m.trackStock);
+    
     try {
       await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
-        medId: 'quick_dose', 
+        medId: stockItem ? stockItem.id : 'quick_dose', 
         medName: quickAddName.trim(), 
-        medColor: 'orange', 
+        medColor: stockItem ? stockItem.colorKey : 'orange', 
         slot: null, 
         timestamp: new Date().toISOString(),
         reason: quickAddReason.trim()
       });
+      
+      // Vähennä saldoa jos löytyi
+      if (stockItem && stockItem.stock > 0) {
+         const medRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', stockItem.id);
+         await updateDoc(medRef, { stock: stockItem.stock - 1 });
+      }
+
       setQuickAddName(''); setQuickAddReason(''); setIsQuickAdding(false);
     } catch(e) { alert("Virhe pikalisäyksessä"); }
   };
@@ -731,11 +722,12 @@ const MedicineTracker = () => {
   };
 
   // Datan valmistelu
-  const activeMeds = medications.filter(m => !m.isArchived);
+  const activeMeds = medications.filter(m => !m.isArchived && (m.showOnDashboard !== false));
   const archivedMeds = medications.filter(m => m.isArchived);
   
   // OSTOSLISTA LOGIIKKA
-  const shoppingListMeds = activeMeds.filter(m => 
+  const shoppingListMeds = medications.filter(m => 
+    !m.isArchived &&
     m.trackStock && 
     !m.isCourse && 
     (m.stock !== null && m.stock <= (m.lowStockLimit || 10))
@@ -865,6 +857,13 @@ const MedicineTracker = () => {
           <div className="flex items-center gap-1">
             {activeTab === 'home' && (
               <>
+                <button 
+                  onClick={() => setShowStockList(true)}
+                  className="p-2 rounded-full transition-colors text-slate-400 hover:text-slate-600"
+                  title="Varastolista"
+                >
+                  <Box size={20} />
+                </button>
                 <button 
                   onClick={() => setShowDosetti(true)}
                   className="p-2 rounded-full transition-colors text-slate-400 hover:text-slate-600"
@@ -1217,7 +1216,7 @@ const MedicineTracker = () => {
         </button>
       </nav>
 
-      {!isAdding && activeTab === 'home' && !showHistoryFor && !deleteDialog.isOpen && !editingMed && !manualLogMed && !takeWithReasonMed && !editingLog && !isQuickAdding && !isReordering && (
+      {!isAdding && activeTab === 'home' && !showHistoryFor && !deleteDialog.isOpen && !editingMed && !manualLogMed && !takeWithReasonMed && !editingLog && !isQuickAdding && !isReordering && !showStockList && (
         <>
           {/* PÄIVITYSNAPPI (VASEN ALAKULMA) */}
           <button
@@ -1238,6 +1237,36 @@ const MedicineTracker = () => {
 
       {/* --- MODALIT --- */}
       
+      {/* VARASTOLISTA MODAL (UUSI) */}
+      {showStockList && (
+        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
+          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[90vh] overflow-y-auto">
+             <div className="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 className="text-lg font-bold flex items-center gap-2 text-slate-800"><Box/> Varastolista</h2>
+                <button onClick={() => setShowStockList(false)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button>
+             </div>
+             
+             <div className="space-y-3">
+               {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).map(med => (
+                 <div key={med.id} className="flex justify-between items-center p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                    <div>
+                      <div className="font-bold text-slate-800">{med.name}</div>
+                      <div className={`text-xs font-bold ${med.stock <= med.lowStockLimit ? 'text-red-500' : 'text-slate-500'}`}>
+                        Saldo: {med.stock} kpl (Raja: {med.lowStockLimit})
+                      </div>
+                    </div>
+                    <button onClick={() => openEditMed(med)} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600"><Pencil size={16}/></button>
+                 </div>
+               ))}
+               {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).length === 0 && (
+                 <p className="text-center text-slate-400 text-sm py-4">Ei varastoseurannassa olevia lääkkeitä.</p>
+               )}
+             </div>
+             <div className="h-6"></div>
+          </div>
+        </div>
+      )}
+
       {/* DOSETTI MODAL (UUSI) */}
       {showDosetti && (
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
@@ -1385,6 +1414,18 @@ const MedicineTracker = () => {
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Zap className="text-orange-500"/> Kirjaa kertaluontoinen</h2>
             <form onSubmit={handleQuickAdd}>
+              <div className="flex flex-wrap gap-2 mb-3 max-h-32 overflow-y-auto">
+                {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).map(m => (
+                  <button 
+                    key={m.id} 
+                    type="button" 
+                    onClick={() => setQuickAddName(m.name)} 
+                    className="px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-600 active:bg-blue-100 active:border-blue-300 active:text-blue-700"
+                  >
+                    {m.name}
+                  </button>
+                ))}
+              </div>
               <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-orange-500" placeholder="Mitä otit? (esim. Burana)" value={quickAddName} onChange={e => setQuickAddName(e.target.value)} />
               <input className="w-full bg-slate-50 p-3 rounded-xl text-sm mb-4 outline-none border focus:border-orange-500" placeholder="Syy (valinnainen, esim. Päänsärky)" value={quickAddReason} onChange={e => setQuickAddReason(e.target.value)} />
               <div className="flex gap-3">
@@ -1446,18 +1487,26 @@ const MedicineTracker = () => {
               <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-blue-500" placeholder="Lääkkeen nimi" value={newMedName} onChange={e => setNewMedName(e.target.value)} />
               <input className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" placeholder="Annostus / Lisätiedot (valinnainen)" value={newMedDosage} onChange={e => setNewMedDosage(e.target.value)} />
               
+              <div className="mb-4">
+                <label className="flex items-center gap-2 cursor-pointer bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <input type="checkbox" checked={showOnDashboard} onChange={(e) => setShowOnDashboard(e.target.checked)} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+                  <span className="text-sm font-bold text-slate-700">Näytä etusivulla</span>
+                </label>
+                <p className="text-[10px] text-slate-400 mt-1 ml-1">Ota pois, jos tämä on vain varastotuote jota käytetään osana yhdistelmää.</p>
+              </div>
+
               {/* KOOSTUMUS / DOSETTI */}
               <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Koostumus / Dosetti</label>
-                 <p className="text-[10px] text-slate-400 mb-3">Lisää tähän jos lääke sisältää useamman pillerin. Nimen tulee täsmätä varastoseurantaa varten.</p>
+                 <p className="text-[10px] text-slate-400 mb-3">Lisää tähän jos lääke sisältää useamman pillerin. Valitse varastosta.</p>
                  
                  <div className="flex gap-2 mb-2">
-                   <input list="med-suggestions" className="flex-1 bg-white p-2 rounded-lg text-sm border focus:border-blue-500" placeholder="Ainesosa (esim. Kalkki)" value={ingredientName} onChange={e => setIngredientName(e.target.value)} />
-                   {/* DATALIST AUTCOMPLETE */}
-                   <datalist id="med-suggestions">
-                     {medications.filter(m => !m.isArchived).map(m => <option key={m.id} value={m.name} />)}
-                   </datalist>
-
+                   <select className="flex-1 bg-white p-2 rounded-lg text-sm border focus:border-blue-500" value={ingredientName} onChange={e => setIngredientName(e.target.value)}>
+                     <option value="">Valitse lääke varastosta...</option>
+                     {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).map(m => (
+                       <option key={m.id} value={m.name}>{m.name}</option>
+                     ))}
+                   </select>
                    <input className="w-20 bg-white p-2 rounded-lg text-sm border focus:border-blue-500" placeholder="Määrä" value={ingredientCount} onChange={e => setIngredientCount(e.target.value)} />
                    <button type="button" onClick={addIngredient} className="bg-blue-600 text-white p-2 rounded-lg"><Plus size={18}/></button>
                  </div>
@@ -1567,18 +1616,26 @@ const MedicineTracker = () => {
               <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-blue-500" value={editingMed.name} onChange={e => setEditingMed({...editingMed, name: e.target.value})} />
               <input className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" placeholder="Annostus / Lisätiedot" value={editingMed.dosage || ''} onChange={e => setEditingMed({...editingMed, dosage: e.target.value})} />
               
+              <div className="mb-4">
+                <label className="flex items-center gap-2 cursor-pointer bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <input type="checkbox" checked={editingMed.showOnDashboard !== false} onChange={(e) => setEditingMed({...editingMed, showOnDashboard: e.target.checked})} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+                  <span className="text-sm font-bold text-slate-700">Näytä etusivulla</span>
+                </label>
+                <p className="text-[10px] text-slate-400 mt-1 ml-1">Ota pois, jos tämä on vain varastotuote jota käytetään osana yhdistelmää.</p>
+              </div>
+
               {/* KOOSTUMUS / DOSETTI (UUSI) */}
               <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Koostumus / Dosetti</label>
-                 <p className="text-[10px] text-slate-400 mb-3">Lisää tähän jos lääke sisältää useamman pillerin. Nimen tulee täsmätä varastoseurantaa varten.</p>
+                 <p className="text-[10px] text-slate-400 mb-3">Lisää tähän jos lääke sisältää useamman pillerin. Valitse varastosta.</p>
                  
                  <div className="flex gap-2 mb-2">
-                   <input list="med-suggestions-edit" className="flex-1 bg-white p-2 rounded-lg text-sm border focus:border-blue-500" placeholder="Ainesosa (esim. Kalkki)" value={ingredientName} onChange={e => setIngredientName(e.target.value)} />
-                   {/* DATALIST AUTCOMPLETE */}
-                   <datalist id="med-suggestions-edit">
-                     {medications.filter(m => !m.isArchived).map(m => <option key={m.id} value={m.name} />)}
-                   </datalist>
-
+                   <select className="flex-1 bg-white p-2 rounded-lg text-sm border focus:border-blue-500" value={ingredientName} onChange={e => setIngredientName(e.target.value)}>
+                     <option value="">Valitse lääke varastosta...</option>
+                     {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).map(m => (
+                       <option key={m.id} value={m.name}>{m.name}</option>
+                     ))}
+                   </select>
                    <input className="w-20 bg-white p-2 rounded-lg text-sm border focus:border-blue-500" placeholder="Määrä" value={ingredientCount} onChange={e => setIngredientCount(e.target.value)} />
                    <button type="button" onClick={addIngredient} className="bg-blue-600 text-white p-2 rounded-lg"><Plus size={18}/></button>
                  </div>
