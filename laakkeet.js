@@ -1365,10 +1365,11 @@ const MedicineTracker = () => {
             </div>
           )}
           </>
-          )}
+)}
         </div>
       </main>
-{/* --- BOTTOM NAV --- */}
+
+      {/* --- BOTTOM NAV --- */}
       <nav className="flex-none bg-white border-t border-slate-200 px-6 py-2 flex justify-around items-center z-20 pb-safe">
         <button onClick={() => handleTabChange('home')} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-colors ${activeTab === 'home' ? 'text-blue-600 bg-blue-50' : 'text-slate-400'}`}>
           <Pill size={22} strokeWidth={activeTab==='home'?2.5:2} /> <span className="text-[10px] font-bold">Lääkkeet</span>
@@ -1393,6 +1394,63 @@ const MedicineTracker = () => {
             <button onClick={openAddModal} className="bg-blue-600 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform"><Plus size={32}/></button>
           </div>
         </>
+      )}
+
+      {/* PIKALISÄYS MODAL */}
+      {isQuickAdding && (
+        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
+          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
+            <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Zap className="text-orange-500"/> Kirjaa kertaluontoinen</h2>
+            <form onSubmit={handleQuickAdd}>
+              
+              <div className="mb-4">
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Valitse listalta (valinnainen)</label>
+                <select 
+                  className="w-full bg-slate-50 p-3 rounded-xl text-base border focus:border-orange-500 outline-none appearance-none"
+                  onChange={(e) => {
+                    const selected = medications.find(m => m.id === e.target.value);
+                    if(selected) setQuickAddName(selected.name);
+                  }}
+                  defaultValue=""
+                >
+                  <option value="" disabled>Valitse lääke...</option>
+                  {medications
+                    .filter(m => !m.isArchived)
+                    .sort((a,b) => a.name.localeCompare(b.name))
+                    .map(m => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))
+                  }
+                </select>
+              </div>
+
+              <div className="flex flex-wrap gap-2 mb-3 max-h-32 overflow-y-auto">
+                {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).map(m => (
+                  <button key={m.id} type="button" onClick={() => setQuickAddName(m.name)} className="px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-600 active:bg-blue-100 active:border-blue-300 active:text-blue-700">{m.name}</button>
+                ))}
+              </div>
+
+              <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-orange-500" placeholder="Tai kirjoita nimi (esim. Burana)" value={quickAddName} onChange={e => setQuickAddName(e.target.value)} />
+              
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                 <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Ajankohta</label>
+                    <input type="datetime-local" className="w-full bg-slate-50 p-3 rounded-xl text-sm outline-none border focus:border-orange-500" value={quickAddDate} onChange={e => setQuickAddDate(e.target.value)} />
+                 </div>
+                 <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Syy</label>
+                    <input className="w-full bg-slate-50 p-3 rounded-xl text-sm outline-none border focus:border-orange-500" placeholder="Valinnainen" value={quickAddReason} onChange={e => setQuickAddReason(e.target.value)} />
+                 </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setIsQuickAdding(false)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
+                <button type="submit" disabled={!quickAddName.trim()} className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold text-sm disabled:opacity-50">Kirjaa</button>
+              </div>
+            </form>
+            <div className="h-6"></div>
+          </div>
+        </div>
       )}
 
       {/* --- MODALIT --- */}
