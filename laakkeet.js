@@ -2,21 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info, List, CalendarDays, Settings } from 'lucide-react';
 
-// TUODAAN OHJEET ERILLISESTÄ TIEDOSTOSTA
-// Varmista että sinulla on ohjeet.js tiedosto samassa kansiossa!
+// TUODAAN OHJEET (Varmista että ohjeet.js on olemassa!)
 import { ohjeData } from './ohjeet.js';
 
-// --- FIREBASE IMPORTS ---
 import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  onAuthStateChanged, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut,
-  setPersistence,
-  browserLocalPersistence
-} from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, getDocs, query, where } from 'firebase/firestore';
 
 // --- ASETUKSET ---
@@ -44,58 +34,37 @@ const TIME_SLOTS = [
 ];
 
 const WEEKDAYS = [
-  { id: 1, label: 'Ma' },
-  { id: 2, label: 'Ti' },
-  { id: 3, label: 'Ke' },
-  { id: 4, label: 'To' },
-  { id: 5, label: 'Pe' },
-  { id: 6, label: 'La' },
-  { id: 0, label: 'Su' }
+  { id: 1, label: 'Ma' }, { id: 2, label: 'Ti' }, { id: 3, label: 'Ke' }, { id: 4, label: 'To' }, { id: 5, label: 'Pe' }, { id: 6, label: 'La' }, { id: 0, label: 'Su' }
 ];
 
-// --- APUFUNKTIOT ---
 const getIconComponent = (iconName) => {
   const icons = { Info, PlusSquare, Plus, CheckCircle, Zap, Package, BarChart2, Bell, List, Layers };
   const Icon = icons[iconName] || HelpCircle;
   return <Icon size={22} className="text-blue-600" />;
 };
 
-// --- OHJESIVU KOMPONENTTI ---
+// --- KOMPONENTIT ---
 const HelpView = ({ onClose }) => {
-  if (!ohjeData) return (
-    <div className="fixed inset-0 z-[60] bg-white p-5 flex flex-col justify-center items-center">
-      <p className="text-red-500 font-bold mb-4">Virhe: ohjeet.js tiedostoa ei löydy.</p>
-      <button onClick={onClose} className="px-4 py-2 bg-slate-200 rounded-lg">Sulje</button>
-    </div>
-  );
-
+  if (!ohjeData) return <div className="fixed inset-0 z-[60] bg-white p-5 flex flex-col justify-center items-center"><p>Virhe: ohjeet.js puuttuu.</p><button onClick={onClose} className="mt-4 p-2 bg-slate-100 rounded">Sulje</button></div>;
   return (
     <div className="fixed inset-0 z-[60] bg-slate-50 flex flex-col animate-in slide-in-from-right duration-300 overflow-hidden">
-      <div className="bg-white px-4 py-4 border-b border-slate-200 flex items-center justify-between shadow-sm flex-none">
-        <div className="flex items-center gap-2 text-blue-600 font-bold text-lg">
-          <HelpCircle /> Käyttöopas
-        </div>
-        <button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
-          <X size={20} />
-        </button>
+      <div className="bg-white px-4 py-4 border-b flex items-center justify-between shadow-sm flex-none">
+        <div className="flex items-center gap-2 text-blue-600 font-bold text-lg"><HelpCircle /> Käyttöopas</div>
+        <button onClick={onClose} className="p-2 bg-slate-100 rounded-full"><X size={20} /></button>
       </div>
       <div className="flex-1 overflow-y-auto p-5 space-y-6 pb-20">
         {ohjeData.map((section) => (
-          <section key={section.id} className={`${section.id === 'intro' ? 'bg-blue-50 border-blue-100' : 'bg-white shadow-sm border-slate-100'} p-5 rounded-2xl border`}>
-            <h3 className={`font-bold text-lg mb-3 flex items-center gap-2 ${section.id === 'intro' ? 'text-blue-800' : 'text-slate-800'}`}>
-              {section.icon && getIconComponent(section.icon)} 
-              {section.title}
-            </h3>
+          <section key={section.id} className="bg-white shadow-sm border border-slate-100 p-5 rounded-2xl">
+            <h3 className="font-bold text-lg mb-3 flex items-center gap-2 text-slate-800">{section.icon && getIconComponent(section.icon)} {section.title}</h3>
             <div className="text-sm text-slate-600" dangerouslySetInnerHTML={{ __html: section.content }} />
           </section>
         ))}
-        <div className="text-center text-xs text-slate-400 pt-6 pb-2">Lääkemuistio v4.7</div>
+        <div className="text-center text-xs text-slate-400 pt-6 pb-2">Lääkemuistio v5.0</div>
       </div>
     </div>
   );
 };
 
-// --- KIRJAUTUMISNÄKYMÄ ---
 const AuthScreen = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
@@ -104,40 +73,21 @@ const AuthScreen = () => {
   const [loading, setLoading] = useState(false);
 
   const handleAuth = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+    e.preventDefault(); setError(''); setLoading(true);
     try {
       await setPersistence(auth, browserLocalPersistence);
-      if (isRegistering) {
-        await createUserWithEmailAndPassword(auth, email, password);
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
-      }
-    } catch (err) {
-      let msg = "Tapahtui virhe.";
-      if (err.code === 'auth/invalid-email') msg = "Virheellinen sähköposti.";
-      if (err.code === 'auth/wrong-password') msg = "Väärä salasana.";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
+      isRegistering ? await createUserWithEmailAndPassword(auth, email, password) : await signInWithEmailAndPassword(auth, email, password);
+    } catch (err) { setError("Tapahtui virhe. Tarkista tiedot."); } finally { setLoading(false); }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative overflow-hidden">
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-         <img src="https://img.geocaching.com/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" alt="" className="w-3/4 opacity-[0.15] grayscale" />
-      </div>
-      <div className="w-full max-w-sm bg-white/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl z-10 border border-white">
-        <div className="flex justify-center mb-6">
-          <img src="https://img.geocaching.com/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" alt="Logo" className="h-16 w-auto object-contain" />
-        </div>
-        <h2 className="text-2xl font-bold text-center text-slate-800 mb-2">{isRegistering ? 'Luo tunnus' : 'Kirjaudu sisään'}</h2>
-        {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 flex items-center gap-2"><AlertTriangle size={16} /> {error}</div>}
+    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative">
+      <div className="w-full max-w-sm bg-white/90 p-8 rounded-2xl shadow-xl z-10 border">
+        <h2 className="text-2xl font-bold text-center mb-6">{isRegistering ? 'Luo tunnus' : 'Kirjaudu sisään'}</h2>
+        {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4">{error}</div>}
         <form onSubmit={handleAuth} className="space-y-4">
-          <input type="email" required className="w-full p-3 bg-slate-50 border rounded-xl" placeholder="Sähköposti" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <input type="password" required className="w-full p-3 bg-slate-50 border rounded-xl" placeholder="Salasana" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <input type="email" required className="w-full p-3 border rounded-xl" placeholder="Sähköposti" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input type="password" required className="w-full p-3 border rounded-xl" placeholder="Salasana" value={password} onChange={(e) => setPassword(e.target.value)} />
           <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl">{loading ? <Loader2 className="animate-spin" /> : (isRegistering ? 'Rekisteröidy' : 'Kirjaudu')}</button>
         </form>
         <div className="mt-6 text-center"><button onClick={() => setIsRegistering(!isRegistering)} className="text-sm text-slate-500">{isRegistering ? 'Kirjaudu sisään' : 'Luo tunnus'}</button></div>
@@ -146,16 +96,13 @@ const AuthScreen = () => {
   );
 };
 
-// --- PÄÄSOVELLUS ---
 const MedicineTracker = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [loadingData, setLoadingData] = useState(true);
-
   const [medications, setMedications] = useState([]);
   const [logs, setLogs] = useState([]);
-  
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [isReordering, setIsReordering] = useState(false);
   const [expandedMedId, setExpandedMedId] = useState(null);
@@ -167,16 +114,13 @@ const MedicineTracker = () => {
   const [showAllMedsList, setShowAllMedsList] = useState(false); 
   const [showAlertsList, setShowAlertsList] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
   const [reportStartDate, setReportStartDate] = useState('');
   const [reportEndDate, setReportEndDate] = useState('');
   const [reportSelectedMeds, setReportSelectedMeds] = useState(new Set());
   const [historySearch, setHistorySearch] = useState('');
-
   const [isAdding, setIsAdding] = useState(false);
   const [addMode, setAddMode] = useState('single'); 
   const [editingMed, setEditingMed] = useState(null);
-
   const [newMedName, setNewMedName] = useState('');
   const [newMedDosage, setNewMedDosage] = useState('');
   const [newMedStock, setNewMedStock] = useState('');
@@ -184,18 +128,15 @@ const MedicineTracker = () => {
   const [newMedLowLimit, setNewMedLowLimit] = useState('10'); 
   const [newMedIsCourse, setNewMedIsCourse] = useState(false); 
   const [showOnDashboard, setShowOnDashboard] = useState(true);
-  
   const [selectedColor, setSelectedColor] = useState('blue');
   const [selectedSchedule, setSelectedSchedule] = useState([]); 
   const [scheduleTimes, setScheduleTimes] = useState({});
   const [frequencyMode, setFrequencyMode] = useState('weekdays'); 
   const [selectedWeekdays, setSelectedWeekdays] = useState([0,1,2,3,4,5,6]); 
   const [intervalStartDate, setIntervalStartDate] = useState(''); 
-
   const [ingredientName, setIngredientName] = useState('');
   const [ingredientCount, setIngredientCount] = useState('');
   const [currentIngredients, setCurrentIngredients] = useState([]); 
-
   const [isQuickAdding, setIsQuickAdding] = useState(false);
   const [quickAddName, setQuickAddName] = useState('');
   const [quickAddReason, setQuickAddReason] = useState('');
@@ -208,68 +149,42 @@ const MedicineTracker = () => {
   const [editingLog, setEditingLog] = useState(null);
   const [editingLogDate, setEditingLogDate] = useState('');
   const [editingLogReason, setEditingLogReason] = useState('');
-
-  const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, mode: null, medId: null });
+  const [deleteDialog, setDeleteDialog] = useState({ isOpen: false });
   const [showArchived, setShowArchived] = useState(false);
   const [showHistoryFor, setShowHistoryFor] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setAuthLoading(false);
-      if (!currentUser) { setLoadingData(false); setMedications([]); setLogs([]); }
-    });
+    const unsubscribe = onAuthStateChanged(auth, (u) => { setUser(u); setAuthLoading(false); if(!u){setMedications([]);setLogs([]);} });
     return () => unsubscribe();
   }, []);
 
   useEffect(() => {
     if (!user) return;
     setLoadingData(true);
-    const medsRef = collection(db, 'artifacts', APP_ID, 'users', user.uid, 'medications');
-    const logsRef = collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs');
-    const unsubMeds = onSnapshot(medsRef, (snapshot) => {
-      const medsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      medsData.sort((a, b) => (a.order || a.createdAt) - (b.order || b.createdAt));
-      setMedications(medsData);
+    const unsubMeds = onSnapshot(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'medications'), (s) => {
+      setMedications(s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=>(a.order||a.createdAt)-(b.order||b.createdAt)));
       setLoadingData(false);
     });
-    const unsubLogs = onSnapshot(logsRef, (snapshot) => {
-      const logsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setLogs(logsData);
+    const unsubLogs = onSnapshot(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), (s) => {
+      setLogs(s.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     return () => { unsubMeds(); unsubLogs(); };
   }, [user]);
 
   useEffect(() => { if (Notification.permission === 'granted') setNotificationsEnabled(true); }, []);
 
-  // --- LOGIC ---
   const getMedStatusColor = (med) => {
     if (!med.scheduleTimes) return null;
     const now = new Date();
-    const currentTime = now.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
-    const currentHour = now.getHours();
-
-    let isToday = false;
-    if (med.interval === 2 && med.intervalStartDate) {
-       const start = new Date(med.intervalStartDate);
-       const diff = Math.floor((now - start) / (1000 * 60 * 60 * 24)); 
-       if (diff % 2 === 0) isToday = true;
-    } else {
-       const day = now.getDay();
-       const days = med.weekdays || [0,1,2,3,4,5,6];
-       if (days.includes(day)) isToday = true;
-    }
+    const isToday = med.interval===2 && med.intervalStartDate ? (Math.floor((now - new Date(med.intervalStartDate)) / 86400000) % 2 === 0) : (med.weekdays||[0,1,2,3,4,5,6]).includes(now.getDay());
     if (!isToday) return null;
-
+    const currentTime = now.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
     let status = 'normal';
     Object.entries(med.scheduleTimes).forEach(([slotId, time]) => {
       const taken = logs.some(l => l.medId === med.id && l.slot === slotId && new Date(l.timestamp).toDateString() === now.toDateString());
       if (!taken) {
          if (time < currentTime) status = 'late';
-         else {
-            const medHour = parseInt(time.split(':')[0]);
-            if (medHour === currentHour || medHour === currentHour + 1) { if (status !== 'late') status = 'soon'; }
-         }
+         else if (parseInt(time.split(':')[0]) <= now.getHours() + 1 && status !== 'late') status = 'soon';
       }
     });
     if (status === 'late') return 'border-red-400 bg-red-50';
@@ -278,51 +193,28 @@ const MedicineTracker = () => {
   };
 
   const toggleNotificationForMed = async (med) => {
-    const medRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', med.id);
-    await updateDoc(medRef, { reminderEnabled: !(med.reminderEnabled !== false) });
+    await updateDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', med.id), { reminderEnabled: !(med.reminderEnabled !== false) });
   };
 
   const toggleNotifications = () => {
-    if (!("Notification" in window)) return alert("Selaimesi ei tue ilmoituksia.");
-    if (Notification.permission === 'denied') return alert("Olet estänyt ilmoitukset selaimen asetuksista.");
-    if (notificationsEnabled) {
-      setNotificationsEnabled(false);
-      alert("Ilmoitukset mykistetty tässä istunnossa.");
-    } else {
-      Notification.requestPermission().then(permission => {
-        if (permission === "granted") {
-          setNotificationsEnabled(true);
-          new Notification("Lääkemuistio", { body: "Ilmoitukset käytössä!" });
-        } else {
-          alert("Ilmoituslupaa ei myönnetty.");
-        }
-      });
-    }
+    if (!("Notification" in window)) return alert("Ei tukea.");
+    if (notificationsEnabled) { setNotificationsEnabled(false); alert("Mykistetty."); }
+    else Notification.requestPermission().then(p => { if(p==='granted'){setNotificationsEnabled(true); new Notification("Päällä!");} else alert("Estetty."); });
   };
 
-  // Reminder Loop
+  // Hälytyslooppi
   useEffect(() => {
     if (!notificationsEnabled || medications.length === 0) return;
     const interval = setInterval(() => {
       const now = new Date();
       const currentTime = now.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
-      const currentDay = now.getDay();
       medications.forEach(med => {
-        if (med.isArchived || med.reminderEnabled === false) return; 
-        let isToday = false;
-        if (med.interval === 2 && med.intervalStartDate) {
-           const start = new Date(med.intervalStartDate);
-           const diff = Math.floor((now - start) / (1000 * 60 * 60 * 24));
-           if (diff % 2 === 0) isToday = true;
-        } else {
-           const days = med.weekdays || [0,1,2,3,4,5,6];
-           if (days.includes(currentDay)) isToday = true;
-        }
+        if (med.isArchived || med.reminderEnabled === false) return;
+        const isToday = med.interval===2 && med.intervalStartDate ? (Math.floor((now - new Date(med.intervalStartDate)) / 86400000) % 2 === 0) : (med.weekdays||[0,1,2,3,4,5,6]).includes(now.getDay());
         if (isToday && med.scheduleTimes) {
           Object.entries(med.scheduleTimes).forEach(([slotId, time]) => {
-            if (time === currentTime) {
-              const taken = logs.some(l => l.medId === med.id && l.slot === slotId && new Date(l.timestamp).toDateString() === now.toDateString());
-              if (!taken) new Notification(`Ota lääke: ${med.name}`, { body: `Aika: ${time}`, icon: "https://img.geocaching.com/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" });
+            if (time === currentTime && !logs.some(l => l.medId === med.id && l.slot === slotId && new Date(l.timestamp).toDateString() === now.toDateString())) {
+                new Notification(`Ota lääke: ${med.name}`, { body: `Aika: ${time}` });
             }
           });
         }
@@ -331,41 +223,29 @@ const MedicineTracker = () => {
     return () => clearInterval(interval);
   }, [medications, logs, notificationsEnabled]);
 
-  // Form Handlers
   const openAddModal = () => {
     setAddMode('single'); setNewMedName(''); setNewMedDosage(''); setNewMedStock(''); setNewMedTrackStock(false);
-    setNewMedLowLimit('10'); setNewMedIsCourse(false); setSelectedColor(getSmartColor()); setSelectedSchedule([]); setScheduleTimes({});
+    setNewMedLowLimit('10'); setNewMedIsCourse(false); setSelectedColor('blue'); setSelectedSchedule([]); setScheduleTimes({});
     setFrequencyMode('weekdays'); setSelectedWeekdays([0,1,2,3,4,5,6]); setIntervalStartDate(new Date().toISOString().split('T')[0]);
     setCurrentIngredients([]); setShowOnDashboard(true); setIsAdding(true);
   };
 
   const openEditMed = (med) => {
     setEditingMed(med);
-    const mode = (med.ingredients && med.ingredients.length > 0) ? 'dosett' : 'single';
-    setAddMode(mode);
+    setAddMode((med.ingredients?.length > 0) ? 'dosett' : 'single');
     setCurrentIngredients(med.ingredients || []);
-    if (med.interval === 2) {
-      setFrequencyMode('every_other');
-      setIntervalStartDate(med.intervalStartDate || new Date().toISOString().split('T')[0]);
-    } else if (med.weekdays && med.weekdays.length === 7) {
-      setFrequencyMode('every_day');
-    } else {
-      setFrequencyMode('weekdays');
-      setSelectedWeekdays(med.weekdays || [0,1,2,3,4,5,6]);
-    }
+    if (med.interval === 2) { setFrequencyMode('every_other'); setIntervalStartDate(med.intervalStartDate || ''); }
+    else if (med.weekdays?.length === 7) { setFrequencyMode('every_day'); }
+    else { setFrequencyMode('weekdays'); setSelectedWeekdays(med.weekdays || [0,1,2,3,4,5,6]); }
   };
 
   const handleSaveMed = async (e) => {
     e.preventDefault();
-    if ((!newMedName.trim() && !editingMed) || !user) return;
-    if (addMode === 'dosett' && currentIngredients.length === 0) return alert("Dosetissa oltava sisältöä.");
-
+    if (!newMedName.trim() && !editingMed) return;
     let weekdays = [0,1,2,3,4,5,6];
     let interval = 1;
-    if (frequencyMode === 'weekdays') weekdays = editingMed ? (editingMed.weekdays || selectedWeekdays) : selectedWeekdays;
+    if (frequencyMode === 'weekdays') weekdays = selectedWeekdays;
     if (frequencyMode === 'every_other') { interval = 2; weekdays = []; }
-    if (frequencyMode === 'every_day') weekdays = [0,1,2,3,4,5,6];
-
     const data = {
       name: editingMed ? editingMed.name : newMedName.trim(), 
       dosage: addMode === 'dosett' ? '' : (editingMed ? editingMed.dosage : newMedDosage.trim()), 
@@ -383,7 +263,6 @@ const MedicineTracker = () => {
       showOnDashboard: addMode === 'dosett' ? true : (editingMed ? editingMed.showOnDashboard : showOnDashboard),
       reminderEnabled: editingMed ? (editingMed.reminderEnabled !== false) : true,
     };
-
     if (editingMed) {
       await updateDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', editingMed.id), data);
       setEditingMed(null);
@@ -394,66 +273,7 @@ const MedicineTracker = () => {
     }
   };
 
-  const addIngredient = () => {
-    if(!ingredientName.trim()) return;
-    setCurrentIngredients([...currentIngredients, {name: ingredientName.trim(), count: ingredientCount.trim() || '1'}]);
-    setIngredientName(''); setIngredientCount('');
-  };
-  
-  const removeIngredient = (index) => {
-    const newIng = [...currentIngredients];
-    newIng.splice(index, 1);
-    setCurrentIngredients(newIng);
-  };
-
-  const editIngredient = (index) => {
-    const ing = currentIngredients[index];
-    setIngredientName(ing.name);
-    setIngredientCount(ing.count);
-    removeIngredient(index);
-  };
-
-  // State mutators for form
-  const toggleScheduleSlot = (slotId) => {
-    const current = editingMed ? (editingMed.schedule || []) : selectedSchedule;
-    const newSch = current.includes(slotId) ? current.filter(id => id !== slotId) : [...current, slotId];
-    editingMed ? setEditingMed({...editingMed, schedule: newSch}) : setSelectedSchedule(newSch);
-  };
-  const toggleWeekday = (dayId) => {
-    // Only used in non-editing mode for simplicity here, logic handled in render
-    const current = selectedWeekdays;
-    const newW = current.includes(dayId) ? current.filter(d => d !== dayId) : [...current, dayId];
-    setSelectedWeekdays(newW);
-  };
-
-  // Actions
-  const moveMedication = async (index, direction) => {
-    if (!user) return;
-    const activeMeds = medications.filter(m => !m.isArchived && (m.showOnDashboard !== false));
-    if (index + direction < 0 || index + direction >= activeMeds.length) return;
-    const currentMed = activeMeds[index];
-    const swapMed = activeMeds[index + direction];
-    let order1 = currentMed.order ?? currentMed.createdAt;
-    let order2 = swapMed.order ?? swapMed.createdAt;
-    if (order1 === order2) order2 = order1 + 1;
-    await updateDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', currentMed.id), { order: order2 });
-    await updateDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', swapMed.id), { order: order1 });
-  };
-
-  const handleQuickAdd = async (e) => {
-    e.preventDefault();
-    if (!quickAddName.trim() || !user) return;
-    const stockItem = medications.find(m => m.name.toLowerCase() === quickAddName.trim().toLowerCase() && m.trackStock);
-    await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
-      medId: stockItem ? stockItem.id : 'quick_dose', medName: quickAddName.trim(), medColor: stockItem ? stockItem.colorKey : 'orange', 
-      slot: null, timestamp: new Date(quickAddDate || new Date()).toISOString(), reason: quickAddReason.trim(), ingredients: null
-    });
-    if (stockItem && stockItem.stock > 0) await updateDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', stockItem.id), { stock: stockItem.stock - 1 });
-    setIsQuickAdding(false); setQuickAddName('');
-  };
-
   const takeMedicine = async (med, slotId = null, reasonText = '') => {
-    if (!user) return;
     await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
       medId: med.id, medName: med.name, medColor: med.colorKey, slot: slotId, 
       timestamp: new Date().toISOString(), reason: reasonText.trim(), ingredients: med.ingredients || null
@@ -467,85 +287,41 @@ const MedicineTracker = () => {
     }
   };
 
-  const handleRefill = async (med) => {
-    const amount = prompt("Lisää määrä:", "30");
-    if (amount) await updateDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', med.id), { stock: (med.stock || 0) + parseInt(amount) });
-  };
-
-  const toggleArchive = async (med) => {
-    await updateDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', med.id), { isArchived: !med.isArchived });
-  };
-
-  const deleteMed = async (keepHistory) => {
-    if (!keepHistory) {
-      const logsToDelete = logs.filter(l => l.medId === deleteDialog.medId);
-      logsToDelete.forEach(l => deleteDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'logs', l.id)));
-    } else {
-      const logsToUpdate = logs.filter(l => l.medId === deleteDialog.medId);
-      const med = medications.find(m => m.id === deleteDialog.medId);
-      logsToUpdate.forEach(l => updateDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'logs', l.id), { medName: med.name, medColor: med.colorKey }));
-    }
-    await deleteDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', deleteDialog.medId));
-    setDeleteDialog({ isOpen: false, mode: null });
-  };
-
-  // Rendering helpers
+  // Render logic vars
   const colorList = ['blue', 'green', 'purple', 'orange', 'rose', 'cyan', 'amber', 'teal', 'indigo', 'lime', 'fuchsia', 'slate'];
-  const colorMap = {
-    'blue':   { bg: 'bg-blue-100',   border: 'border-blue-300',   dot: 'bg-blue-600',   text: 'text-blue-800',   btn: 'bg-blue-600 active:bg-blue-700' },
-    'green':  { bg: 'bg-green-100',  border: 'border-green-300',  dot: 'bg-green-600',  text: 'text-green-800',  btn: 'bg-green-600 active:bg-green-700' },
-    'purple': { bg: 'bg-purple-100', border: 'border-purple-300', dot: 'bg-purple-600', text: 'text-purple-800', btn: 'bg-purple-600 active:bg-purple-700' },
-    'orange': { bg: 'bg-orange-100', border: 'border-orange-300', dot: 'bg-orange-500', text: 'text-orange-800', btn: 'bg-orange-500 active:bg-orange-600' },
-    'rose':   { bg: 'bg-red-100',    border: 'border-red-300',    dot: 'bg-red-600',    text: 'text-red-800',    btn: 'bg-red-600 active:bg-red-700' },
-    'cyan':   { bg: 'bg-cyan-100',   border: 'border-cyan-300',   dot: 'bg-cyan-600',   text: 'text-cyan-800',   btn: 'bg-cyan-600 active:bg-cyan-700' },
-    'amber':  { bg: 'bg-amber-100',  border: 'border-amber-300',  dot: 'bg-amber-500',  text: 'text-amber-800',  btn: 'bg-amber-500 active:bg-amber-600' },
-    'teal':   { bg: 'bg-teal-100',   border: 'border-teal-300',   dot: 'bg-teal-600',   text: 'text-teal-800',   btn: 'bg-teal-600 active:bg-teal-700' },
-    'indigo': { bg: 'bg-indigo-100', border: 'border-indigo-300', dot: 'bg-indigo-600', text: 'text-indigo-800', btn: 'bg-indigo-600 active:bg-indigo-700' },
-    'lime':   { bg: 'bg-lime-100',   border: 'border-lime-300',   dot: 'bg-lime-600',   text: 'text-lime-800',   btn: 'bg-lime-600 active:bg-lime-700' },
-    'fuchsia':{ bg: 'bg-fuchsia-100',border: 'border-fuchsia-300',dot: 'bg-fuchsia-600',text: 'text-fuchsia-800',btn: 'bg-fuchsia-600 active:bg-fuchsia-700' },
-    'slate':  { bg: 'bg-slate-200',  border: 'border-slate-300',  dot: 'bg-slate-600',  text: 'text-slate-800',  btn: 'bg-slate-600 active:bg-slate-700' },
-  };
+  const colorMap = { 'blue': {bg:'bg-blue-100',border:'border-blue-300',dot:'bg-blue-600',text:'text-blue-800',btn:'bg-blue-600'}, 'green': {bg:'bg-green-100',border:'border-green-300',dot:'bg-green-600',text:'text-green-800',btn:'bg-green-600'}, 'purple': {bg:'bg-purple-100',border:'border-purple-300',dot:'bg-purple-600',text:'text-purple-800',btn:'bg-purple-600'}, 'orange': {bg:'bg-orange-100',border:'border-orange-300',dot:'bg-orange-500',text:'text-orange-800',btn:'bg-orange-500'}, 'rose': {bg:'bg-red-100',border:'border-red-300',dot:'bg-red-600',text:'text-red-800',btn:'bg-red-600'}, 'cyan': {bg:'bg-cyan-100',border:'border-cyan-300',dot:'bg-cyan-600',text:'text-cyan-800',btn:'bg-cyan-600'}, 'amber': {bg:'bg-amber-100',border:'border-amber-300',dot:'bg-amber-500',text:'text-amber-800',btn:'bg-amber-500'}, 'teal': {bg:'bg-teal-100',border:'border-teal-300',dot:'bg-teal-600',text:'text-teal-800',btn:'bg-teal-600'}, 'indigo': {bg:'bg-indigo-100',border:'border-indigo-300',dot:'bg-indigo-600',text:'text-indigo-800',btn:'bg-indigo-600'}, 'lime': {bg:'bg-lime-100',border:'border-lime-300',dot:'bg-lime-600',text:'text-lime-800',btn:'bg-lime-600'}, 'fuchsia': {bg:'bg-fuchsia-100',border:'border-fuchsia-300',dot:'bg-fuchsia-600',text:'text-fuchsia-800',btn:'bg-fuchsia-600'}, 'slate': {bg:'bg-slate-200',border:'border-slate-300',dot:'bg-slate-600',text:'text-slate-800',btn:'bg-slate-600'} };
   const getColors = (key) => colorMap[key] || colorMap['blue'];
   const getSmartColor = () => colorList[medications.length % colorList.length];
 
   const activeMeds = medications.filter(m => {
     if (m.isArchived || m.showOnDashboard === false) return false;
     const now = new Date();
-    if (m.interval === 2 && m.intervalStartDate) {
-       const start = new Date(m.intervalStartDate);
-       const diff = Math.floor((now - start) / (1000 * 60 * 60 * 24));
-       return diff % 2 === 0;
-    }
-    return (m.weekdays || [0,1,2,3,4,5,6]).includes(now.getDay());
+    if (m.interval === 2 && m.intervalStartDate) return (Math.floor((now - new Date(m.intervalStartDate))/86400000) % 2 === 0);
+    return (m.weekdays||[0,1,2,3,4,5,6]).includes(now.getDay());
   });
 
   const getHistoryDates = (list) => [...new Set(list.map(l => new Date(l.timestamp).toDateString()))].sort((a,b)=>new Date(b)-new Date(a));
-  const getLogsForDate = (dateStr, list) => list.filter(l => new Date(l.timestamp).toDateString() === dateStr).sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
-
+  const getLogsForDate = (ds, list) => list.filter(l => new Date(l.timestamp).toDateString() === ds).sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
   const filteredLogs = logs.filter(log => {
     if (!historySearch.trim()) return true;
     const term = historySearch.toLowerCase();
-    const name = (medications.find(m => m.id === log.medId)?.name || log.medName).toLowerCase();
-    const hasIng = log.ingredients && log.ingredients.some(i => i.name.toLowerCase().includes(term));
-    return name.includes(term) || (log.reason && log.reason.toLowerCase().includes(term)) || hasIng;
+    return (medications.find(m => m.id === log.medId)?.name || log.medName).toLowerCase().includes(term) || (log.ingredients && log.ingredients.some(i => i.name.toLowerCase().includes(term)));
   });
 
-  const shoppingListMeds = medications.filter(m => !m.isArchived && m.trackStock && (m.stock <= (m.lowStockLimit || 10) + 5));
-
-  if (authLoading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-blue-600"/></div>;
+  if (authLoading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin"/></div>;
   if (!user) return <AuthScreen />;
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 font-sans overflow-hidden select-none relative">
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"><img src="https://img.geocaching.com/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" className="w-3/4 opacity-[0.15] grayscale" /></div>
       
-      <header className="flex-none bg-white/95 backdrop-blur-sm border-b border-slate-200 px-4 py-3 z-50 shadow-sm">
+      <header className="flex-none bg-white/95 backdrop-blur-sm border-b border-slate-200 px-4 py-3 z-50 shadow-sm relative">
         <div className="flex justify-between items-center mb-3">
           <div className="flex items-center gap-3"><img src="https://img.geocaching.com/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" className="h-8"/> <h1 className="text-lg font-bold text-slate-800">{activeTab === 'home' ? 'Lääkkeet' : 'Historia'}</h1></div>
           <div className="flex items-center gap-1">
              {activeTab === 'home' && (
               <>
-               <button onClick={() => setShowShoppingList(true)} className={`p-2 rounded-full ${shoppingListMeds.length>0?'text-red-500':'text-slate-400'}`}><ShoppingCart size={20}/></button>
+               <button onClick={() => setShowShoppingList(true)} className="p-2 rounded-full text-slate-400"><ShoppingCart size={20}/></button>
                <button onClick={toggleNotifications} className={`p-2 rounded-full ${notificationsEnabled?'text-blue-500':'text-slate-400'}`}>{notificationsEnabled ? <Bell size={20}/> : <BellOff size={20}/>}</button>
                <button onClick={() => setShowHelp(true)} className="p-2 rounded-full text-slate-400"><HelpCircle size={20}/></button>
                <div className="relative">
@@ -557,7 +333,6 @@ const MedicineTracker = () => {
                      <button onClick={() => {setShowStockList(true); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 hover:bg-slate-50 text-sm"><Box size={18} className="text-blue-500"/> Varastolista</button>
                      <button onClick={() => {setShowDosetti(true); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 hover:bg-slate-50 text-sm"><LayoutList size={18} className="text-blue-500"/> Dosettijako</button>
                      <div className="h-px bg-slate-100"></div>
-                     <button onClick={() => {setIsReordering(!isReordering); setIsMenuOpen(false);}} className={`flex items-center gap-3 p-3 hover:bg-slate-50 text-sm ${isReordering ? 'bg-blue-50 text-blue-600' : ''}`}><ArrowUpDown size={18}/> Järjestä</button>
                      <button onClick={() => {handleLogout(); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 hover:bg-red-50 text-red-600 text-sm"><LogOut size={18}/> Kirjaudu ulos</button>
                    </div>
                  )}
@@ -588,7 +363,7 @@ const MedicineTracker = () => {
               const lateClass = getMedStatusColor(med);
               const c = getColors(med.colorKey);
               const lastLog = getLastTaken(med.id);
-              const isExpanded = expandedMedId === med.id || isReordering;
+              const isExpanded = expandedMedId === med.id;
               const today = new Date().toDateString();
               const doneToday = med.scheduleTimes 
                 ? Object.keys(med.scheduleTimes).every(sid => logs.some(l => l.medId === med.id && l.slot === sid && new Date(l.timestamp).toDateString() === today))
@@ -596,29 +371,23 @@ const MedicineTracker = () => {
 
               return (
                 <div key={med.id} className={`rounded-xl shadow-sm border transition-all ${c.bg} ${lateClass || c.border} relative`}>
-                   {isReordering && (
-                     <div className="absolute right-0 top-0 bottom-0 w-14 flex flex-col justify-center gap-2 pr-2 z-30">
-                        <button onClick={(e) => {e.stopPropagation(); moveMedication(medications.indexOf(med), -1)}} className="p-2 bg-white rounded-full"><ArrowUp size={16}/></button>
-                        <button onClick={(e) => {e.stopPropagation(); moveMedication(medications.indexOf(med), 1)}} className="p-2 bg-white rounded-full"><ArrowDown size={16}/></button>
-                     </div>
-                   )}
-                   <div onClick={() => !isReordering && toggleExpand(med.id)} className="p-4 flex justify-between items-center cursor-pointer">
+                   <div onClick={() => toggleExpand(med.id)} className="p-4 flex justify-between items-center cursor-pointer">
                       <div className="flex items-center gap-2">
-                        {med.ingredients && med.ingredients.length > 0 && <Layers size={20} className="text-slate-600"/>}
+                        {med.ingredients?.length > 0 && <Layers size={20} className="text-slate-600"/>}
                         <h3 className={`text-lg font-bold ${lateClass?'text-red-800':'text-slate-800'}`}>{med.name}</h3>
                         {doneToday && <CheckCircle size={18} className="text-green-600"/>}
                         {lateClass && !doneToday && <AlertTriangle size={18} className="text-red-500"/>}
                       </div>
-                      {!isReordering && (expandedMedId === med.id ? <ChevronUp className="text-slate-400"/> : <ChevronDown className="text-slate-400"/>)}
+                      {expandedMedId === med.id ? <ChevronUp className="text-slate-400"/> : <ChevronDown className="text-slate-400"/>}
                    </div>
-                   {expandedMedId === med.id && !isReordering && (
+                   {expandedMedId === med.id && (
                      <div className="px-4 pb-4 border-t border-black/5 pt-3 animate-in slide-in-from-top-1">
-                        {med.ingredients && med.ingredients.length > 0 ? (
+                        {med.ingredients?.length > 0 ? (
                           <div className="mb-3 text-sm text-slate-600 bg-white/60 p-2 rounded">{med.ingredients.map((i,x)=><div key={x}>{i.name} ({i.count})</div>)}</div>
                         ) : (
-                          <div className={`mb-3 text-sm font-medium bg-white/50 p-2 rounded inline-flex gap-2 ${getStockStatusColor(med)}`}>
+                          <div className={`mb-3 text-sm font-medium bg-white/50 p-2 rounded inline-flex gap-2`}>
                              {med.dosage && <span>{med.dosage}</span>}
-                             {med.trackStock && <span><Package size={14} className="inline"/> {med.stock} kpl</span>}
+                             {med.trackStock && <span className={med.stock <= (med.lowStockLimit||10) ? 'text-red-600 font-bold' : ''}>Varasto: {med.stock} kpl</span>}
                           </div>
                         )}
                         <div className="flex items-center gap-1.5 text-xs text-slate-600 mb-3"><Clock size={12}/> {lastLog ? `${getDayLabel(lastLog.timestamp)} ${formatTime(lastLog.timestamp)}` : 'Ei otettu vielä'}</div>
@@ -724,7 +493,7 @@ const MedicineTracker = () => {
            <div className="flex justify-between mb-4"><h2 className="text-xl font-bold">Varastolista</h2><button onClick={() => setShowStockList(false)} className="p-2 bg-slate-100 rounded-full"><X/></button></div>
            <div className="space-y-3">{medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).map(m => (
              <div key={m.id} className="flex justify-between p-3 border rounded-xl bg-slate-50">
-               <div><div className="font-bold">{m.name}</div><div className={`text-xs ${getStockStatusColor(m)}`}>Saldo: {m.stock}</div></div>
+               <div><div className="font-bold">{m.name}</div><div className={`text-xs ${m.stock<=(m.lowStockLimit||10)?'text-red-600 font-bold':'text-slate-500'}`}>Saldo: {m.stock} kpl (Raja: {m.lowStockLimit})</div></div>
                <div className="flex gap-2"><button onClick={() => {setShowHistoryFor(m.id); setShowStockList(false)}} className="p-2 border rounded bg-white"><History size={16}/></button><button onClick={() => openEditMed(m)} className="p-2 border rounded bg-white"><Pencil size={16}/></button></div>
              </div>
            ))}</div>
@@ -734,7 +503,7 @@ const MedicineTracker = () => {
       {(isAdding || editingMed) && (
         <div className="absolute inset-0 z-50 bg-white p-5 animate-in slide-in-from-bottom overflow-y-auto">
            <div className="flex justify-between mb-4"><h2 className="text-xl font-bold">{editingMed ? 'Muokkaa' : 'Lisää uusi'}</h2><button onClick={() => {setIsAdding(false); setEditingMed(null)}} className="p-2 bg-slate-100 rounded-full"><X/></button></div>
-           <form onSubmit={editingMed ? handleUpdateMedication : handleAddMedication}>
+           <form onSubmit={handleSaveMed}>
              {!editingMed && <div className="flex p-1 bg-slate-100 rounded-xl mb-4"><button type="button" onClick={() => setAddMode('single')} className={`flex-1 py-2 text-sm font-bold rounded-lg ${addMode==='single'?'bg-white shadow text-blue-600':'text-slate-500'}`}>Yksittäinen</button><button type="button" onClick={() => setAddMode('dosett')} className={`flex-1 py-2 text-sm font-bold rounded-lg ${addMode==='dosett'?'bg-white shadow text-blue-600':'text-slate-500'}`}>Dosetti</button></div>}
              <input className="w-full p-4 bg-slate-50 rounded-xl border mb-4 text-lg" placeholder="Nimi" value={editingMed ? editingMed.name : newMedName} onChange={e => editingMed ? setEditingMed({...editingMed, name: e.target.value}) : setNewMedName(e.target.value)}/>
              
