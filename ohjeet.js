@@ -5,7 +5,7 @@
 export const ohjeData = [
   {
     id: 'intro',
-    title: 'Tervetuloa Lääkemuistioon',
+    title: 'Tervetuloa Mikkokalevin Lääkemuistioon',
     icon: 'Info',
     content: `
       <p class="mb-3 text-slate-700">Tämä sovellus on suunniteltu auttamaan lääkityksen hallinnassa, varastosaldojen seurannassa ja ottoaikojen muistamisessa.</p>
