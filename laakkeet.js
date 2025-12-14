@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info, List, CalendarDays } from 'lucide-react';
+import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info, List, CalendarDays, Settings } from 'lucide-react';
 
 // TUODAAN OHJEET ERILLISESTÄ TIEDOSTOSTA
 // Varmista että sinulla on ohjeet.js tiedosto samassa kansiossa!
@@ -53,6 +53,7 @@ const WEEKDAYS = [
   { id: 0, label: 'Su' }
 ];
 
+// --- APUFUNKTIOT ---
 const getIconComponent = (iconName) => {
   const icons = { Info, PlusSquare, Plus, CheckCircle, Zap, Package, BarChart2, Bell, List, Layers };
   const Icon = icons[iconName] || HelpCircle;
@@ -61,8 +62,7 @@ const getIconComponent = (iconName) => {
 
 // --- OHJESIVU KOMPONENTTI ---
 const HelpView = ({ onClose }) => {
-  // Jos ohjeData puuttuu (esim. tiedostoa ei löydy), näytetään virheilmoitus
-  if (!ohjeData) return <div className="fixed inset-0 z-[60] bg-white p-5">Virhe: ohjeet.js puuttuu.</div>;
+  if (!ohjeData) return <div className="fixed inset-0 z-[60] bg-white p-5 flex flex-col justify-center items-center"><p>Virhe: ohjeet.js puuttuu.</p><button onClick={onClose} className="mt-4 p-2 bg-slate-100">Sulje</button></div>;
 
   return (
     <div className="fixed inset-0 z-[60] bg-slate-50 flex flex-col animate-in slide-in-from-right duration-300 overflow-hidden">
@@ -85,9 +85,8 @@ const HelpView = ({ onClose }) => {
             <div className="text-sm text-slate-600" dangerouslySetInnerHTML={{ __html: section.content }} />
           </section>
         ))}
-        
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v4.1 - {new Date().getFullYear()}
+          Lääkemuistio v4.5
         </div>
       </div>
     </div>
@@ -118,9 +117,7 @@ const AuthScreen = () => {
       let msg = "Tapahtui virhe.";
       if (err.code === 'auth/invalid-email') msg = "Virheellinen sähköposti.";
       if (err.code === 'auth/missing-password') msg = "Syötä salasana.";
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') msg = "Väärä sähköposti tai salasana.";
-      if (err.code === 'auth/weak-password') msg = "Salasanan tulee olla vähintään 6 merkkiä.";
-      if (err.code === 'auth/email-already-in-use') msg = "Sähköposti on jo käytössä.";
+      if (err.code === 'auth/wrong-password') msg = "Väärä salasana.";
       setError(msg);
     } finally {
       setLoading(false);
@@ -136,38 +133,13 @@ const AuthScreen = () => {
         <div className="flex justify-center mb-6">
           <img src="https://img.geocaching.com/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" alt="Logo" className="h-16 w-auto object-contain" />
         </div>
-        <h2 className="text-2xl font-bold text-center text-slate-800 mb-2">
-          {isRegistering ? 'Luo tunnus' : 'Kirjaudu sisään'}
-        </h2>
-        <p className="text-center text-slate-400 text-sm mb-8">
-          Lääkemuistio - Pidä kirjaa lääkkeistäsi
-        </p>
-        {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 flex items-center gap-2"><AlertTriangle size={16} /> {error}</div>}
+        <h2 className="text-2xl font-bold text-center text-slate-800 mb-2">{isRegistering ? 'Luo tunnus' : 'Kirjaudu sisään'}</h2>
         <form onSubmit={handleAuth} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Sähköposti</label>
-            <div className="relative">
-              <User className="absolute left-3 top-3 text-slate-400" size={18} />
-              <input type="email" required className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all" placeholder="sinun@sahkoposti.fi" value={email} onChange={(e) => setEmail(e.target.value)} />
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Salasana</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 text-slate-400" size={18} />
-              <input type="password" required className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all" placeholder="******" value={password} onChange={(e) => setPassword(e.target.value)} />
-            </div>
-          </div>
-          <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all flex justify-center items-center gap-2 disabled:opacity-70">
-            {loading && <Loader2 size={20} className="animate-spin" />}
-            {isRegistering ? 'Rekisteröidy' : 'Kirjaudu'}
-          </button>
+          <input type="email" required className="w-full p-3 bg-slate-50 border rounded-xl" placeholder="Sähköposti" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input type="password" required className="w-full p-3 bg-slate-50 border rounded-xl" placeholder="Salasana" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl">{loading ? <Loader2 className="animate-spin" /> : (isRegistering ? 'Rekisteröidy' : 'Kirjaudu')}</button>
         </form>
-        <div className="mt-6 text-center">
-          <button onClick={() => { setIsRegistering(!isRegistering); setError(''); }} className="text-sm text-slate-500 hover:text-blue-600 font-medium">
-            {isRegistering ? 'Onko sinulla jo tunnus? Kirjaudu' : 'Uusi käyttäjä? Luo tunnus'}
-          </button>
-        </div>
+        <div className="mt-6 text-center"><button onClick={() => setIsRegistering(!isRegistering)} className="text-sm text-slate-500">{isRegistering ? 'Kirjaudu sisään' : 'Luo tunnus'}</button></div>
       </div>
     </div>
   );
@@ -192,24 +164,23 @@ const MedicineTracker = () => {
   const [showReport, setShowReport] = useState(false);
   const [showStockList, setShowStockList] = useState(false); 
   const [showAllMedsList, setShowAllMedsList] = useState(false); 
+  const [showAlertsList, setShowAlertsList] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Raportin tila
+  // Raportti
   const [reportStartDate, setReportStartDate] = useState('');
   const [reportEndDate, setReportEndDate] = useState('');
   const [reportSelectedMeds, setReportSelectedMeds] = useState(new Set());
 
-  // HAKU TILA
+  // Haku
   const [historySearch, setHistorySearch] = useState('');
 
-  // Ainesosien tila lisäys/muokkaus ikkunassa
-  const [ingredientName, setIngredientName] = useState('');
-  const [ingredientCount, setIngredientCount] = useState('');
-  const [currentIngredients, setCurrentIngredients] = useState([]); 
-
-  // LISÄYS TILA
+  // Lisäys/Muokkaus tila
   const [isAdding, setIsAdding] = useState(false);
   const [addMode, setAddMode] = useState('single'); 
+  const [editingMed, setEditingMed] = useState(null);
+
+  // UI Kentät
   const [newMedName, setNewMedName] = useState('');
   const [newMedDosage, setNewMedDosage] = useState('');
   const [newMedStock, setNewMedStock] = useState('');
@@ -220,10 +191,19 @@ const MedicineTracker = () => {
   
   const [selectedColor, setSelectedColor] = useState('blue');
   const [selectedSchedule, setSelectedSchedule] = useState([]); 
-  const [selectedWeekdays, setSelectedWeekdays] = useState([0,1,2,3,4,5,6]); 
   const [scheduleTimes, setScheduleTimes] = useState({});
+  
+  // Jaksotus
+  const [frequencyMode, setFrequencyMode] = useState('weekdays'); 
+  const [selectedWeekdays, setSelectedWeekdays] = useState([0,1,2,3,4,5,6]); 
+  const [intervalStartDate, setIntervalStartDate] = useState(''); 
 
-  // PIKALISÄYS TILA
+  // Dosetin ainesosat
+  const [ingredientName, setIngredientName] = useState('');
+  const [ingredientCount, setIngredientCount] = useState('');
+  const [currentIngredients, setCurrentIngredients] = useState([]); 
+
+  // Pikalisäys
   const [isQuickAdding, setIsQuickAdding] = useState(false);
   const [quickAddName, setQuickAddName] = useState('');
   const [quickAddReason, setQuickAddReason] = useState('');
@@ -232,7 +212,6 @@ const MedicineTracker = () => {
   const [takeWithReasonMed, setTakeWithReasonMed] = useState(null);
   const [takeReason, setTakeReason] = useState('');
 
-  const [editingMed, setEditingMed] = useState(null);
   const [manualLogMed, setManualLogMed] = useState(null);
   const [manualDate, setManualDate] = useState('');
   const [manualReason, setManualReason] = useState('');
@@ -245,21 +224,16 @@ const MedicineTracker = () => {
   const [showArchived, setShowArchived] = useState(false);
   const [showHistoryFor, setShowHistoryFor] = useState(null);
 
-  // Auth Listener
+  // --- FIREBASE LISTENERS ---
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setAuthLoading(false);
-      if (!currentUser) {
-        setLoadingData(false);
-        setMedications([]);
-        setLogs([]);
-      }
+      if (!currentUser) { setLoadingData(false); setMedications([]); setLogs([]); }
     });
     return () => unsubscribe();
   }, []);
 
-  // Data Listener
   useEffect(() => {
     if (!user) return;
     setLoadingData(true);
@@ -268,155 +242,223 @@ const MedicineTracker = () => {
 
     const unsubMeds = onSnapshot(medsRef, (snapshot) => {
       const medsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      medsData.sort((a, b) => {
-        const orderA = a.order !== undefined ? a.order : a.createdAt;
-        const orderB = b.order !== undefined ? b.order : b.createdAt;
-        return orderA - orderB;
-      });
+      medsData.sort((a, b) => (a.order || a.createdAt) - (b.order || b.createdAt));
       setMedications(medsData);
       setLoadingData(false);
-    }, (err) => { console.error(err); setLoadingData(false); });
+    });
 
     const unsubLogs = onSnapshot(logsRef, (snapshot) => {
       const logsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setLogs(logsData);
     });
-
     return () => { unsubMeds(); unsubLogs(); };
   }, [user]);
 
-  // Aseta oletusarvot raportille
-  useEffect(() => {
-    if (showReport) {
-      const end = new Date();
-      const start = new Date();
-      start.setDate(end.getDate() - 30);
-      setReportStartDate(start.toISOString().split('T')[0]);
-      setReportEndDate(end.toISOString().split('T')[0]);
-      setReportSelectedMeds(new Set(medications.filter(m => !m.isArchived).map(m => m.id)));
-    }
-  }, [showReport, medications]);
-
-  // Ilmoituslogiikka - ladataan tila
   useEffect(() => {
     if (Notification.permission === 'granted') setNotificationsEnabled(true);
   }, []);
 
-  const toggleNotifications = () => {
-    if (!("Notification" in window)) {
-      alert("Selaimesi ei tue ilmoituksia.");
-      return;
+  // --- LOGIIKKA ---
+
+  // TARKISTETAAN ONKO LÄÄKE MYÖHÄSSÄ TAI "LÄHELLÄ"
+  const getMedStatusColor = (med) => {
+    if (!med.scheduleTimes) return null;
+    const now = new Date();
+    const currentTime = now.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+    const currentHour = now.getHours();
+
+    // Tarkista onko tänään ottopäivä
+    let isToday = false;
+    if (med.interval === 2 && med.intervalStartDate) {
+       const start = new Date(med.intervalStartDate);
+       const diff = Math.floor((now - start) / (1000 * 60 * 60 * 24)); 
+       if (diff % 2 === 0) isToday = true;
+    } else {
+       const day = now.getDay();
+       const days = med.weekdays || [0,1,2,3,4,5,6];
+       if (days.includes(day)) isToday = true;
     }
+    
+    if (!isToday) return null;
+
+    let status = 'normal'; // normal, late, soon
+
+    Object.entries(med.scheduleTimes).forEach(([slotId, time]) => {
+      const taken = logs.some(l => l.medId === med.id && l.slot === slotId && new Date(l.timestamp).toDateString() === now.toDateString());
+      if (!taken) {
+         if (time < currentTime) status = 'late';
+         else {
+            const medHour = parseInt(time.split(':')[0]);
+            if (medHour === currentHour || medHour === currentHour + 1) {
+                if (status !== 'late') status = 'soon';
+            }
+         }
+      }
+    });
+
+    if (status === 'late') return 'border-red-400 bg-red-50';
+    if (status === 'soon') return 'border-yellow-400 bg-yellow-50';
+    return null;
+  };
+
+  const toggleNotificationForMed = async (med) => {
+    const medRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', med.id);
+    await updateDoc(medRef, { reminderEnabled: !(med.reminderEnabled !== false) });
+  };
+
+  const toggleNotifications = () => {
+    if (!("Notification" in window)) return alert("Selain ei tue ilmoituksia.");
     if (notificationsEnabled) {
       setNotificationsEnabled(false);
       alert("Ilmoitukset mykistetty.");
-      return;
+    } else {
+      Notification.requestPermission().then(p => {
+        if (p === 'granted') {
+          setNotificationsEnabled(true);
+          new Notification("Lääkemuistio", { body: "Ilmoitukset käytössä!" });
+        } else {
+          alert("Estetty selaimen asetuksista.");
+        }
+      });
     }
-    if (Notification.permission === 'denied') {
-      alert("Olet estänyt ilmoitukset selaimen asetuksista.");
-      return;
-    }
-    if (Notification.permission === 'granted') {
-      setNotificationsEnabled(true);
-      alert("Ilmoitukset käytössä!");
-      return;
-    }
-    Notification.requestPermission().then((permission) => {
-      if (permission === "granted") {
-        setNotificationsEnabled(true);
-        new Notification("Lääkemuistio", { body: "Ilmoitukset käytössä!" });
-      } else {
-        alert("Ilmoituslupaa ei myönnetty.");
-      }
-    });
   };
 
+  // Hälytyslooppi
   useEffect(() => {
     if (!notificationsEnabled || medications.length === 0) return;
-    const checkReminders = () => {
+    const interval = setInterval(() => {
       const now = new Date();
       const currentTime = now.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
-      const currentWeekday = now.getDay();
+      const currentDay = now.getDay();
+
       medications.forEach(med => {
-        if (med.isArchived) return;
-        const activeWeekdays = med.weekdays || [0,1,2,3,4,5,6];
-        if (!activeWeekdays.includes(currentWeekday)) return;
-        if (med.scheduleTimes) {
+        if (med.isArchived || med.reminderEnabled === false) return; 
+
+        let isToday = false;
+        if (med.interval === 2 && med.intervalStartDate) {
+           const start = new Date(med.intervalStartDate);
+           const diff = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+           if (diff % 2 === 0) isToday = true;
+        } else {
+           const days = med.weekdays || [0,1,2,3,4,5,6];
+           if (days.includes(currentDay)) isToday = true;
+        }
+
+        if (isToday && med.scheduleTimes) {
           Object.entries(med.scheduleTimes).forEach(([slotId, time]) => {
             if (time === currentTime) {
-              const today = now.toDateString();
-              const alreadyTaken = logs.some(l => l.medId === med.id && l.slot === slotId && new Date(l.timestamp).toDateString() === today);
-              if (!alreadyTaken) {
-                new Notification(`Lääkkeen aika: ${med.name}`, {
-                  body: `Aika ottaa ${TIME_SLOTS.find(s => s.id === slotId)?.label || ''} lääke.`,
-                  icon: "https://img.geocaching.com/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png"
-                });
+              const taken = logs.some(l => l.medId === med.id && l.slot === slotId && new Date(l.timestamp).toDateString() === now.toDateString());
+              if (!taken) {
+                new Notification(`Ota lääke: ${med.name}`, { body: `Aika: ${time}`, icon: "https://img.geocaching.com/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" });
               }
             }
           });
         }
       });
-    };
-    const interval = setInterval(checkReminders, 60000); 
+    }, 60000);
     return () => clearInterval(interval);
   }, [medications, logs, notificationsEnabled]);
 
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    setEditingLog(null);
-    setShowHistoryFor(null);
-    setEditingMed(null);
-    setIsAdding(false);
-    setIsQuickAdding(false);
-    setHistorySearch('');
-  };
-
-  // Värit
-  const colorList = ['blue', 'green', 'purple', 'orange', 'rose', 'cyan', 'amber', 'teal', 'indigo', 'lime', 'fuchsia', 'slate'];
-  const colorMap = {
-    'blue':   { bg: 'bg-blue-100',   border: 'border-blue-300',   dot: 'bg-blue-600',   text: 'text-blue-800',   btn: 'bg-blue-600 active:bg-blue-700' },
-    'green':  { bg: 'bg-green-100',  border: 'border-green-300',  dot: 'bg-green-600',  text: 'text-green-800',  btn: 'bg-green-600 active:bg-green-700' },
-    'purple': { bg: 'bg-purple-100', border: 'border-purple-300', dot: 'bg-purple-600', text: 'text-purple-800', btn: 'bg-purple-600 active:bg-purple-700' },
-    'orange': { bg: 'bg-orange-100', border: 'border-orange-300', dot: 'bg-orange-500', text: 'text-orange-800', btn: 'bg-orange-500 active:bg-orange-600' },
-    'rose':   { bg: 'bg-red-100',    border: 'border-red-300',    dot: 'bg-red-600',    text: 'text-red-800',    btn: 'bg-red-600 active:bg-red-700' },
-    'cyan':   { bg: 'bg-cyan-100',   border: 'border-cyan-300',   dot: 'bg-cyan-600',   text: 'text-cyan-800',   btn: 'bg-cyan-600 active:bg-cyan-700' },
-    'amber':  { bg: 'bg-amber-100',  border: 'border-amber-300',  dot: 'bg-amber-500',  text: 'text-amber-800',  btn: 'bg-amber-500 active:bg-amber-600' },
-    'teal':   { bg: 'bg-teal-100',   border: 'border-teal-300',   dot: 'bg-teal-600',   text: 'text-teal-800',   btn: 'bg-teal-600 active:bg-teal-700' },
-    'indigo': { bg: 'bg-indigo-100', border: 'border-indigo-300', dot: 'bg-indigo-600', text: 'text-indigo-800', btn: 'bg-indigo-600 active:bg-indigo-700' },
-    'lime':   { bg: 'bg-lime-100',   border: 'border-lime-300',   dot: 'bg-lime-600',   text: 'text-lime-800',   btn: 'bg-lime-600 active:bg-lime-700' },
-    'fuchsia':{ bg: 'bg-fuchsia-100',border: 'border-fuchsia-300',dot: 'bg-fuchsia-600',text: 'text-fuchsia-800',btn: 'bg-fuchsia-600 active:bg-fuchsia-700' },
-    'slate':  { bg: 'bg-slate-200',  border: 'border-slate-300',  dot: 'bg-slate-600',  text: 'text-slate-800',  btn: 'bg-slate-600 active:bg-slate-700' },
-  };
-  const getColors = (key) => colorMap[key] || colorMap['blue'];
-  const getSmartColor = () => {
-    const activeMeds = medications.filter(m => !m.isArchived);
-    const usedColors = new Set(activeMeds.map(m => m.colorKey));
-    return colorList.find(c => !usedColors.has(c)) || colorList[medications.length % colorList.length];
-  };
-
-  // --- LOGIIKKA ---
-  const handleLogout = () => { if(window.confirm("Kirjaudutaanko ulos?")) signOut(auth); };
-
-  const toggleExpand = (id) => {
-    setExpandedMedId(expandedMedId === id ? null : id);
-  };
-
+  // Lomakekäsittelijät
   const openAddModal = () => {
-    setAddMode('single'); 
+    setAddMode('single');
     setNewMedName(''); setNewMedDosage(''); setNewMedStock(''); setNewMedTrackStock(false);
     setNewMedLowLimit('10'); setNewMedIsCourse(false);
     setSelectedColor(getSmartColor()); setSelectedSchedule([]); setScheduleTimes({});
-    setSelectedWeekdays([0,1,2,3,4,5,6]);
-    setCurrentIngredients([]);
-    setShowOnDashboard(true);
+    setFrequencyMode('weekdays'); setSelectedWeekdays([0,1,2,3,4,5,6]); setIntervalStartDate(new Date().toISOString().split('T')[0]);
+    setCurrentIngredients([]); setShowOnDashboard(true);
     setIsAdding(true);
+  };
+
+  const openEditMed = (med) => {
+    setEditingMed(med);
+    const mode = (med.ingredients && med.ingredients.length > 0) ? 'dosett' : 'single';
+    setAddMode(mode);
+    setCurrentIngredients(med.ingredients || []);
+    
+    // Tunnista jaksotus
+    if (med.interval === 2) {
+      setFrequencyMode('every_other');
+      setIntervalStartDate(med.intervalStartDate || new Date().toISOString().split('T')[0]);
+    } else if (med.weekdays && med.weekdays.length === 7) {
+      setFrequencyMode('every_day');
+    } else {
+      setFrequencyMode('weekdays');
+      setSelectedWeekdays(med.weekdays || [0,1,2,3,4,5,6]);
+    }
+  };
+
+  const handleAddMedication = async (e) => {
+    e.preventDefault();
+    if (!newMedName.trim() || !user) return;
+    if (addMode === 'dosett' && currentIngredients.length === 0) return alert("Dosetissa oltava sisältöä.");
+
+    try {
+      const maxOrder = medications.reduce((max, m) => Math.max(max, m.order || 0), 0);
+      let weekdays = [0,1,2,3,4,5,6];
+      let interval = 1;
+      
+      if (frequencyMode === 'weekdays') weekdays = selectedWeekdays;
+      if (frequencyMode === 'every_other') { interval = 2; weekdays = []; } 
+
+      await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'medications'), {
+        name: newMedName.trim(), 
+        dosage: addMode === 'dosett' ? '' : newMedDosage.trim(), 
+        stock: (addMode === 'single' && newMedTrackStock) ? parseInt(newMedStock) || 0 : null,
+        trackStock: addMode === 'single' ? newMedTrackStock : false,
+        lowStockLimit: (addMode === 'single' && newMedTrackStock) ? (parseInt(newMedLowLimit) || 10) : 10,
+        isCourse: addMode === 'single' ? newMedIsCourse : false,
+        colorKey: selectedColor, 
+        schedule: selectedSchedule, 
+        scheduleTimes: scheduleTimes,
+        weekdays: weekdays,
+        interval: interval,
+        intervalStartDate: frequencyMode === 'every_other' ? intervalStartDate : null,
+        ingredients: addMode === 'dosett' ? currentIngredients : [], 
+        showOnDashboard: addMode === 'dosett' ? true : showOnDashboard,
+        reminderEnabled: true,
+        createdAt: Date.now(), 
+        order: maxOrder + 1, 
+        isArchived: false
+      });
+      setIsAdding(false);
+    } catch (e) { alert("Virhe tallennuksessa"); }
+  };
+
+  const handleUpdateMedication = async (e) => {
+    e.preventDefault();
+    if (!editingMed || !user) return;
+    try {
+      let weekdays = [0,1,2,3,4,5,6];
+      let interval = 1;
+      if (frequencyMode === 'weekdays') weekdays = selectedWeekdays;
+      if (frequencyMode === 'every_other') { interval = 2; weekdays = []; }
+
+      const medRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', editingMed.id);
+      await updateDoc(medRef, { 
+        name: editingMed.name.trim(), 
+        dosage: editingMed.dosage || '', 
+        stock: editingMed.trackStock ? parseInt(editingMed.stock) : null,
+        trackStock: editingMed.trackStock || false,
+        lowStockLimit: editingMed.trackStock ? parseInt(editingMed.lowStockLimit) : 10,
+        isCourse: editingMed.isCourse || false,
+        colorKey: editingMed.colorKey, 
+        schedule: editingMed.schedule || [], 
+        scheduleTimes: editingMed.scheduleTimes || {},
+        weekdays: weekdays,
+        interval: interval,
+        intervalStartDate: frequencyMode === 'every_other' ? intervalStartDate : null,
+        ingredients: currentIngredients,
+        showOnDashboard: editingMed.showOnDashboard !== undefined ? editingMed.showOnDashboard : true
+      });
+      setEditingMed(null);
+    } catch (e) { alert("Virhe muokkauksessa"); }
   };
 
   const addIngredient = () => {
     if(!ingredientName.trim()) return;
     setCurrentIngredients([...currentIngredients, {name: ingredientName.trim(), count: ingredientCount.trim() || '1'}]);
-    setIngredientName('');
-    setIngredientCount('');
+    setIngredientName(''); setIngredientCount('');
   };
   
   const removeIngredient = (index) => {
@@ -448,13 +490,15 @@ const MedicineTracker = () => {
   };
 
   const toggleWeekday = (dayId, isEdit = false) => {
+    // Apufunktio viikonpäiville (used in edit)
     if (isEdit) {
-      const current = editingMed.weekdays || [0,1,2,3,4,5,6];
-      const newWeekdays = current.includes(dayId) ? current.filter(d => d !== dayId) : [...current, dayId];
-      setEditingMed({...editingMed, weekdays: newWeekdays});
+       // ... existing logic handled by selectedWeekdays state in edit mode now for simplicity
+       const current = selectedWeekdays;
+       const newW = current.includes(dayId) ? current.filter(d => d !== dayId) : [...current, dayId];
+       setSelectedWeekdays(newW);
     } else {
-      const newWeekdays = selectedWeekdays.includes(dayId) ? selectedWeekdays.filter(d => d !== dayId) : [...selectedWeekdays, dayId];
-      setSelectedWeekdays(newWeekdays);
+       const newW = selectedWeekdays.includes(dayId) ? selectedWeekdays.filter(d => d !== dayId) : [...selectedWeekdays, dayId];
+       setSelectedWeekdays(newW);
     }
   };
 
@@ -464,67 +508,6 @@ const MedicineTracker = () => {
     } else {
       setScheduleTimes({ ...scheduleTimes, [slotId]: time });
     }
-  };
-
-  const handleAddMedication = async (e) => {
-    e.preventDefault();
-    if (!newMedName.trim() || !user) return;
-    
-    if (addMode === 'dosett' && currentIngredients.length === 0) {
-      alert("Dosetissa täytyy olla vähintään yksi lääke!");
-      return;
-    }
-
-    try {
-      const maxOrder = medications.reduce((max, m) => Math.max(max, m.order || 0), 0);
-      const medData = {
-        name: newMedName.trim(), 
-        dosage: addMode === 'dosett' ? '' : newMedDosage.trim(),
-        stock: (addMode === 'single' && newMedTrackStock) ? parseInt(newMedStock) || 0 : null,
-        trackStock: addMode === 'single' ? newMedTrackStock : false,
-        lowStockLimit: (addMode === 'single' && newMedTrackStock) ? (parseInt(newMedLowLimit) || 10) : 10,
-        isCourse: addMode === 'single' ? newMedIsCourse : false,
-        colorKey: selectedColor, 
-        schedule: selectedSchedule, 
-        scheduleTimes: scheduleTimes,
-        weekdays: selectedWeekdays,
-        ingredients: addMode === 'dosett' ? currentIngredients : [], 
-        showOnDashboard: addMode === 'dosett' ? true : showOnDashboard,
-        createdAt: Date.now(), 
-        order: maxOrder + 1, 
-        isArchived: false
-      };
-      await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'medications'), medData);
-      setNewMedName(''); setNewMedDosage(''); setIsAdding(false); setCurrentIngredients([]);
-    } catch (error) { alert("Virhe lisäyksessä."); }
-  };
-
-  const handleUpdateMedication = async (e) => {
-    e.preventDefault();
-    if (!editingMed || !editingMed.name.trim() || !user) return;
-    try {
-      const medRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', editingMed.id);
-      await updateDoc(medRef, { 
-        name: editingMed.name.trim(), 
-        dosage: editingMed.dosage ? editingMed.dosage.trim() : '', 
-        stock: editingMed.trackStock ? (parseInt(editingMed.stock) || 0) : null,
-        trackStock: editingMed.trackStock || false,
-        lowStockLimit: editingMed.trackStock ? (parseInt(editingMed.lowStockLimit) || 10) : 10,
-        isCourse: editingMed.isCourse || false,
-        colorKey: editingMed.colorKey, 
-        schedule: editingMed.schedule || [], 
-        scheduleTimes: editingMed.scheduleTimes || {},
-        weekdays: editingMed.weekdays || [0,1,2,3,4,5,6],
-        ingredients: currentIngredients,
-        showOnDashboard: editingMed.showOnDashboard !== undefined ? editingMed.showOnDashboard : true
-      });
-      setEditingMed(null);
-    } catch (error) { alert("Virhe muokkauksessa."); }
-  };
-
-  const openEditMed = (med) => {
-    setEditingMed({...med, weekdays: med.weekdays || [0,1,2,3,4,5,6]});
-    setCurrentIngredients(med.ingredients || []);
   };
 
   const moveMedication = async (index, direction) => {
@@ -576,27 +559,17 @@ const MedicineTracker = () => {
     try {
       const ingredientsSnapshot = med.ingredients && med.ingredients.length > 0 ? med.ingredients : null;
       await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
-        medId: med.id, 
-        medName: med.name, 
-        medColor: med.colorKey, 
-        slot: slotId, 
-        timestamp: new Date().toISOString(), 
-        reason: reasonText.trim(),
-        ingredients: ingredientsSnapshot 
+        medId: med.id, medName: med.name, medColor: med.colorKey, slot: slotId, 
+        timestamp: new Date().toISOString(), reason: reasonText.trim(), ingredients: ingredientsSnapshot 
       });
       if (med.trackStock && med.stock > 0) {
          const medRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', med.id);
          await updateDoc(medRef, { stock: med.stock - 1 });
       }
-      if (med.ingredients && med.ingredients.length > 0) {
+      if (med.ingredients) {
         for (const ing of med.ingredients) {
-           const subMed = medications.find(m => m.name.toLowerCase() === ing.name.toLowerCase() && !m.isArchived);
-           if (subMed && subMed.trackStock && subMed.stock !== null) {
-              const amountToTake = parseInt(ing.count) || 1;
-              const newStock = subMed.stock - amountToTake;
-              const subMedRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', subMed.id);
-              await updateDoc(subMedRef, { stock: newStock });
-           }
+           const sub = medications.find(m => m.name === ing.name);
+           if (sub && sub.trackStock) await updateDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'medications', sub.id), { stock: sub.stock - (parseInt(ing.count)||1) });
         }
       }
     } catch (error) { console.error(error); }
@@ -729,7 +702,6 @@ const MedicineTracker = () => {
      setDeleteDialog({ isOpen: false, mode: null, medId: null, logId: null });
   };
 
-  // UI Helpers
   const formatTime = (iso) => { try { return new Date(iso).toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' }); } catch(e) { return '--:--'; } };
   const getDayLabel = (iso) => {
     try { const d = new Date(iso); const today = new Date();
@@ -753,19 +725,20 @@ const MedicineTracker = () => {
     const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     return now.toISOString().slice(0, 16);
   };
-  const isSlotTakenToday = (medId, slotId) => {
-    const today = new Date().toDateString();
-    return logs.some(l => l.medId === medId && l.slot === slotId && new Date(l.timestamp).toDateString() === today);
-  };
-  const isGenericTakenToday = (medId) => {
-    const today = new Date().toDateString();
-    return logs.some(l => l.medId === medId && new Date(l.timestamp).toDateString() === today);
-  };
 
+  // --- FILTTERÖINTI ETUSIVULLE ---
   const activeMeds = medications.filter(m => {
     if (m.isArchived) return false;
     if (m.showOnDashboard === false) return false;
-    const today = new Date().getDay();
+    
+    // Jaksotus
+    const now = new Date();
+    if (m.interval === 2 && m.intervalStartDate) {
+       const start = new Date(m.intervalStartDate);
+       const diff = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+       return diff % 2 === 0;
+    }
+    const today = now.getDay();
     const activeDays = m.weekdays || [0,1,2,3,4,5,6];
     return activeDays.includes(today);
   });
@@ -797,9 +770,7 @@ const MedicineTracker = () => {
     const reason = (log.reason || '').toLowerCase();
     if (reason.includes(term)) return true;
     if (log.ingredients && Array.isArray(log.ingredients)) {
-      const hasIngredient = log.ingredients.some(ing => 
-        ing.name.toLowerCase().includes(term)
-      );
+      const hasIngredient = log.ingredients.some(ing => ing.name.toLowerCase().includes(term));
       if (hasIngredient) return true;
     }
     return false;
@@ -831,12 +802,10 @@ const MedicineTracker = () => {
     
     let text = `LÄÄKKEIDEN KÄYTTÖ\n`;
     text += `Aikaväli: ${start.toLocaleDateString()} - ${end.toLocaleDateString()}\n\n`;
-    text += `YHTEENVETO:\n`;
     Object.entries(medStats).sort((a,b) => b[1].count - a[1].count).forEach(([name, data]) => {
       text += `- ${name}: ${data.count} kpl\n`;
     });
-    text += `\n-----------------------------\n`;
-    text += `ERITTELY:\n\n`;
+    text += `\nERITTELY:\n\n`;
     Object.entries(medStats).forEach(([name, data]) => {
        if (data.count === 0) return;
        text += `--- ${name.toUpperCase()} (${data.count} kpl) ---\n`;
@@ -886,7 +855,13 @@ const MedicineTracker = () => {
     setReportSelectedMeds(newSet);
   };
 
-  const dailyProgress = 0; // Simplified
+  const getStockStatusColor = (med) => {
+     if (!med.trackStock || med.stock === null) return '';
+     const limit = med.lowStockLimit || 10;
+     if (med.stock <= limit) return 'text-red-600 font-bold';
+     if (med.stock <= limit + 5) return 'text-orange-600 font-bold';
+     return 'text-slate-500';
+  };
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-blue-600" size={40} /></div>;
   if (!user) return <AuthScreen />;
@@ -910,57 +885,23 @@ const MedicineTracker = () => {
           <div className="flex items-center gap-1">
             {activeTab === 'home' && (
               <>
-                <button 
-                  onClick={() => setShowShoppingList(true)}
-                  className={`p-2 rounded-full transition-colors relative ${shoppingListMeds.length > 0 ? 'text-red-500 hover:text-red-600 bg-red-50' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                  <ShoppingCart size={20} />
-                  {shoppingListMeds.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>}
-                </button>
-                
-                <button 
-                  onClick={toggleNotifications} 
-                  className={`p-2 rounded-full transition-colors ${notificationsEnabled ? 'text-blue-500 bg-blue-50' : 'text-slate-400 hover:text-slate-600'}`}
-                  title={notificationsEnabled ? "Mykistä ilmoitukset" : "Ota ilmoitukset käyttöön"}
-                >
-                  {notificationsEnabled ? <Bell size={20} /> : <BellOff size={20} />}
-                </button>
-
-                <button 
-                  onClick={() => setShowHelp(true)} 
-                  className="p-2 rounded-full transition-colors text-slate-400 hover:text-slate-600"
-                >
-                  <HelpCircle size={20} />
-                </button>
-                
+                <button onClick={() => setShowShoppingList(true)} className={`p-2 rounded-full transition-colors relative ${shoppingListMeds.length > 0 ? 'text-red-500 hover:text-red-600 bg-red-50' : 'text-slate-400 hover:text-slate-600'}`}><ShoppingCart size={20} />{shoppingListMeds.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>}</button>
+                <button onClick={toggleNotifications} className={`p-2 rounded-full transition-colors ${notificationsEnabled ? 'text-blue-500 bg-blue-50' : 'text-slate-400 hover:text-slate-600'}`} title={notificationsEnabled ? "Mykistä ilmoitukset" : "Ota ilmoitukset käyttöön"}>{notificationsEnabled ? <Bell size={20} /> : <BellOff size={20} />}</button>
+                <button onClick={() => setShowHelp(true)} className="p-2 rounded-full transition-colors text-slate-400 hover:text-slate-600"><HelpCircle size={20} /></button>
                 <div className="relative">
-                  <button 
-                    onClick={() => setIsMenuOpen(!isMenuOpen)} 
-                    className={`p-2 rounded-full transition-colors ${isMenuOpen ? 'bg-slate-100 text-slate-800' : 'text-slate-400 hover:text-slate-600'}`}
-                  >
-                    <Menu size={24} />
-                  </button>
+                  <button onClick={() => setIsMenuOpen(!isMenuOpen)} className={`p-2 rounded-full transition-colors ${isMenuOpen ? 'bg-slate-100 text-slate-800' : 'text-slate-400 hover:text-slate-600'}`}><Menu size={24} /></button>
                   {isMenuOpen && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)}></div>
-                      <div className="absolute top-full right-0 mt-2 w-48 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-slate-100 z-50 p-1 flex flex-col gap-1 animate-in fade-in slide-in-from-top-2 duration-200">
-                        <button onClick={() => {setShowAllMedsList(true); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-700 text-sm font-medium text-left">
-                          <List size={18} className="text-blue-500"/> Lääkeluettelo (Kaikki)
-                        </button>
-                        <button onClick={() => {setShowStockList(true); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-700 text-sm font-medium text-left">
-                          <Box size={18} className="text-blue-500"/> Varastolista
-                        </button>
-                        <button onClick={() => {setShowDosetti(true); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-700 text-sm font-medium text-left">
-                          <LayoutList size={18} className="text-blue-500"/> Dosettijako
-                        </button>
+                      <div className="absolute top-full right-0 mt-2 w-56 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-slate-100 z-50 p-1 flex flex-col gap-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <button onClick={() => {setShowAlertsList(true); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-700 text-sm font-medium text-left"><Bell size={18} className="text-blue-500"/> Hälytyslista</button>
+                        <button onClick={() => {setShowAllMedsList(true); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-700 text-sm font-medium text-left"><List size={18} className="text-blue-500"/> Lääkeluettelo</button>
+                        <button onClick={() => {setShowStockList(true); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-700 text-sm font-medium text-left"><Box size={18} className="text-blue-500"/> Varastolista</button>
+                        <button onClick={() => {setShowDosetti(true); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-700 text-sm font-medium text-left"><LayoutList size={18} className="text-blue-500"/> Dosettijako</button>
                         <div className="h-px bg-slate-100 my-1"></div>
-                        <button onClick={() => {setIsReordering(!isReordering); setIsMenuOpen(false);}} className={`flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-sm font-medium text-left ${isReordering ? 'bg-blue-50 text-blue-700' : 'text-slate-700'}`}>
-                          <ArrowUpDown size={18} className={isReordering ? 'text-blue-600' : 'text-slate-400'}/> Järjestä
-                        </button>
+                        <button onClick={() => {setIsReordering(!isReordering); setIsMenuOpen(false);}} className={`flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-sm font-medium text-left ${isReordering ? 'bg-blue-50 text-blue-700' : 'text-slate-700'}`}><ArrowUpDown size={18} className={isReordering ? 'text-blue-600' : 'text-slate-400'}/> Järjestä</button>
                         <div className="h-px bg-slate-100 my-1"></div>
-                        <button onClick={() => {handleLogout(); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 rounded-lg hover:bg-red-50 text-red-600 text-sm font-medium text-left">
-                          <LogOut size={18}/> Kirjaudu ulos
-                        </button>
+                        <button onClick={() => {handleLogout(); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 rounded-lg hover:bg-red-50 text-red-600 text-sm font-medium text-left"><LogOut size={18}/> Kirjaudu ulos</button>
                       </div>
                     </>
                   )}
@@ -971,59 +912,38 @@ const MedicineTracker = () => {
         </div>
 
         <div className="bg-slate-100 p-1 rounded-xl flex mb-1">
-          <button 
-            onClick={() => handleTabChange('home')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === 'home' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            <Pill size={16} /> Lääkkeet
-          </button>
-          <button 
-            onClick={() => handleTabChange('stats')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === 'stats' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            <BarChart2 size={16} /> Historia
-          </button>
+          <button onClick={() => handleTabChange('home')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === 'home' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Lääkkeet</button>
+          <button onClick={() => handleTabChange('stats')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === 'stats' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Historia</button>
         </div>
       </header>
 
       <main className="flex-1 overflow-y-auto p-3 pb-20 z-0 relative">
         <div className="max-w-md mx-auto space-y-3">
-          {loadingData ? (
-            <div className="text-center py-10 text-slate-400 flex flex-col items-center gap-2"><Loader2 className="animate-spin" /><span className="text-sm">Ladataan lääkkeitä...</span></div>
-          ) : (
-          <>
           {activeTab === 'home' && (
             <>
               {activeMeds.length === 0 && !isAdding && (
                 <div className="text-center py-12 text-slate-400">
                   <div className="bg-white p-4 rounded-full inline-block mb-3 shadow-sm"><Pill size={32} className="text-blue-200" /></div>
                   <p className="mb-4 text-sm">Ei lääkkeitä listalla tälle päivälle.</p>
-                  
-                  {/* TYHJÄN TILAN NAPIT */}
                   <div className="flex flex-col gap-3 px-10">
-                    <button onClick={() => setShowHelp(true)} className="bg-white text-blue-600 border border-blue-200 px-5 py-2.5 rounded-full font-bold shadow-sm text-sm active:scale-95 transition-transform flex items-center justify-center gap-2">
-                      <Info size={18}/> Tutustu ohjeisiin
-                    </button>
-                    <button onClick={openAddModal} className="bg-blue-600 text-white px-5 py-2.5 rounded-full font-bold shadow-lg text-sm active:scale-95 transition-transform flex items-center justify-center gap-2">
-                      <Plus size={18}/> Lisää ensimmäinen
-                    </button>
+                    <button onClick={() => setShowHelp(true)} className="bg-white text-blue-600 border border-blue-200 px-5 py-2.5 rounded-full font-bold shadow-sm text-sm active:scale-95 transition-transform flex items-center justify-center gap-2"><Info size={18}/> Tutustu ohjeisiin</button>
+                    <button onClick={openAddModal} className="bg-blue-600 text-white px-5 py-2.5 rounded-full font-bold shadow-lg text-sm active:scale-95 transition-transform flex items-center justify-center gap-2"><Plus size={18}/> Lisää ensimmäinen</button>
                   </div>
                 </div>
               )}
               {activeMeds.map((med, index) => {
-                const lastLog = getLastTaken(med.id);
+                const lateClass = getMedStatusColor(med);
                 const c = getColors(med.colorKey || 'blue');
-                const hasSchedule = med.schedule && med.schedule.length > 0;
-                const isCombo = med.ingredients && med.ingredients.length > 0;
-                const isLowStock = !isCombo && med.trackStock && !med.isCourse && med.stock !== null && med.stock <= (med.lowStockLimit || 10);
+                const lastLog = getLastTaken(med.id);
                 const isExpanded = expandedMedId === med.id || isReordering; 
-                let isDoneForToday = false;
-                if (hasSchedule) isDoneForToday = med.schedule.every(slotId => isSlotTakenToday(med.id, slotId));
-                else isDoneForToday = isGenericTakenToday(med.id);
+                
+                const today = new Date().toDateString();
+                const doneToday = med.scheduleTimes 
+                   ? Object.keys(med.scheduleTimes).every(slot => logs.some(l => l.medId === med.id && l.slot === slot && new Date(l.timestamp).toDateString() === today))
+                   : logs.some(l => l.medId === med.id && new Date(l.timestamp).toDateString() === today);
 
                 return (
-                  <div key={med.id} className={`rounded-xl shadow-sm border transition-all duration-200 overflow-hidden ${c.bg} ${c.border} ${!isExpanded?'hover:shadow-md':''} relative group`}>
-                    
+                  <div key={med.id} className={`rounded-xl shadow-sm border transition-all duration-200 overflow-hidden ${c.bg} ${lateClass || c.border} relative group`}>
                     {isReordering && (
                       <div className="absolute right-0 top-0 bottom-0 w-14 flex flex-col justify-center gap-2 pr-2 bg-gradient-to-l from-white/80 via-white/50 to-transparent z-30">
                         <button onClick={(e) => { e.stopPropagation(); moveMedication(index, -1); }} disabled={index === 0} className="p-2 bg-white rounded-full shadow-sm text-slate-500 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed mx-auto"><ArrowUp size={18} /></button>
@@ -1034,20 +954,18 @@ const MedicineTracker = () => {
                     <div onClick={() => !isReordering && toggleExpand(med.id)} className={`p-4 flex justify-between items-center ${!isReordering ? 'cursor-pointer active:bg-black/5' : ''}`}>
                       <div className="flex-1 min-w-0 pr-3">
                          <div className="flex items-center gap-2">
-                            {isCombo && <Layers size={20} className="text-slate-600" />}
-                            <h3 className="text-lg font-bold text-slate-800 leading-tight">{med.name}</h3>
-                            {expandedMedId !== med.id && isDoneForToday && <CheckCircle size={18} className="text-green-600 shrink-0" />}
-                            {expandedMedId !== med.id && isLowStock && <AlertTriangle size={18} className="text-red-500 shrink-0" />}
+                            {med.ingredients && med.ingredients.length > 0 && <Layers size={20} className="text-slate-600" />}
+                            <h3 className={`text-lg font-bold leading-tight ${lateClass ? 'text-red-800' : 'text-slate-800'}`}>{med.name}</h3>
+                            {doneToday && <CheckCircle size={18} className="text-green-600 shrink-0" />}
+                            {lateClass && !doneToday && <AlertTriangle size={18} className="text-red-500 shrink-0" />}
                          </div>
                          
                          {expandedMedId !== med.id && (
                            <div className="flex items-center gap-2 mt-1">
-                             {isCombo ? (
+                             {med.ingredients && med.ingredients.length > 0 ? (
                                <span className="text-xs font-bold text-slate-500 bg-white/50 px-1.5 py-0.5 rounded uppercase tracking-wider">Dosetti</span>
-                             ) : isLowStock ? (
+                             ) : med.trackStock && med.stock <= (med.lowStockLimit || 10) ? (
                                <span className="text-xs text-red-600 font-bold truncate">{med.stock} kpl jäljellä!</span>
-                             ) : med.trackStock && med.isCourse ? (
-                               <span className="text-xs text-slate-500 font-bold truncate">Kuuri: {med.stock} kpl</span>
                              ) : med.dosage ? (
                                <span className="text-xs text-slate-600 font-medium truncate">{med.dosage}</span>
                              ) : (
@@ -1056,7 +974,6 @@ const MedicineTracker = () => {
                            </div>
                          )}
                       </div>
-                      
                       {!isReordering && <div className="text-slate-400">{expandedMedId === med.id ? <ChevronUp size={24} /> : <ChevronDown size={24} />}</div>}
                     </div>
 
@@ -1064,27 +981,21 @@ const MedicineTracker = () => {
                       <div className="px-4 pb-4 pt-0 animate-in slide-in-from-top-2 duration-200">
                          <div className="border-t border-black/5 mb-3 pt-1"></div>
                          
-                         {isCombo && (
+                         {med.ingredients && med.ingredients.length > 0 && (
                            <div className="text-xs text-slate-600 bg-white/60 p-2.5 rounded-lg mb-3 border border-slate-100">
-                             <div className="flex items-center gap-2 mb-2">
-                               <Layers size={14} className="text-slate-400"/>
-                               <span className="font-bold uppercase text-[10px] text-slate-500">Sisältö</span>
-                             </div>
+                             <div className="flex items-center gap-2 mb-2"><Layers size={14} className="text-slate-400"/><span className="font-bold uppercase text-[10px] text-slate-500">Sisältö</span></div>
                              <div className="space-y-1">
                                {med.ingredients.map((ing, idx) => (
-                                 <div key={idx} className="flex justify-between border-b border-slate-200 last:border-0 pb-1 last:pb-0">
-                                   <span className="font-medium">{ing.name}</span>
-                                   <span className="text-slate-500">{ing.count} kpl</span>
-                                 </div>
+                                 <div key={idx} className="flex justify-between border-b border-slate-200 last:border-0 pb-1 last:pb-0"><span className="font-medium">{ing.name}</span><span className="text-slate-500">{ing.count} kpl</span></div>
                                ))}
                              </div>
                            </div>
                          )}
 
-                         {!isCombo && med.dosage && <div className="text-sm text-slate-700 mb-2 font-medium bg-white/50 p-2 rounded-lg inline-block mr-2">{med.dosage}</div>}
+                         {!med.ingredients?.length && med.dosage && <div className="text-sm text-slate-700 mb-2 font-medium bg-white/50 p-2 rounded-lg inline-block mr-2">{med.dosage}</div>}
 
-                         {!isCombo && med.trackStock && (
-                           <div className={`text-sm mb-3 font-medium bg-white/50 p-2 rounded-lg inline-flex items-center gap-2 ${isLowStock ? 'text-red-600 border border-red-200' : 'text-slate-700'}`}>
+                         {!med.ingredients?.length && med.trackStock && (
+                           <div className={`text-sm mb-3 font-medium bg-white/50 p-2 rounded-lg inline-flex items-center gap-2 ${getStockStatusColor(med)}`}>
                              <Package size={14} /> <span>{med.stock !== null ? med.stock : 0} kpl</span>
                            </div>
                          )}
@@ -1094,29 +1005,23 @@ const MedicineTracker = () => {
                          </div>
 
                          <div className="flex gap-2 mb-4 justify-end flex-wrap">
-                            {!isCombo && med.trackStock && <button onClick={() => handleRefill(med)} className="p-2 bg-white/60 rounded-lg hover:text-green-600 hover:bg-white flex items-center gap-1" title="Täydennä varastoa"><RefreshCw size={18}/></button>}
+                            {med.trackStock && <button onClick={() => handleRefill(med)} className="p-2 bg-white/60 rounded-lg hover:text-green-600 hover:bg-white flex items-center gap-1" title="Täydennä varastoa"><RefreshCw size={18}/></button>}
                             <button onClick={() => { setManualLogMed(med); setManualDate(getCurrentDateTimeLocal()); }} className="p-2 bg-white/60 rounded-lg hover:text-blue-600 hover:bg-white" title="Lisää manuaalisesti"><CalendarPlus size={18}/></button>
                             <button onClick={() => setShowHistoryFor(med.id)} className="p-2 bg-white/60 rounded-lg hover:text-blue-600 hover:bg-white" title="Historia"><History size={18}/></button>
-                            <button onClick={() => setEditingMed(med)} className="p-2 bg-white/60 rounded-lg hover:text-blue-600 hover:bg-white" title="Muokkaa"><Pencil size={18}/></button>
+                            <button onClick={() => openEditMed(med)} className="p-2 bg-white/60 rounded-lg hover:text-blue-600 hover:bg-white" title="Muokkaa"><Pencil size={18}/></button>
                             <button onClick={() => toggleArchive(med)} className="p-2 bg-white/60 rounded-lg hover:text-orange-500 hover:bg-white" title="Arkistoi"><Archive size={18}/></button>
                             <button onClick={() => requestDeleteMed(med)} className="p-2 bg-white/60 rounded-lg hover:text-red-500 hover:bg-white" title="Poista"><Trash2 size={18}/></button>
                          </div>
 
-                         {hasSchedule ? (
+                         {med.scheduleTimes ? (
                             <div className="grid grid-cols-4 gap-2">
-                              {TIME_SLOTS.filter(slot => med.schedule.includes(slot.id)).map(slot => {
-                                const isTaken = isSlotTakenToday(med.id, slot.id);
-                                const scheduleTime = med.scheduleTimes?.[slot.id] || slot.defaultTime;
+                              {TIME_SLOTS.filter(slot => (med.schedule||[]).includes(slot.id)).map(slot => {
+                                const taken = logs.some(l => l.medId === med.id && l.slot === slot.id && new Date(l.timestamp).toDateString() === today);
                                 return (
-                                  <button 
-                                    key={slot.id}
-                                    onClick={() => takeMedicine(med, slot.id)}
-                                    disabled={isTaken}
-                                    className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${isTaken ? 'bg-green-100 border-green-200 text-green-700' : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-600 active:scale-95'}`}
-                                  >
-                                    {isTaken ? <Check size={20} strokeWidth={3} /> : <slot.icon size={20} />}
+                                  <button key={slot.id} onClick={() => takeMedicine(med, slot.id)} disabled={taken} className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${taken ? 'bg-green-100 border-green-200 text-green-700' : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-600 active:scale-95'}`}>
+                                    {taken ? <Check size={20} strokeWidth={3} /> : <slot.icon size={20} />}
                                     <span className="text-[10px] font-bold mt-1 uppercase">{slot.label}</span>
-                                    {!isTaken && <span className="text-[9px] text-slate-400">{scheduleTime}</span>}
+                                    {!taken && <span className="text-[9px] text-slate-400">{med.scheduleTimes[slot.id]}</span>}
                                   </button>
                                 );
                               })}
@@ -1167,21 +1072,10 @@ const MedicineTracker = () => {
                    <h2 className="text-base font-bold text-slate-800 flex items-center gap-2"><Calendar className="text-blue-500" size={18}/> Koko historia</h2>
                 </div>
                 
-                {/* HAKUKENTTÄ */}
                 <div className="relative mb-4">
                   <Search className="absolute left-3 top-2.5 text-slate-400" size={18}/>
-                  <input 
-                    type="text" 
-                    placeholder="Etsi lääkettä (esim. Burana)..." 
-                    className="w-full bg-slate-50 pl-10 pr-4 py-2 rounded-lg text-sm border focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all"
-                    value={historySearch}
-                    onChange={(e) => setHistorySearch(e.target.value)}
-                  />
-                  {historySearch && (
-                    <button onClick={() => setHistorySearch('')} className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600">
-                      <X size={18}/>
-                    </button>
-                  )}
+                  <input type="text" placeholder="Etsi lääkettä..." className="w-full bg-slate-50 pl-10 pr-4 py-2 rounded-lg text-sm border focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all" value={historySearch} onChange={(e) => setHistorySearch(e.target.value)} />
+                  {historySearch && (<button onClick={() => setHistorySearch('')} className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"><X size={18}/></button>)}
                 </div>
 
                 <div className="space-y-3">
@@ -1211,11 +1105,7 @@ const MedicineTracker = () => {
                       </div>
                     );
                   })}
-                  {filteredLogs.length === 0 && (
-                    <div className="text-center text-slate-400 text-sm py-4">
-                      {historySearch ? 'Ei hakutuloksia.' : 'Ei vielä historiaa.'}
-                    </div>
-                  )}
+                  {filteredLogs.length === 0 && <div className="text-center text-slate-400 text-sm py-4">{historySearch ? 'Ei hakutuloksia.' : 'Ei vielä historiaa.'}</div>}
                 </div>
               </div>
             </div>
@@ -1229,13 +1119,14 @@ const MedicineTracker = () => {
         <button onClick={() => handleTabChange('home')} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-colors ${activeTab === 'home' ? 'text-blue-600 bg-blue-50' : 'text-slate-400'}`}>
           <Pill size={22} strokeWidth={activeTab==='home'?2.5:2} /> <span className="text-[10px] font-bold">Lääkkeet</span>
         </button>
+        <img src="https://img.geocaching.com/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" className="h-10 w-auto object-contain -mt-4 drop-shadow-md"/>
         <button onClick={() => handleTabChange('stats')} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-colors ${activeTab === 'stats' ? 'text-blue-600 bg-blue-50' : 'text-slate-400'}`}>
           <BarChart2 size={22} strokeWidth={activeTab==='stats'?2.5:2} /> <span className="text-[10px] font-bold">Historia</span>
         </button>
       </nav>
 
-      {/* FAB BUTTONS - ONLY VISIBLE IF NO MODAL/OVERLAY IS ACTIVE */}
-      {!isAdding && activeTab === 'home' && !showHistoryFor && !deleteDialog.isOpen && !editingMed && !manualLogMed && !takeWithReasonMed && !editingLog && !isQuickAdding && !isReordering && !showStockList && !showAllMedsList && (
+      {/* FAB NAPIT (Vain Home-välilehdellä, ei modaleissa) */}
+      {!isAdding && activeTab === 'home' && !showHistoryFor && !deleteDialog.isOpen && !editingMed && !manualLogMed && !takeWithReasonMed && !editingLog && !isQuickAdding && !isReordering && !showStockList && !showAllMedsList && !showAlertsList && !showShoppingList && (
         <>
           <button onClick={() => window.location.reload()} className="absolute bottom-20 left-5 z-30 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-slate-500 hover:text-blue-600 hover:rotate-180 transition-all duration-500 border border-slate-200" title="Päivitä sovellus"><RotateCcw size={24} /></button>
           <div className="absolute bottom-20 right-5 z-30 flex gap-3 items-end">
@@ -1247,77 +1138,55 @@ const MedicineTracker = () => {
 
       {/* --- MODALIT --- */}
       
-      {/* LÄÄKELUETTELO MODAL (UUSI JA PARANNETTU) */}
-      {showAllMedsList && (
-        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
-          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[90vh] overflow-y-auto">
-             <div className="flex justify-between items-center mb-4 border-b pb-2">
-                <h2 className="text-lg font-bold flex items-center gap-2 text-slate-800"><List/> Lääkeluettelo</h2>
-                <button onClick={() => setShowAllMedsList(false)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button>
-             </div>
-             
-             <div className="space-y-6">
-               {/* 1. YKSITTÄISET LÄÄKKEET */}
-               <div>
-                 <h3 className="text-xs font-bold text-slate-400 uppercase mb-2">💊 Yksittäiset lääkkeet</h3>
-                 <div className="space-y-2">
-                   {medications
-                     .filter(m => !m.isArchived && (!m.ingredients || m.ingredients.length === 0))
-                     .sort((a,b) => a.name.localeCompare(b.name))
-                     .map(med => (
-                     <div key={med.id} className="flex justify-between items-center p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                        <div className="flex-1 min-w-0 pr-2">
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2.5 h-2.5 rounded-full ${getColors(med.colorKey).dot}`} />
-                            <div className="font-bold text-slate-800 truncate">{med.name}</div>
-                          </div>
-                          <div className="text-[10px] text-slate-500 mt-0.5 flex gap-2 flex-wrap">
-                            {!med.showOnDashboard && <span className="bg-slate-200 px-1.5 rounded">Piilotettu</span>}
-                            {med.trackStock && <span>Varasto: {med.stock}</span>}
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button onClick={() => takeMedicine(med)} className="p-2 bg-white border border-slate-200 rounded-lg text-green-600 hover:bg-green-50" title="Ota"><Check size={16}/></button>
-                          <button onClick={() => { setShowHistoryFor(med.id); setShowAllMedsList(false); }} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600" title="Historia"><History size={16}/></button>
-                          <button onClick={() => openEditMed(med)} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600"><Pencil size={16}/></button>
-                        </div>
-                     </div>
-                   ))}
-                   {medications.filter(m => !m.isArchived && (!m.ingredients || m.ingredients.length === 0)).length === 0 && <p className="text-xs text-slate-400 italic">Ei yksittäisiä lääkkeitä.</p>}
-                 </div>
+      {/* HÄLYTYSLISTA */}
+      {showAlertsList && (
+        <div className="absolute inset-0 z-50 bg-white p-5 overflow-y-auto animate-in slide-in-from-bottom">
+           <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-bold flex gap-2"><Bell/> Hälytyslista</h2><button onClick={() => setShowAlertsList(false)} className="p-2 bg-slate-100 rounded-full"><X/></button></div>
+           <div className="space-y-3">
+             {medications.filter(m => !m.isArchived && m.scheduleTimes && Object.keys(m.scheduleTimes).length > 0).map(med => (
+               <div key={med.id} className="flex justify-between items-center p-4 bg-slate-50 rounded-xl border">
+                 <span className="font-bold">{med.name}</span>
+                 <button onClick={() => toggleNotificationForMed(med)} className={`p-2 rounded-full ${med.reminderEnabled !== false ? 'bg-blue-100 text-blue-600' : 'bg-slate-200 text-slate-400'}`}>
+                   {med.reminderEnabled !== false ? <Bell size={20}/> : <BellOff size={20}/>}
+                 </button>
                </div>
+             ))}
+             {medications.filter(m => !m.isArchived && m.scheduleTimes && Object.keys(m.scheduleTimes).length > 0).length === 0 && <p className="text-center text-slate-400">Ei aikataulutettuja lääkkeitä.</p>}
+           </div>
+        </div>
+      )}
 
-               {/* 2. DOSETIT & YHDISTELMÄT */}
-               <div>
-                 <h3 className="text-xs font-bold text-slate-400 uppercase mb-2">🗓️ Dosetit & Yhdistelmät</h3>
-                 <div className="space-y-2">
-                   {medications
-                     .filter(m => !m.isArchived && m.ingredients && m.ingredients.length > 0)
-                     .sort((a,b) => a.name.localeCompare(b.name))
-                     .map(med => (
-                     <div key={med.id} className="flex justify-between items-center p-3 bg-blue-50/50 border border-blue-100 rounded-xl">
-                        <div className="flex-1 min-w-0 pr-2">
-                          <div className="flex items-center gap-2">
-                            <Layers size={14} className="text-blue-500"/>
-                            <div className="font-bold text-slate-800 truncate">{med.name}</div>
-                          </div>
-                          <div className="text-[10px] text-slate-500 mt-0.5 truncate">
-                            Sisältää: {med.ingredients.map(i => i.name).join(', ')}
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button onClick={() => takeMedicine(med)} className="p-2 bg-white border border-slate-200 rounded-lg text-green-600 hover:bg-green-50" title="Ota"><Check size={16}/></button>
-                          <button onClick={() => { setShowHistoryFor(med.id); setShowAllMedsList(false); }} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600" title="Historia"><History size={16}/></button>
-                          <button onClick={() => openEditMed(med)} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600"><Pencil size={16}/></button>
-                        </div>
+      {/* LÄÄKELUETTELO (KAIKKI) */}
+      {showAllMedsList && (
+        <div className="absolute inset-0 z-50 bg-white p-5 overflow-y-auto animate-in slide-in-from-bottom">
+           <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-bold flex gap-2"><List/> Lääkeluettelo</h2><button onClick={() => setShowAllMedsList(false)} className="p-2 bg-slate-100 rounded-full"><X/></button></div>
+           
+           <div className="space-y-6">
+               {['💊 Yksittäiset lääkkeet', '🗓️ Dosetit & Yhdistelmät'].map((title, idx) => {
+                 const isDosettSection = idx === 1;
+                 const list = medications.filter(m => !m.isArchived && (isDosettSection ? (m.ingredients?.length>0) : (!m.ingredients || m.ingredients.length===0))).sort((a,b) => a.name.localeCompare(b.name));
+                 return (
+                   <div key={idx}>
+                     <h3 className="font-bold text-slate-400 uppercase text-xs mb-2">{title}</h3>
+                     <div className="space-y-2">
+                       {list.map(med => (
+                         <div key={med.id} className="flex justify-between items-center p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                            <div className="flex-1">
+                              <div className="font-bold text-slate-800">{med.name}</div>
+                              <div className="text-xs text-slate-500">{isDosettSection ? `Sisältö: ${med.ingredients.length} osaa` : (med.trackStock ? `Varasto: ${med.stock}` : 'Ei varastoa')}</div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={() => { setShowHistoryFor(med.id); setShowAllMedsList(false); }} className="p-2 bg-white border rounded text-blue-600"><History size={16}/></button>
+                              <button onClick={() => { openEditMed(med); setShowAllMedsList(false); }} className="p-2 bg-white border rounded text-blue-600"><Pencil size={16}/></button>
+                            </div>
+                         </div>
+                       ))}
+                       {list.length === 0 && <p className="text-xs text-slate-400 italic">Tyhjä.</p>}
                      </div>
-                   ))}
-                   {medications.filter(m => !m.isArchived && m.ingredients && m.ingredients.length > 0).length === 0 && <p className="text-xs text-slate-400 italic">Ei dosetteja.</p>}
-                 </div>
-               </div>
-             </div>
-             <div className="h-6"></div>
-          </div>
+                   </div>
+                 )
+               })}
+           </div>
         </div>
       )}
 
@@ -1329,15 +1198,12 @@ const MedicineTracker = () => {
                 <h2 className="text-lg font-bold flex items-center gap-2 text-slate-800"><Box/> Varastolista</h2>
                 <button onClick={() => setShowStockList(false)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button>
              </div>
-             
              <div className="space-y-3">
                {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).map(med => (
                  <div key={med.id} className="flex justify-between items-center p-3 bg-slate-50 border border-slate-100 rounded-xl">
                     <div className="flex-1">
                       <div className="font-bold text-slate-800">{med.name}</div>
-                      <div className={`text-xs font-bold ${med.stock <= med.lowStockLimit ? 'text-red-500' : 'text-slate-500'}`}>
-                        Saldo: {med.stock} kpl (Raja: {med.lowStockLimit})
-                      </div>
+                      <div className={`text-xs ${getStockStatusColor(med)}`}>Saldo: {med.stock} kpl (Raja: {med.lowStockLimit})</div>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => { setShowHistoryFor(med.id); setShowStockList(false); }} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600" title="Historia"><History size={16}/></button>
@@ -1345,9 +1211,6 @@ const MedicineTracker = () => {
                     </div>
                  </div>
                ))}
-               {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).length === 0 && (
-                 <p className="text-center text-slate-400 text-sm py-4">Ei varastoseurannassa olevia lääkkeitä.</p>
-               )}
              </div>
              <div className="h-6"></div>
           </div>
@@ -1358,11 +1221,7 @@ const MedicineTracker = () => {
       {showDosetti && (
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] overflow-y-auto">
-             <div className="flex justify-between items-center mb-4 border-b pb-2">
-                <h2 className="text-lg font-bold flex items-center gap-2 text-blue-600"><LayoutList/> Dosettijako</h2>
-                <button onClick={() => setShowDosetti(false)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button>
-             </div>
-             
+             <div className="flex justify-between items-center mb-4 border-b pb-2"><h2 className="text-lg font-bold flex items-center gap-2 text-blue-600"><LayoutList/> Dosettijako</h2><button onClick={() => setShowDosetti(false)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button></div>
              <div className="space-y-6">
                {TIME_SLOTS.map(slot => {
                  const medsForSlot = medications.filter(m => !m.isArchived && m.schedule && m.schedule.includes(slot.id));
@@ -1374,17 +1233,11 @@ const MedicineTracker = () => {
                          {medsForSlot.map(med => {
                            if (med.ingredients && med.ingredients.length > 0) {
                              return med.ingredients.map((ing, idx) => (
-                               <li key={`${med.id}-${idx}`} className="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
-                                 <span className="font-medium text-sm text-slate-700">{ing.name}</span>
-                                 <span className="font-bold text-sm text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{ing.count}</span>
-                               </li>
+                               <li key={`${med.id}-${idx}`} className="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-100 shadow-sm"><span className="font-medium text-sm text-slate-700">{ing.name}</span><span className="font-bold text-sm text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{ing.count}</span></li>
                              ));
                            } else {
                              return (
-                               <li key={med.id} className="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
-                                 <span className="font-medium text-sm text-slate-700">{med.name}</span>
-                                 <span className="font-bold text-sm text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{med.dosage || '1 kpl'}</span>
-                               </li>
+                               <li key={med.id} className="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-100 shadow-sm"><span className="font-medium text-sm text-slate-700">{med.name}</span><span className="font-bold text-sm text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{med.dosage || '1 kpl'}</span></li>
                              );
                            }
                          })}
@@ -1403,43 +1256,25 @@ const MedicineTracker = () => {
       {showReport && (
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in">
            <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
-             <div className="flex justify-between items-center mb-4 flex-none">
-                <h2 className="text-lg font-bold">Luo raportti</h2>
-                <button onClick={() => setShowReport(false)} className="p-1 bg-slate-100 rounded-full"><X size={18}/></button>
-             </div>
-             
+             <div className="flex justify-between items-center mb-4 flex-none"><h2 className="text-lg font-bold">Luo raportti</h2><button onClick={() => setShowReport(false)} className="p-1 bg-slate-100 rounded-full"><X size={18}/></button></div>
              <div className="flex-1 overflow-y-auto pr-2">
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Alkaen</label>
-                      <input type="date" className="w-full bg-slate-50 p-2 rounded-lg text-sm border" value={reportStartDate} onChange={e => setReportStartDate(e.target.value)} />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Päättyen</label>
-                      <input type="date" className="w-full bg-slate-50 p-2 rounded-lg text-sm border" value={reportEndDate} onChange={e => setReportEndDate(e.target.value)} />
-                    </div>
+                    <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Alkaen</label><input type="date" className="w-full bg-slate-50 p-2 rounded-lg text-sm border" value={reportStartDate} onChange={e => setReportStartDate(e.target.value)} /></div>
+                    <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Päättyen</label><input type="date" className="w-full bg-slate-50 p-2 rounded-lg text-sm border" value={reportEndDate} onChange={e => setReportEndDate(e.target.value)} /></div>
                   </div>
                   <div>
-                    <div className="flex justify-between items-center mb-2">
-                       <label className="block text-xs font-bold text-slate-500 uppercase">Valitse lääkkeet</label>
-                       <button onClick={() => {
-                         const allIds = medications.filter(m => !m.isArchived).map(m => m.id);
-                         setReportSelectedMeds(reportSelectedMeds.size === allIds.length ? new Set() : new Set(allIds));
-                       }} className="text-xs text-blue-600 font-bold">Valitse/Poista kaikki</button>
-                    </div>
+                    <div className="flex justify-between items-center mb-2"><label className="block text-xs font-bold text-slate-500 uppercase">Valitse lääkkeet</label><button onClick={() => { const allIds = medications.filter(m => !m.isArchived).map(m => m.id); setReportSelectedMeds(reportSelectedMeds.size === allIds.length ? new Set() : new Set(allIds)); }} className="text-xs text-blue-600 font-bold">Valitse/Poista kaikki</button></div>
                     <div className="space-y-2 max-h-40 overflow-y-auto border rounded-xl p-2 bg-slate-50">
                       {medications.filter(m => !m.isArchived).map(med => (
                         <label key={med.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-100 cursor-pointer">
-                          <input type="checkbox" className="w-4 h-4 text-blue-600 rounded" checked={reportSelectedMeds.has(med.id)} onChange={() => toggleReportMedSelection(med.id)} />
-                          <span className="text-sm font-medium text-slate-700 truncate">{med.name}</span>
+                          <input type="checkbox" className="w-4 h-4 text-blue-600 rounded" checked={reportSelectedMeds.has(med.id)} onChange={() => toggleReportMedSelection(med.id)} /><span className="text-sm font-medium text-slate-700 truncate">{med.name}</span>
                         </label>
                       ))}
                     </div>
                   </div>
                 </div>
              </div>
-
              <div className="flex-none pt-4 mt-2 border-t">
                <pre className="bg-slate-50 p-3 rounded-xl text-[10px] font-mono overflow-auto h-32 whitespace-pre-wrap mb-3 border">{generateReportText()}</pre>
                <button onClick={copyReport} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95"><Clipboard size={18} /> Kopioi leikepöydälle</button>
@@ -1452,19 +1287,16 @@ const MedicineTracker = () => {
       {showShoppingList && (
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[80vh] overflow-y-auto">
-             <div className="flex justify-between items-center mb-4 border-b pb-2">
-                <h2 className="text-lg font-bold flex items-center gap-2 text-red-600"><ShoppingCart/> Ostoslista</h2>
-                <button onClick={() => setShowShoppingList(false)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button>
-             </div>
+             <div className="flex justify-between items-center mb-4 border-b pb-2"><h2 className="text-lg font-bold flex items-center gap-2 text-red-600"><ShoppingCart/> Ostoslista</h2><button onClick={() => setShowShoppingList(false)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button></div>
              {shoppingListMeds.length === 0 ? <div className="text-center text-slate-400 py-8">Kaikki lääkkeet hyvässä tilanteessa!</div> : (
                <div className="space-y-3">
                  {shoppingListMeds.map(med => (
-                   <div key={med.id} className="flex justify-between items-center p-3 bg-red-50 border border-red-100 rounded-xl">
+                   <div key={med.id} className={`flex justify-between items-center p-3 border rounded-xl ${med.stock <= med.lowStockLimit ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-200'}`}>
                       <div>
                         <div className="font-bold text-slate-800">{med.name}</div>
-                        <div className="text-xs text-red-600 font-bold">Jäljellä: {med.stock} kpl (Raja: {med.lowStockLimit||10})</div>
+                        <div className={`text-xs font-bold ${med.stock <= med.lowStockLimit ? 'text-red-600' : 'text-orange-600'}`}>Jäljellä: {med.stock} kpl (Raja: {med.lowStockLimit||10})</div>
                       </div>
-                      <Package className="text-red-300" size={24}/>
+                      <Package className={med.stock <= med.lowStockLimit ? 'text-red-300' : 'text-orange-300'} size={24}/>
                    </div>
                  ))}
                </div>
@@ -1474,58 +1306,24 @@ const MedicineTracker = () => {
         </div>
       )}
 
-      {/* OHJEET */}
-      {showHelp && <HelpView onClose={() => setShowHelp(false)} />}
-
       {/* PIKALISÄYS */}
       {isQuickAdding && (
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Zap className="text-orange-500"/> Kirjaa kertaluontoinen</h2>
             <form onSubmit={handleQuickAdd}>
-              
-              {/* VETOVALIKKO */}
               <div className="mb-4">
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Valitse listalta (valinnainen)</label>
-                <select 
-                  className="w-full bg-slate-50 p-3 rounded-xl text-base border focus:border-orange-500 outline-none appearance-none"
-                  onChange={(e) => {
-                    const selected = medications.find(m => m.id === e.target.value);
-                    if(selected) setQuickAddName(selected.name);
-                  }}
-                  defaultValue=""
-                >
+                <select className="w-full bg-slate-50 p-3 rounded-xl text-base border focus:border-orange-500 outline-none appearance-none" onChange={(e) => { const selected = medications.find(m => m.id === e.target.value); if(selected) setQuickAddName(selected.name); }} defaultValue="">
                   <option value="" disabled>Valitse lääke...</option>
-                  {medications
-                    .filter(m => !m.isArchived)
-                    .sort((a,b) => a.name.localeCompare(b.name))
-                    .map(m => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))
-                  }
+                  {medications.filter(m => !m.isArchived).sort((a,b) => a.name.localeCompare(b.name)).map(m => (<option key={m.id} value={m.id}>{m.name}</option>))}
                 </select>
               </div>
-
-              {/* PIKA-NAPIT (VARASTOTUOTTEET) */}
-              <div className="flex flex-wrap gap-2 mb-3 max-h-32 overflow-y-auto">
-                {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).map(m => (
-                  <button key={m.id} type="button" onClick={() => setQuickAddName(m.name)} className="px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-600 active:bg-blue-100 active:border-blue-300 active:text-blue-700">{m.name}</button>
-                ))}
-              </div>
-
               <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-orange-500" placeholder="Tai kirjoita nimi (esim. Burana)" value={quickAddName} onChange={e => setQuickAddName(e.target.value)} />
-              
               <div className="grid grid-cols-2 gap-3 mb-4">
-                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Ajankohta</label>
-                    <input type="datetime-local" className="w-full bg-slate-50 p-3 rounded-xl text-sm outline-none border focus:border-orange-500" value={quickAddDate} onChange={e => setQuickAddDate(e.target.value)} />
-                 </div>
-                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Syy</label>
-                    <input className="w-full bg-slate-50 p-3 rounded-xl text-sm outline-none border focus:border-orange-500" placeholder="Valinnainen" value={quickAddReason} onChange={e => setQuickAddReason(e.target.value)} />
-                 </div>
+                 <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Ajankohta</label><input type="datetime-local" className="w-full bg-slate-50 p-3 rounded-xl text-sm outline-none border focus:border-orange-500" value={quickAddDate} onChange={e => setQuickAddDate(e.target.value)} /></div>
+                 <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Syy</label><input className="w-full bg-slate-50 p-3 rounded-xl text-sm outline-none border focus:border-orange-500" placeholder="Valinnainen" value={quickAddReason} onChange={e => setQuickAddReason(e.target.value)} /></div>
               </div>
-
               <div className="flex gap-3">
                 <button type="button" onClick={() => setIsQuickAdding(false)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
                 <button type="submit" disabled={!quickAddName.trim()} className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold text-sm disabled:opacity-50">Kirjaa</button>
@@ -1536,289 +1334,221 @@ const MedicineTracker = () => {
         </div>
       )}
 
-      {/* 1. LISÄÄ LÄÄKE (UUSI ULD) */}
-      {isAdding && (
+      {/* OTA SYYLLÄ */}
+      {takeWithReasonMed && (
+        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
+          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
+            <div className="flex justify-between items-center mb-1"><h2 className="text-lg font-bold">Ota lääke</h2><button onClick={() => setTakeWithReasonMed(null)} className="p-1 bg-slate-100 rounded-full"><X size={16}/></button></div>
+            <p className="text-sm text-slate-500 mb-4">{takeWithReasonMed.name}</p>
+            <form onSubmit={handleConfirmTakeWithReason}>
+              <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-4 outline-none border focus:border-blue-500" placeholder="Syy (valinnainen, esim. Kipu)" value={takeReason} onChange={e => setTakeReason(e.target.value)} />
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setTakeWithReasonMed(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
+                <button type="submit" className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-lg">Kirjaa</button>
+              </div>
+            </form>
+            <div className="h-6"></div>
+          </div>
+        </div>
+      )}
+
+      {/* SINGLE MED HISTORY MODAL */}
+      {showHistoryFor && (
+        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
+          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] overflow-y-auto">
+             <div className="flex justify-between items-center mb-4 border-b pb-2"><h2 className="text-lg font-bold flex items-center gap-2 text-slate-800"><History /> Historia: {medications.find(m => m.id === showHistoryFor)?.name || 'Lääke'}</h2><button onClick={() => setShowHistoryFor(null)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button></div>
+             <div className="space-y-3">
+                {getHistoryDates(logs.filter(l => l.medId === showHistoryFor)).map((dayStr, i) => {
+                  const filteredLogs = getLogsForDate(new Date(dayStr), logs.filter(l => l.medId === showHistoryFor));
+                  return (
+                    <div key={i} className="border-b border-slate-50 pb-2 last:border-0">
+                       <div className="text-[10px] font-bold uppercase mb-1.5 text-slate-400">{getDayLabel(dayStr)}</div>
+                       <div className="space-y-2">
+                         {filteredLogs.map(log => (
+                           <button key={log.id} onClick={() => openLogEdit(log)} className="w-full flex justify-between items-center p-2 bg-slate-50 rounded-lg text-left">
+                              <div><span className="font-bold text-sm text-slate-700">{formatTime(log.timestamp)}</span>{log.ingredients && log.ingredients.length > 0 && (<div className="text-[10px] text-slate-500 mt-0.5">Sisälsi: {log.ingredients.map(ing => `${ing.name} (${ing.count})`).join(', ')}</div>)}</div>
+                              {log.reason && <span className="text-xs text-slate-500 italic">"{log.reason}"</span>}
+                           </button>
+                         ))}
+                       </div>
+                    </div>
+                  );
+                })}
+                {logs.filter(l => l.medId === showHistoryFor).length === 0 && <p className="text-center text-slate-400 text-sm">Ei merkintöjä.</p>}
+             </div>
+             <div className="h-6"></div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE DIALOG MODAL */}
+      {deleteDialog.isOpen && (
+        <div className="absolute inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in">
+           <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+             <h2 className="text-lg font-bold text-red-600 mb-2">{deleteDialog.title || 'Poista?'}</h2>
+             <p className="text-slate-600 mb-6">{deleteDialog.message || 'Haluatko varmasti jatkaa?'}</p>
+             <div className="flex flex-col gap-3">
+               {deleteDialog.mode === 'med' && deleteDialog.hasHistory ? (
+                 <><button onClick={handleDeleteKeepHistory} className="w-full py-3 bg-white border-2 border-slate-200 text-slate-700 rounded-xl font-bold text-sm">Poista, mutta säästä historia</button><button onClick={handleDeleteAll} className="w-full py-3 bg-red-600 text-white rounded-xl font-bold text-sm">Poista kaikki (myös historia)</button></>
+               ) : deleteDialog.mode === 'log' ? (
+                 <button onClick={handleDeleteSingleLog} className="w-full py-3 bg-red-600 text-white rounded-xl font-bold text-sm">Poista merkintä</button>
+               ) : (
+                 <button onClick={handleDeleteAll} className="w-full py-3 bg-red-600 text-white rounded-xl font-bold text-sm">Poista</button>
+               )}
+               <button onClick={() => setDeleteDialog({ ...deleteDialog, isOpen: false })} className="w-full py-3 text-slate-400 font-bold text-sm">Peruuta</button>
+             </div>
+           </div>
+        </div>
+      )}
+
+      {/* EDIT LOG MODAL */}
+      {editingLog && (
+        <div className="absolute inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in">
+           <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+             <div className="flex justify-between items-center mb-4"><h2 className="text-lg font-bold">Merkinnän tiedot</h2><button onClick={() => setEditingLog(null)} className="p-1 bg-slate-100 rounded-full"><X size={18}/></button></div>
+             <form onSubmit={handleSaveLogEdit}>
+               {editingLog.ingredients && editingLog.ingredients.length > 0 && (
+                 <div className="mb-4 bg-slate-50 p-3 rounded-xl border border-slate-200"><label className="block text-xs font-bold text-slate-500 uppercase mb-2">Sisälsi</label><ul className="space-y-1">{editingLog.ingredients.map((ing, idx) => (<li key={idx} className="flex justify-between text-sm"><span className="font-medium text-slate-700">{ing.name}</span><span className="text-slate-500">{ing.count} kpl</span></li>))}</ul></div>
+               )}
+               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Aika</label>
+               <input type="datetime-local" required className="w-full bg-slate-50 p-3 rounded-xl mb-4 border" value={editingLogDate} onChange={e => setEditingLogDate(e.target.value)} />
+               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Syy / Lisätieto</label>
+               <input className="w-full bg-slate-50 p-3 rounded-xl mb-6 border" placeholder="Valinnainen" value={editingLogReason} onChange={e => setEditingLogReason(e.target.value)} />
+               <div className="flex gap-3">
+                 <button type="button" onClick={requestDeleteLog} className="p-3 bg-red-50 text-red-600 rounded-xl"><Trash2 size={20}/></button>
+                 <button type="submit" className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">Tallenna</button>
+               </div>
+             </form>
+           </div>
+        </div>
+      )}
+
+      {/* LISÄYS / MUOKKAUS */}
+      {(isAdding || editingMed) && (
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[95vh] overflow-y-auto">
-            
-            {/* VÄRIVALINTA */}
             <div className="flex flex-wrap gap-3 justify-center mb-6 pt-2">
-              {colorList.map(c => {
-                const colors = getColors(c);
-                const isSelected = selectedColor === c;
-                return (
-                  <button key={c} type="button" onClick={() => setSelectedColor(c)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isSelected ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'hover:scale-105'}`}>
-                    <div className={`w-full h-full rounded-full ${colors.dot} shadow-sm`} />
-                  </button>
-                );
+              {colorList.map(c => { const colors = getColors(c); const isSelected = editingMed ? editingMed.colorKey === c : selectedColor === c;
+                return (<button key={c} type="button" onClick={() => editingMed ? setEditingMed({...editingMed, colorKey: c}) : setSelectedColor(c)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isSelected ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'hover:scale-105'}`}><div className={`w-full h-full rounded-full ${colors.dot} shadow-sm`} /></button>);
               })}
             </div>
 
-            {/* TYYPPIVALINTA */}
-            <div className="flex p-1 bg-slate-100 rounded-xl mb-6">
-              <button 
-                onClick={() => setAddMode('single')}
-                className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${addMode === 'single' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Yksittäinen lääke
-              </button>
-              <button 
-                onClick={() => setAddMode('dosett')}
-                className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${addMode === 'dosett' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Dosetti / Setti
-              </button>
-            </div>
+            {/* TYYPPIVALINTA VAIN LISÄYKSESSÄ */}
+            {!editingMed && (
+              <div className="flex p-1 bg-slate-100 rounded-xl mb-6">
+                <button type="button" onClick={() => setAddMode('single')} className={`flex-1 py-2 text-sm font-bold rounded-lg ${addMode==='single'?'bg-white shadow text-blue-600':'text-slate-500'}`}>Yksittäinen</button>
+                <button type="button" onClick={() => setAddMode('dosett')} className={`flex-1 py-2 text-sm font-bold rounded-lg ${addMode==='dosett'?'bg-white shadow text-blue-600':'text-slate-500'}`}>Dosetti</button>
+              </div>
+            )}
 
-            <h2 className="text-lg font-bold mb-4">{addMode === 'single' ? 'Lisää lääke' : 'Luo Dosetti'}</h2>
+            <h2 className="text-lg font-bold mb-4">{editingMed ? 'Muokkaa' : (addMode === 'single' ? 'Lisää lääke' : 'Luo Dosetti')}</h2>
             
-            <form onSubmit={handleAddMedication}>
-              
-              <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-blue-500" placeholder={addMode === 'single' ? "Lääkkeen nimi" : "Dosetin nimi (esim. Aamulääkkeet)"} value={newMedName} onChange={e => setNewMedName(e.target.value)} />
+            <form onSubmit={editingMed ? handleUpdateMedication : handleAddMedication}>
+              <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-blue-500" placeholder={addMode === 'single' ? "Lääkkeen nimi" : "Dosetin nimi"} value={editingMed ? editingMed.name : newMedName} onChange={e => editingMed ? setEditingMed({...editingMed, name: e.target.value}) : setNewMedName(e.target.value)} />
               
               {addMode === 'single' && (
-                <input className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" placeholder="Annostus / Lisätiedot (valinnainen)" value={newMedDosage} onChange={e => setNewMedDosage(e.target.value)} />
+                <input className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" placeholder="Annostus (valinnainen)" value={editingMed ? (editingMed.dosage || '') : newMedDosage} onChange={e => editingMed ? setEditingMed({...editingMed, dosage: e.target.value}) : setNewMedDosage(e.target.value)} />
               )}
 
-              {/* DOSETIN SISÄLTÖ */}
               {addMode === 'dosett' && (
-                <div className="mb-6 bg-blue-50 p-3 rounded-xl border border-blue-100">
-                   <label className="block text-xs font-bold text-blue-800 uppercase mb-2">Valitse sisältö (Pakollinen)</label>
+                <div className="mb-6 bg-blue-50 p-4 rounded-xl border border-blue-100">
+                   <label className="block text-xs font-bold text-blue-800 uppercase mb-2">Sisältö</label>
                    <div className="flex gap-2 mb-2">
-                     <select className="flex-1 bg-white p-2 rounded-lg text-sm border focus:border-blue-500 outline-none" value={ingredientName} onChange={e => setIngredientName(e.target.value)}>
+                     <select className="flex-1 p-2 rounded border outline-none" value={ingredientName} onChange={e => setIngredientName(e.target.value)}>
                        <option value="">Valitse lääke...</option>
                        {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
                      </select>
-                     <input className="w-20 bg-white p-2 rounded-lg text-sm border focus:border-blue-500 outline-none" placeholder="Määrä" value={ingredientCount} onChange={e => setIngredientCount(e.target.value)} />
-                     <button type="button" onClick={addIngredient} className="bg-blue-600 text-white p-2 rounded-lg active:scale-95"><Plus size={18}/></button>
+                     <input className="w-16 p-2 rounded border outline-none" placeholder="Määrä" value={ingredientCount} onChange={e => setIngredientCount(e.target.value)} />
+                     <button type="button" onClick={addIngredient} className="p-2 bg-blue-600 text-white rounded"><Plus/></button>
                    </div>
-                   <div className="space-y-2">
-                     {currentIngredients.map((ing, idx) => (
-                       <div key={idx} className="flex justify-between items-center bg-white p-2 rounded-lg border border-blue-100 text-sm">
-                         <span>{ing.name} <span className="text-slate-400 font-normal">({ing.count})</span></span>
-                         <div className="flex gap-1">
-                           <button type="button" onClick={() => editIngredient(idx)} className="p-1 text-slate-400 hover:text-blue-600"><Pencil size={16}/></button>
-                           <button type="button" onClick={() => removeIngredient(idx)} className="p-1 text-slate-400 hover:text-red-600"><Trash2 size={16}/></button>
-                         </div>
-                       </div>
-                     ))}
-                     {currentIngredients.length === 0 && <div className="text-xs text-center text-blue-400 py-2">Ei vielä lääkkeitä valittuna.</div>}
-                   </div>
+                   {currentIngredients.map((ing, i) => (
+                     <div key={i} className="flex justify-between text-sm p-2 bg-white border rounded mb-1">
+                       <span>{ing.name} ({ing.count})</span>
+                       <div className="flex gap-1"><button type="button" onClick={() => editIngredient(i)} className="p-1 text-slate-400"><Pencil size={16}/></button><button type="button" onClick={() => removeIngredient(i)} className="p-1 text-red-400"><Trash2 size={16}/></button></div>
+                     </div>
+                   ))}
                 </div>
               )}
 
-              {/* SINGLE MODE OPTIONS */}
               {addMode === 'single' && (
-                <div className="mb-4">
-                  <label className="flex items-center gap-2 cursor-pointer bg-slate-50 p-3 rounded-xl border border-slate-200">
-                    <input type="checkbox" checked={showOnDashboard} onChange={(e) => setShowOnDashboard(e.target.checked)} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+                <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <label className="flex items-center gap-2 mb-2 cursor-pointer">
+                    <input type="checkbox" checked={editingMed ? editingMed.trackStock : newMedTrackStock} onChange={(e) => editingMed ? setEditingMed({...editingMed, trackStock: e.target.checked}) : setNewMedTrackStock(e.target.checked)} className="w-4 h-4 text-blue-600 rounded" />
+                    <span className="text-sm font-bold text-slate-700">Seuraa lääkevarastoa</span>
+                  </label>
+                  {(editingMed ? editingMed.trackStock : newMedTrackStock) && (
+                    <div className="animate-in slide-in-from-top-2 pt-2 grid grid-cols-2 gap-3">
+                      <div><label className="block text-[10px] font-bold text-slate-400 uppercase">Varastossa</label><input type="number" className="w-full bg-white p-2 rounded border" value={editingMed ? (editingMed.stock ?? '') : newMedStock} onChange={e => editingMed ? setEditingMed({...editingMed, stock: e.target.value}) : setNewMedStock(e.target.value)} /></div>
+                      <div><label className="block text-[10px] font-bold text-slate-400 uppercase">Hälytysraja</label><input type="number" className="w-full bg-white p-2 rounded border" value={editingMed ? (editingMed.lowStockLimit ?? 10) : newMedLowLimit} onChange={e => editingMed ? setEditingMed({...editingMed, lowStockLimit: e.target.value}) : setNewMedLowLimit(e.target.value)} /></div>
+                    </div>
+                  )}
+                  {/* Etusivun valinta vain single-modessa, dosetti aina true */}
+                  <label className="flex items-center gap-2 cursor-pointer mt-3 pt-2 border-t">
+                    <input type="checkbox" checked={editingMed ? (editingMed.showOnDashboard !== false) : showOnDashboard} onChange={(e) => editingMed ? setEditingMed({...editingMed, showOnDashboard: e.target.checked}) : setShowOnDashboard(e.target.checked)} className="w-4 h-4 text-blue-600 rounded" />
                     <span className="text-sm font-bold text-slate-700">Näytä etusivulla</span>
                   </label>
                 </div>
               )}
 
-              {/* VARASTOSALDO (VAIN SINGLE) */}
-              {addMode === 'single' && (
-                <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  <label className="flex items-center gap-2 mb-2 cursor-pointer">
-                    <input type="checkbox" checked={newMedTrackStock} onChange={(e) => setNewMedTrackStock(e.target.checked)} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
-                    <span className="text-sm font-bold text-slate-700">Seuraa lääkevarastoa</span>
-                  </label>
-                  {newMedTrackStock && (
-                    <div className="animate-in slide-in-from-top-2 space-y-3 border-t border-slate-200 pt-3 mt-2">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Varastossa</label>
-                            <input type="number" className="w-full bg-white p-2 rounded-lg text-sm outline-none border focus:border-blue-500" placeholder="100" value={newMedStock} onChange={e => setNewMedStock(e.target.value)} />
-                        </div>
-                        <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hälytysraja</label>
-                            <input type="number" className="w-full bg-white p-2 rounded-lg text-sm outline-none border focus:border-blue-500" placeholder="10" value={newMedLowLimit} onChange={e => setNewMedLowLimit(e.target.value)} />
-                        </div>
-                      </div>
-                      <label className="flex items-center gap-2 cursor-pointer pt-2">
-                        <input type="checkbox" checked={newMedIsCourse} onChange={(e) => setNewMedIsCourse(e.target.checked)} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
-                        <div><span className="text-sm font-bold text-slate-700 block">Tämä on kuuri</span></div>
-                      </label>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* AIKATAULU JA PÄIVÄT (MOLEMMAT) */}
+              {/* JAKSOTUS */}
               <div className="mb-6">
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Aikataulu (Valinnainen)</label>
-                
-                {/* VIIKONPÄIVÄT */}
-                <div className="flex justify-between mb-4 bg-slate-50 p-2 rounded-xl border border-slate-200">
-                  {WEEKDAYS.map(day => {
-                    const isSelected = selectedWeekdays.includes(day.id);
-                    return (
-                      <button
-                        key={day.id}
-                        type="button"
-                        onClick={() => {
-                          const newDays = isSelected 
-                            ? selectedWeekdays.filter(d => d !== day.id)
-                            : [...selectedWeekdays, day.id];
-                          setSelectedWeekdays(newDays);
-                        }}
-                        className={`w-8 h-8 rounded-full text-xs font-bold transition-all ${isSelected ? 'bg-blue-600 text-white shadow-md scale-110' : 'bg-white text-slate-400 border border-slate-200'}`}
-                      >
-                        {day.label}
-                      </button>
-                    )
-                  })}
-                </div>
+                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Toistuvuus</label>
+                 <select className="w-full p-3 bg-slate-50 border rounded-xl mb-3" value={frequencyMode} onChange={e => setFrequencyMode(e.target.value)}>
+                   <option value="every_day">Joka päivä</option>
+                   <option value="every_other">Joka toinen päivä</option>
+                   <option value="weekdays">Valitut viikonpäivät</option>
+                 </select>
 
-                {/* AIKASLOTIT */}
-                <div className="grid grid-cols-1 gap-2">
-                  {TIME_SLOTS.map(slot => {
-                    const isSelected = selectedSchedule.includes(slot.id);
-                    return (
-                      <div key={slot.id} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${isSelected ? 'bg-blue-50 border-blue-500' : 'bg-white border-slate-200'}`}>
-                        <button type="button" onClick={() => toggleScheduleSlot(slot.id)} className={`flex-1 flex items-center gap-3`}>
-                          <div className={`p-2 rounded-full ${isSelected ? 'bg-blue-200 text-blue-700' : 'bg-slate-100 text-slate-500'}`}><slot.icon size={20}/></div>
-                          <span className={`text-sm font-bold uppercase ${isSelected ? 'text-blue-900' : 'text-slate-500'}`}>{slot.label}</span>
-                        </button>
-                        {isSelected && <input type="time" className="bg-white border border-blue-200 text-blue-800 text-sm rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-400" value={scheduleTimes[slot.id] || slot.defaultTime} onChange={(e) => handleTimeChange(slot.id, e.target.value)} />}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+                 {frequencyMode === 'weekdays' && (
+                   <div className="flex justify-between bg-slate-50 p-2 rounded-xl border mb-4">
+                     {WEEKDAYS.map(day => {
+                       const currentDays = editingMed ? (editingMed.weekdays || []) : selectedWeekdays;
+                       const isSelected = currentDays.includes(day.id);
+                       const toggle = () => { const newDays = isSelected ? currentDays.filter(d => d !== day.id) : [...currentDays, day.id]; editingMed ? setEditingMed({...editingMed, weekdays: newDays}) : setSelectedWeekdays(newDays); };
+                       return <button key={day.id} type="button" onClick={toggle} className={`w-8 h-8 rounded-full text-xs font-bold ${isSelected ? 'bg-blue-600 text-white' : 'bg-white border'}`}>{day.label}</button>
+                     })}
+                   </div>
+                 )}
+                 
+                 {frequencyMode === 'every_other' && (
+                   <div className="bg-slate-50 p-3 rounded-xl border mb-4">
+                     <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Aloituspäivä</label>
+                     <input type="date" className="w-full bg-white p-2 rounded border" value={editingMed ? (editingMed.intervalStartDate || '') : intervalStartDate} onChange={e => editingMed ? setEditingMed({...editingMed, intervalStartDate: e.target.value}) : setIntervalStartDate(e.target.value)} />
+                   </div>
+                 )}
 
-              <div className="flex gap-3">
-                <button type="button" onClick={() => setIsAdding(false)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
-                <button 
-                  type="submit" 
-                  disabled={!newMedName.trim() || (addMode === 'dosett' && currentIngredients.length === 0)} 
-                  className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm disabled:opacity-50"
-                >
-                  Tallenna
-                </button>
-              </div>
-            </form>
-            <div className="h-6"></div>
-          </div>
-        </div>
-      )}
-
-      {/* 2. MUOKKAA LÄÄKETTÄ */}
-      {editingMed && (
-        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
-          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold mb-4">Muokkaa</h2>
-            <form onSubmit={handleUpdateMedication}>
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Väri</label>
-              <div className="flex flex-wrap gap-3 justify-center mb-6">
-                {colorList.map(c => {
-                  const colors = getColors(c);
-                  const isSelected = editingMed.colorKey === c;
-                  return (
-                    <button key={c} type="button" onClick={() => setEditingMed({...editingMed, colorKey: c})} className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isSelected ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'hover:scale-105'}`}>
-                      <div className={`w-full h-full rounded-full ${colors.dot} shadow-sm`} />
-                    </button>
-                  );
-                })}
-              </div>
-
-              <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-blue-500" value={editingMed.name} onChange={e => setEditingMed({...editingMed, name: e.target.value})} />
-              <input className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" placeholder="Annostus / Lisätiedot" value={editingMed.dosage || ''} onChange={e => setEditingMed({...editingMed, dosage: e.target.value})} />
-              
-              <div className="mb-4">
-                <label className="flex items-center gap-2 cursor-pointer bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  <input type="checkbox" checked={editingMed.showOnDashboard !== false} onChange={(e) => setEditingMed({...editingMed, showOnDashboard: e.target.checked})} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
-                  <span className="text-sm font-bold text-slate-700">Näytä etusivulla</span>
-                </label>
-              </div>
-
-              {/* DOSETTI MUOKKAUS */}
-              <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Koostumus / Dosetti</label>
-                 <div className="flex gap-2 mb-2">
-                   <select className="flex-1 bg-white p-2 rounded-lg text-sm border focus:border-blue-500" value={ingredientName} onChange={e => setIngredientName(e.target.value)}>
-                     <option value="">Valitse lääke varastosta...</option>
-                     {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
-                   </select>
-                   <input className="w-20 bg-white p-2 rounded-lg text-sm border focus:border-blue-500" placeholder="Määrä" value={ingredientCount} onChange={e => setIngredientCount(e.target.value)} />
-                   <button type="button" onClick={addIngredient} className="bg-blue-600 text-white p-2 rounded-lg"><Plus size={18}/></button>
-                 </div>
-                 <div className="space-y-2">
-                   {currentIngredients.map((ing, idx) => (
-                     <div key={idx} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-200 text-sm">
-                       <span>{ing.name} <span className="text-slate-400 font-normal">({ing.count})</span></span>
-                       <div className="flex gap-1">
-                         <button type="button" onClick={() => editIngredient(idx)} className="p-1 text-slate-400 hover:text-blue-600"><Pencil size={16}/></button>
-                         <button type="button" onClick={() => removeIngredient(idx)} className="p-1 text-slate-400 hover:text-red-600"><Trash2 size={16}/></button>
-                       </div>
-                     </div>
-                   ))}
+                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Kellonajat</label>
+                 <div className="grid grid-cols-1 gap-2">
+                    {TIME_SLOTS.map(slot => {
+                      const currentSchedule = editingMed ? (editingMed.schedule || []) : selectedSchedule;
+                      const isSelected = currentSchedule.includes(slot.id);
+                      const times = editingMed ? (editingMed.scheduleTimes || {}) : scheduleTimes;
+                      return (
+                        <div key={slot.id} className={`flex items-center gap-3 p-3 rounded-xl border ${isSelected ? 'border-blue-500 bg-blue-50' : ''}`}>
+                          <button type="button" onClick={() => { const newSch = isSelected ? currentSchedule.filter(id => id !== slot.id) : [...currentSchedule, slot.id]; editingMed ? setEditingMed({...editingMed, schedule: newSch}) : setSelectedSchedule(newSch); }} className="flex-1 flex gap-3 items-center">
+                            <slot.icon size={20} className={isSelected ? 'text-blue-600' : 'text-slate-400'}/>
+                            <span className="font-bold text-sm uppercase">{slot.label}</span>
+                          </button>
+                          {isSelected && <input type="time" className="bg-white border rounded p-1" value={times[slot.id] || slot.defaultTime} onChange={(e) => { const newTimes = {...times, [slot.id]: e.target.value}; editingMed ? setEditingMed({...editingMed, scheduleTimes: newTimes}) : setScheduleTimes(newTimes); }} />}
+                        </div>
+                      )
+                    })}
                  </div>
               </div>
 
-              <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                <label className="flex items-center gap-2 mb-2 cursor-pointer">
-                  <input type="checkbox" checked={editingMed.trackStock || false} onChange={(e) => setEditingMed({...editingMed, trackStock: e.target.checked})} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
-                  <span className="text-sm font-bold text-slate-700">Seuraa lääkevarastoa</span>
-                </label>
-                {editingMed.trackStock && (
-                  <div className="animate-in slide-in-from-top-2 space-y-3 border-t border-slate-200 pt-3 mt-2">
-                    <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Varastossa (kpl)</label>
-                        <input type="number" className="w-full bg-white p-2 rounded-lg text-base outline-none border focus:border-blue-500" placeholder="Esim. 100" value={editingMed.stock !== null && editingMed.stock !== undefined ? editingMed.stock : ''} onChange={e => setEditingMed({...editingMed, stock: e.target.value})} />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Hälytysraja (kpl)</label>
-                        <input type="number" className="w-full bg-white p-2 rounded-lg text-base outline-none border focus:border-blue-500" placeholder="Oletus 10" value={editingMed.lowStockLimit || 10} onChange={e => setEditingMed({...editingMed, lowStockLimit: e.target.value})} />
-                    </div>
-                    <label className="flex items-center gap-2 cursor-pointer pt-2">
-                      <input type="checkbox" checked={editingMed.isCourse || false} onChange={(e) => setEditingMed({...editingMed, isCourse: e.target.checked})} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
-                      <div><span className="text-sm font-bold text-slate-700 block">Tämä on kuuri</span></div>
-                    </label>
-                  </div>
-                )}
-              </div>
-
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Otettava</label>
-              <div className="grid grid-cols-1 gap-2 mb-6">
-                {TIME_SLOTS.map(slot => {
-                  const currentSchedule = editingMed.schedule || [];
-                  const isSelected = currentSchedule.includes(slot.id);
-                  const currentTime = editingMed.scheduleTimes?.[slot.id] || slot.defaultTime;
-                  return (
-                    <div key={slot.id} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${isSelected ? 'bg-blue-50 border-blue-500' : 'bg-white border-slate-200'}`}>
-                      <button type="button" onClick={() => toggleScheduleSlot(slot.id, true)} className={`flex-1 flex items-center gap-3`}>
-                        <div className={`p-2 rounded-full ${isSelected ? 'bg-blue-200 text-blue-700' : 'bg-slate-100 text-slate-500'}`}><slot.icon size={20}/></div>
-                        <span className={`text-sm font-bold uppercase ${isSelected ? 'text-blue-900' : 'text-slate-500'}`}>{slot.label}</span>
-                      </button>
-                      
-                      {isSelected && (
-                        <input 
-                          type="time" 
-                          className="bg-white border border-blue-200 text-blue-800 text-sm rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-400"
-                          value={currentTime}
-                          onChange={(e) => handleTimeChange(slot.id, e.target.value, true)}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
               <div className="flex gap-3">
-                <button type="button" onClick={() => setEditingMed(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
-                <button type="submit" disabled={!editingMed.name.trim()} className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm disabled:opacity-50">Tallenna</button>
+                <button type="button" onClick={() => {setIsAdding(false); setEditingMed(null);}} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600">Peruuta</button>
+                <button type="submit" disabled={editingMed ? !editingMed.name : (!newMedName.trim() || (addMode === 'dosett' && currentIngredients.length === 0))} className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold disabled:opacity-50">Tallenna</button>
               </div>
             </form>
-            <div className="h-6"></div>
           </div>
         </div>
       )}
+      
+      {showHelp && <HelpView onClose={() => setShowHelp(false)} />}
     </div>
   );
 };
 
-// --- RENDERÖINTI ---
 const root = createRoot(document.getElementById('root'));
 root.render(<MedicineTracker />);
