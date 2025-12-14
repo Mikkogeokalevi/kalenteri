@@ -1,21 +1,22 @@
-// laakkeet.js - ALL IN ONE VERSION 1.5
+import React, { useState, useEffect, useRef } from 'react';
+import { createRoot } from 'react-dom/client';
+import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info, List, CalendarDays, AlertCircle } from 'lucide-react';
+
+// TUODAAN OHJEET ERILLISESTÄ TIEDOSTOSTA
 import { ohjeData } from './ohjeet.js';
 
 // --- FIREBASE IMPORTS ---
-// Koska käytämme CDN-versiota html-tiedostossa emme voi importata näin.
-// Käytetään globaaleja muuttujia tai Reactin sisäisiä importteja jos importmap ei ole käytössä.
-// MUTTA: Koska palasimme Babel-standalonen peruskäyttöön, meidän täytyy tuoda Firebase eri tavalla 
-// TAI käyttää importteja jos "type=module" toimisi. 
-// KORJAUS: Käytämme tässä nyt importteja, jotka toimivat kun Babel hoitaa ne, 
-// MUTTA html:ssä pitää ladata kirjastot oikein.
-// Yksinkertaisin tapa tässä "hätätilanteessa" on käyttää Firebasea "module" muodossa suoraan koodissa:
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-// LUCIDE ICONS (Haetaan globaalista objektista, koska UMD lataus html:ssä)
-const { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info, List, CalendarDays, AlertCircle } = lucide;
+import { initializeApp } from 'firebase/app';
+import { 
+  getAuth, 
+  onAuthStateChanged, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut,
+  setPersistence,
+  browserLocalPersistence
+} from 'firebase/auth';
+import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, getDocs, query, where } from 'firebase/firestore';
 
 // --- ASETUKSET ---
 const firebaseConfig = {
@@ -53,45 +54,51 @@ const WEEKDAYS = [
 
 const getIconComponent = (iconName) => {
   const icons = { Info, PlusSquare, Plus, CheckCircle, Zap, Package, BarChart2, Bell, List, Layers };
-  // Lucide on globaali, joten haetaan sieltä jos stringinä
-  if (typeof iconName === 'string') {
-      return lucide[iconName] || HelpCircle;
-  }
-  return HelpCircle;
+  const Icon = icons[iconName] || HelpCircle;
+  return <Icon size={22} className="text-blue-600" />;
 };
 
-// Värit
-const colorList = ['blue', 'green', 'purple', 'orange', 'rose', 'cyan', 'amber', 'teal', 'indigo', 'lime', 'fuchsia', 'slate'];
-const colorMap = {
-  'blue':   { bg: 'bg-blue-100',   border: 'border-blue-300',   dot: 'bg-blue-600',   text: 'text-blue-800',   btn: 'bg-blue-600 active:bg-blue-700' },
-  'green':  { bg: 'bg-green-100',  border: 'border-green-300',  dot: 'bg-green-600',  text: 'text-green-800',  btn: 'bg-green-600 active:bg-green-700' },
-  'purple': { bg: 'bg-purple-100', border: 'border-purple-300', dot: 'bg-purple-600', text: 'text-purple-800', btn: 'bg-purple-600 active:bg-purple-700' },
-  'orange': { bg: 'bg-orange-100', border: 'border-orange-300', dot: 'bg-orange-500', text: 'text-orange-800', btn: 'bg-orange-500 active:bg-orange-600' },
-  'rose':   { bg: 'bg-red-100',    border: 'border-red-300',    dot: 'bg-red-600',    text: 'text-red-800',    btn: 'bg-red-600 active:bg-red-700' },
-  'cyan':   { bg: 'bg-cyan-100',   border: 'border-cyan-300',   dot: 'bg-cyan-600',   text: 'text-cyan-800',   btn: 'bg-cyan-600 active:bg-cyan-700' },
-  'amber':  { bg: 'bg-amber-100',  border: 'border-amber-300',  dot: 'bg-amber-500',  text: 'text-amber-800',  btn: 'bg-amber-500 active:bg-amber-600' },
-  'teal':   { bg: 'bg-teal-100',   border: 'border-teal-300',   dot: 'bg-teal-600',   text: 'text-teal-800',   btn: 'bg-teal-600 active:bg-teal-700' },
-  'indigo': { bg: 'bg-indigo-100', border: 'border-indigo-300', dot: 'bg-indigo-600', text: 'text-indigo-800', btn: 'bg-indigo-600 active:bg-indigo-700' },
-  'lime':   { bg: 'bg-lime-100',   border: 'border-lime-300',   dot: 'bg-lime-600',   text: 'text-lime-800',   btn: 'bg-lime-600 active:bg-lime-700' },
-  'fuchsia':{ bg: 'bg-fuchsia-100',border: 'border-fuchsia-300',dot: 'bg-fuchsia-600',text: 'text-fuchsia-800',btn: 'bg-fuchsia-600 active:bg-fuchsia-700' },
-  'slate':  { bg: 'bg-slate-200',  border: 'border-slate-300',  dot: 'bg-slate-600',  text: 'text-slate-800',  btn: 'bg-slate-600 active:bg-slate-700' },
-};
-const getColors = (key) => colorMap[key] || colorMap['blue'];
-const getSmartColor = (medications) => {
-  const activeMeds = medications.filter(m => !m.isArchived);
-  const usedColors = new Set(activeMeds.map(m => m.colorKey));
-  return colorList.find(c => !usedColors.has(c)) || colorList[medications.length % colorList.length];
+// --- OHJESIVU KOMPONENTTI ---
+const HelpView = ({ onClose }) => {
+  if (!ohjeData) return <div className="fixed inset-0 z-[60] bg-white p-5">Virhe: ohjeet.js puuttuu.</div>;
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-slate-50 flex flex-col animate-in slide-in-from-right duration-300 overflow-hidden">
+      <div className="bg-white px-4 py-4 border-b border-slate-200 flex items-center justify-between shadow-sm flex-none">
+        <div className="flex items-center gap-2 text-blue-600 font-bold text-lg">
+          <HelpCircle /> Käyttöopas
+        </div>
+        <button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
+          <X size={20} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-5 space-y-6 pb-20">
+        {ohjeData.map((section) => (
+          <section key={section.id} className={`${section.id === 'intro' ? 'bg-blue-50 border-blue-100' : 'bg-white shadow-sm border-slate-100'} p-5 rounded-2xl border`}>
+            <h3 className={`font-bold text-lg mb-3 flex items-center gap-2 ${section.id === 'intro' ? 'text-blue-800' : 'text-slate-800'}`}>
+              {section.icon && getIconComponent(section.icon)} 
+              {section.title}
+            </h3>
+            <div className="text-sm text-slate-600" dangerouslySetInnerHTML={{ __html: section.content }} />
+          </section>
+        ))}
+        
+        <div className="text-center text-xs text-slate-400 pt-6 pb-2">
+          Lääkemuistio v4.6 - {new Date().getFullYear()}
+        </div>
+      </div>
+    </div>
+  );
 };
 
-// --- KOMPONENTIT ---
-
-// AuthScreen
+// --- KIRJAUTUMISNÄKYMÄ ---
 const AuthScreen = () => {
-  const [isRegistering, setIsRegistering] = React.useState(false);
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
-  const [error, setError] = React.useState('');
-  const [loading, setLoading] = React.useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -164,115 +171,84 @@ const AuthScreen = () => {
   );
 };
 
-// HelpView
-const HelpView = ({ onClose }) => {
-  if (!ohjeData) return <div className="fixed inset-0 z-[60] bg-white p-5">Virhe: ohjeet.js puuttuu.</div>;
-
-  return (
-    <div className="fixed inset-0 z-[60] bg-slate-50 flex flex-col animate-in slide-in-from-right duration-300 overflow-hidden">
-      <div className="bg-white px-4 py-4 border-b border-slate-200 flex items-center justify-between shadow-sm flex-none">
-        <div className="flex items-center gap-2 text-blue-600 font-bold text-lg">
-          <HelpCircle /> Käyttöopas
-        </div>
-        <button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
-          <X size={20} />
-        </button>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-5 space-y-6 pb-20">
-        {ohjeData.map((section) => {
-          const IconComp = getIconComponent(section.icon);
-          return (
-            <section key={section.id} className={`${section.id === 'intro' ? 'bg-blue-50 border-blue-100' : 'bg-white shadow-sm border-slate-100'} p-5 rounded-2xl border`}>
-              <h3 className={`font-bold text-lg mb-3 flex items-center gap-2 ${section.id === 'intro' ? 'text-blue-800' : 'text-slate-800'}`}>
-                {IconComp && <IconComp size={22} className="text-blue-600" />} 
-                {section.title}
-              </h3>
-              <div className="text-sm text-slate-600" dangerouslySetInnerHTML={{ __html: section.content }} />
-            </section>
-          );
-        })}
-        
-        <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v4.6 - {new Date().getFullYear()}
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // --- PÄÄSOVELLUS ---
 const MedicineTracker = () => {
-  const [activeTab, setActiveTab] = React.useState('home');
-  const [user, setUser] = React.useState(null);
-  const [authLoading, setAuthLoading] = React.useState(true);
-  const [loadingData, setLoadingData] = React.useState(true);
+  const [activeTab, setActiveTab] = useState('home');
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [loadingData, setLoadingData] = useState(true);
 
-  const [medications, setMedications] = React.useState([]);
-  const [logs, setLogs] = React.useState([]);
+  const [medications, setMedications] = useState([]);
+  const [logs, setLogs] = useState([]);
   
-  const [notificationsEnabled, setNotificationsEnabled] = React.useState(false);
-  const [isReordering, setIsReordering] = React.useState(false);
-  const [expandedMedId, setExpandedMedId] = React.useState(null);
-  const [showHelp, setShowHelp] = React.useState(false);
-  const [showShoppingList, setShowShoppingList] = React.useState(false);
-  const [showDosetti, setShowDosetti] = React.useState(false);
-  const [showReport, setShowReport] = React.useState(false);
-  const [showStockList, setShowStockList] = React.useState(false); 
-  const [showAllMedsList, setShowAllMedsList] = React.useState(false); 
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [isReordering, setIsReordering] = useState(false);
+  const [expandedMedId, setExpandedMedId] = useState(null);
+  const [showHelp, setShowHelp] = useState(false);
+  const [showShoppingList, setShowShoppingList] = useState(false);
+  const [showDosetti, setShowDosetti] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [showStockList, setShowStockList] = useState(false); 
+  const [showAllMedsList, setShowAllMedsList] = useState(false); 
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Raportin tila
-  const [reportStartDate, setReportStartDate] = React.useState('');
-  const [reportEndDate, setReportEndDate] = React.useState('');
-  const [reportSelectedMeds, setReportSelectedMeds] = React.useState(new Set());
+  const [reportStartDate, setReportStartDate] = useState('');
+  const [reportEndDate, setReportEndDate] = useState('');
+  const [reportSelectedMeds, setReportSelectedMeds] = useState(new Set());
 
   // HAKU TILA
-  const [historySearch, setHistorySearch] = React.useState('');
+  const [historySearch, setHistorySearch] = useState('');
 
   // Ainesosien tila lisäys/muokkaus ikkunassa
-  const [ingredientName, setIngredientName] = React.useState('');
-  const [ingredientCount, setIngredientCount] = React.useState('');
-  const [currentIngredients, setCurrentIngredients] = React.useState([]); 
+  const [ingredientName, setIngredientName] = useState('');
+  const [ingredientCount, setIngredientCount] = useState('');
+  const [currentIngredients, setCurrentIngredients] = useState([]); 
 
   // LISÄYS TILA
-  const [isAdding, setIsAdding] = React.useState(false);
-  const [addMode, setAddMode] = React.useState('single'); 
-  const [newMedName, setNewMedName] = React.useState('');
-  const [newMedDosage, setNewMedDosage] = React.useState('');
-  const [newMedStock, setNewMedStock] = React.useState('');
-  const [newMedTrackStock, setNewMedTrackStock] = React.useState(false);
-  const [newMedLowLimit, setNewMedLowLimit] = React.useState('10'); 
-  const [newMedIsCourse, setNewMedIsCourse] = React.useState(false); 
-  const [showOnDashboard, setShowOnDashboard] = React.useState(true);
+  const [isAdding, setIsAdding] = useState(false);
+  const [addMode, setAddMode] = useState('single'); 
+  const [newMedName, setNewMedName] = useState('');
+  const [newMedDosage, setNewMedDosage] = useState('');
+  const [newMedStock, setNewMedStock] = useState('');
+  const [newMedTrackStock, setNewMedTrackStock] = useState(false);
+  const [newMedLowLimit, setNewMedLowLimit] = useState('10'); 
+  const [newMedIsCourse, setNewMedIsCourse] = useState(false); 
+  const [showOnDashboard, setShowOnDashboard] = useState(true);
   
-  const [selectedColor, setSelectedColor] = React.useState('blue');
-  const [selectedSchedule, setSelectedSchedule] = React.useState([]); 
-  const [selectedWeekdays, setSelectedWeekdays] = React.useState([0,1,2,3,4,5,6]); 
-  const [scheduleTimes, setScheduleTimes] = React.useState({});
+  const [selectedColor, setSelectedColor] = useState('blue');
+  const [selectedSchedule, setSelectedSchedule] = useState([]); 
+  const [selectedWeekdays, setSelectedWeekdays] = useState([0,1,2,3,4,5,6]); 
+  const [scheduleTimes, setScheduleTimes] = useState({});
 
   // PIKALISÄYS TILA
-  const [isQuickAdding, setIsQuickAdding] = React.useState(false);
-  const [quickAddName, setQuickAddName] = React.useState('');
-  const [quickAddReason, setQuickAddReason] = React.useState('');
-  const [quickAddDate, setQuickAddDate] = React.useState('');
+  const [isQuickAdding, setIsQuickAdding] = useState(false);
+  const [quickAddName, setQuickAddName] = useState('');
+  const [quickAddReason, setQuickAddReason] = useState('');
+  const [quickAddDate, setQuickAddDate] = useState('');
   
+  // TÄMÄ PALAUTETTIIN VARMUUDEN VUOKSI
+  const [takeWithReasonMed, setTakeWithReasonMed] = useState(null);
+  const [takeReason, setTakeReason] = useState('');
+
   // EDITOINTI JA LOGITUS TILAT
-  const [editingMed, setEditingMed] = React.useState(null);
-  const [manualLogMed, setManualLogMed] = React.useState(null);
-  const [manualDate, setManualDate] = React.useState('');
-  const [manualReason, setManualReason] = React.useState('');
+  const [editingMed, setEditingMed] = useState(null);
+  
+  // MANUAALINEN LOGI
+  const [manualLogMed, setManualLogMed] = useState(null);
+  const [manualDate, setManualDate] = useState('');
+  const [manualReason, setManualReason] = useState('');
 
-  const [editingLog, setEditingLog] = React.useState(null);
-  const [editingLogDate, setEditingLogDate] = React.useState('');
-  const [editingLogReason, setEditingLogReason] = React.useState('');
+  const [editingLog, setEditingLog] = useState(null);
+  const [editingLogDate, setEditingLogDate] = useState('');
+  const [editingLogReason, setEditingLogReason] = useState('');
 
-  const [deleteDialog, setDeleteDialog] = React.useState({ isOpen: false, mode: null, medId: null, medName: '', logId: null, hasHistory: false, message: '' });
-  const [showArchived, setShowArchived] = React.useState(false);
-  const [showHistoryFor, setShowHistoryFor] = React.useState(null);
+  const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, mode: null, medId: null, medName: '', logId: null, hasHistory: false, message: '' });
+  const [showArchived, setShowArchived] = useState(false);
+  const [showHistoryFor, setShowHistoryFor] = useState(null);
 
   // Auth Listener
-  React.useEffect(() => {
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setAuthLoading(false);
@@ -286,7 +262,7 @@ const MedicineTracker = () => {
   }, []);
 
   // Data Listener
-  React.useEffect(() => {
+  useEffect(() => {
     if (!user) return;
     setLoadingData(true);
     const medsRef = collection(db, 'artifacts', APP_ID, 'users', user.uid, 'medications');
@@ -312,7 +288,7 @@ const MedicineTracker = () => {
   }, [user]);
 
   // Aseta oletusarvot raportille
-  React.useEffect(() => {
+  useEffect(() => {
     if (showReport) {
       const end = new Date();
       const start = new Date();
@@ -324,7 +300,7 @@ const MedicineTracker = () => {
   }, [showReport, medications]);
 
   // Ilmoituslogiikka
-  React.useEffect(() => {
+  useEffect(() => {
     if (Notification.permission === 'granted') setNotificationsEnabled(true);
   }, []);
 
@@ -357,7 +333,7 @@ const MedicineTracker = () => {
     });
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!notificationsEnabled || medications.length === 0) return;
     const checkReminders = () => {
       const now = new Date();
@@ -397,6 +373,29 @@ const MedicineTracker = () => {
     setHistorySearch('');
   };
 
+  // Värit
+  const colorList = ['blue', 'green', 'purple', 'orange', 'rose', 'cyan', 'amber', 'teal', 'indigo', 'lime', 'fuchsia', 'slate'];
+  const colorMap = {
+    'blue':   { bg: 'bg-blue-100',   border: 'border-blue-300',   dot: 'bg-blue-600',   text: 'text-blue-800',   btn: 'bg-blue-600 active:bg-blue-700' },
+    'green':  { bg: 'bg-green-100',  border: 'border-green-300',  dot: 'bg-green-600',  text: 'text-green-800',  btn: 'bg-green-600 active:bg-green-700' },
+    'purple': { bg: 'bg-purple-100', border: 'border-purple-300', dot: 'bg-purple-600', text: 'text-purple-800', btn: 'bg-purple-600 active:bg-purple-700' },
+    'orange': { bg: 'bg-orange-100', border: 'border-orange-300', dot: 'bg-orange-500', text: 'text-orange-800', btn: 'bg-orange-500 active:bg-orange-600' },
+    'rose':   { bg: 'bg-red-100',    border: 'border-red-300',    dot: 'bg-red-600',    text: 'text-red-800',    btn: 'bg-red-600 active:bg-red-700' },
+    'cyan':   { bg: 'bg-cyan-100',   border: 'border-cyan-300',   dot: 'bg-cyan-600',   text: 'text-cyan-800',   btn: 'bg-cyan-600 active:bg-cyan-700' },
+    'amber':  { bg: 'bg-amber-100',  border: 'border-amber-300',  dot: 'bg-amber-500',  text: 'text-amber-800',  btn: 'bg-amber-500 active:bg-amber-600' },
+    'teal':   { bg: 'bg-teal-100',   border: 'border-teal-300',   dot: 'bg-teal-600',   text: 'text-teal-800',   btn: 'bg-teal-600 active:bg-teal-700' },
+    'indigo': { bg: 'bg-indigo-100', border: 'border-indigo-300', dot: 'bg-indigo-600', text: 'text-indigo-800', btn: 'bg-indigo-600 active:bg-indigo-700' },
+    'lime':   { bg: 'bg-lime-100',   border: 'border-lime-300',   dot: 'bg-lime-600',   text: 'text-lime-800',   btn: 'bg-lime-600 active:bg-lime-700' },
+    'fuchsia':{ bg: 'bg-fuchsia-100',border: 'border-fuchsia-300',dot: 'bg-fuchsia-600',text: 'text-fuchsia-800',btn: 'bg-fuchsia-600 active:bg-fuchsia-700' },
+    'slate':  { bg: 'bg-slate-200',  border: 'border-slate-300',  dot: 'bg-slate-600',  text: 'text-slate-800',  btn: 'bg-slate-600 active:bg-slate-700' },
+  };
+  const getColors = (key) => colorMap[key] || colorMap['blue'];
+  const getSmartColor = () => {
+    const activeMeds = medications.filter(m => !m.isArchived);
+    const usedColors = new Set(activeMeds.map(m => m.colorKey));
+    return colorList.find(c => !usedColors.has(c)) || colorList[medications.length % colorList.length];
+  };
+
   // --- LOGIIKKA ---
   const handleLogout = () => { if(window.confirm("Kirjaudutaanko ulos?")) signOut(auth); };
 
@@ -408,7 +407,7 @@ const MedicineTracker = () => {
     setAddMode('single'); 
     setNewMedName(''); setNewMedDosage(''); setNewMedStock(''); setNewMedTrackStock(false);
     setNewMedLowLimit('10'); setNewMedIsCourse(false);
-    setSelectedColor(getSmartColor(medications)); setSelectedSchedule([]); setScheduleTimes({});
+    setSelectedColor(getSmartColor()); setSelectedSchedule([]); setScheduleTimes({});
     setSelectedWeekdays([0,1,2,3,4,5,6]);
     setCurrentIngredients([]);
     setShowOnDashboard(true);
@@ -605,6 +604,15 @@ const MedicineTracker = () => {
     } catch (error) { console.error(error); }
   };
 
+  // PALAUTETTU TOIMINTO (Varmuuden vuoksi)
+  const handleConfirmTakeWithReason = async (e) => {
+    e.preventDefault();
+    if(!takeWithReasonMed) return;
+    await takeMedicine(takeWithReasonMed, null, takeReason);
+    setTakeWithReasonMed(null);
+    setTakeReason('');
+  };
+
   const handleRefill = async (med) => {
     if (!user) return;
     const amount = prompt("Paljonko lisätään varastoon?", "30");
@@ -776,6 +784,7 @@ const MedicineTracker = () => {
   
   // Lasketaan kriittisten määrä etusivun ilmoitusta varten
   const criticalStockCount = activeMeds.filter(m => m.trackStock && !m.isCourse && m.stock <= (m.lowStockLimit || 10)).length;
+
 
   const getLogName = (log) => {
     const med = medications.find(m => m.id === log.medId);
@@ -982,7 +991,6 @@ const MedicineTracker = () => {
         </div>
       </header>
 
-      {/* --- PÄÄSISÄLTÖ JA MODAALIT (SAMA KUIN AIEMMIN, MUTTA NYT YHDESSÄ TIEDOSTOSSA) --- */}
       <main className="flex-1 overflow-y-auto p-3 pb-20 z-0 relative">
         <div className="max-w-md mx-auto space-y-3">
           {loadingData ? (
@@ -991,7 +999,7 @@ const MedicineTracker = () => {
           <>
           {activeTab === 'home' && (
             <>
-              {/* VAROITUSPALKKI JOS KRIITTISESTI LOPPUMASSA */}
+              {/* VAROITUSPALKKI JOS KRIITTISESTI LOPPUMASSA (UUSI) */}
               {criticalStockCount > 0 && (
                 <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl mb-2 flex items-center gap-3 animate-pulse">
                    <AlertCircle size={20} className="text-red-600" />
@@ -1021,7 +1029,7 @@ const MedicineTracker = () => {
                 const hasSchedule = med.schedule && med.schedule.length > 0;
                 const isCombo = med.ingredients && med.ingredients.length > 0;
                 
-                // Määritellään rajat
+                // Määritellään rajat (UUSI LOGIIKKA)
                 const limit = med.lowStockLimit || 10;
                 const isCriticalStock = !isCombo && med.trackStock && !med.isCourse && med.stock !== null && med.stock <= limit;
                 const isWarningStock = !isCombo && med.trackStock && !med.isCourse && med.stock !== null && med.stock > limit && med.stock <= (limit + 5);
@@ -1032,7 +1040,7 @@ const MedicineTracker = () => {
                 if (hasSchedule) isDoneForToday = med.schedule.every(slotId => isSlotTakenToday(med.id, slotId));
                 else isDoneForToday = isGenericTakenToday(med.id);
 
-                // --- ONKO MYÖHÄSSÄ? ---
+                // --- ONKO MYÖHÄSSÄ? (UUSI LOGIIKKA) ---
                 let isLate = false;
                 if (hasSchedule) {
                   const now = new Date();
@@ -1070,7 +1078,7 @@ const MedicineTracker = () => {
                             {isCombo && <Layers size={20} className="text-slate-600" />}
                             <h3 className="text-lg font-bold text-slate-800 leading-tight">{med.name}</h3>
                             
-                            {/* Tilanneikonit */}
+                            {/* Tilanneikonit (UUSI) */}
                             {expandedMedId !== med.id && isDoneForToday && <CheckCircle size={18} className="text-green-600 shrink-0" />}
                             {expandedMedId !== med.id && isLate && <Clock size={18} className="text-red-500 animate-pulse shrink-0" />}
                             {expandedMedId !== med.id && !isLate && isCriticalStock && <AlertCircle size={18} className="text-red-600 shrink-0" />}
@@ -1149,7 +1157,7 @@ const MedicineTracker = () => {
                                 const isTaken = isSlotTakenToday(med.id, slot.id);
                                 const scheduleTime = med.scheduleTimes?.[slot.id] || slot.defaultTime;
                                 
-                                // Onko juuri tämä slotti myöhässä?
+                                // Onko juuri tämä slotti myöhässä? (UUSI)
                                 const [h, m] = scheduleTime.split(':').map(Number);
                                 const now = new Date();
                                 const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -1280,7 +1288,7 @@ const MedicineTracker = () => {
         </div>
       </main>
 
-      {/* --- BOTTOM NAV --- */}
+      {/* --- BOTTOM NAV KORJATTU --- */}
       <nav className="flex-none bg-white border-t border-slate-200 px-6 py-2 flex justify-around items-center z-20 pb-safe">
         <button onClick={() => handleTabChange('home')} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-colors ${activeTab === 'home' ? 'text-blue-600 bg-blue-50' : 'text-slate-400'}`}>
           <Pill size={22} strokeWidth={activeTab==='home'?2.5:2} /> <span className="text-[10px] font-bold">Lääkkeet</span>
@@ -1296,7 +1304,7 @@ const MedicineTracker = () => {
         </button>
       </nav>
 
-      {/* FAB BUTTONS */}
+      {/* FAB BUTTONS - ONLY VISIBLE IF NO MODAL/OVERLAY IS ACTIVE */}
       {!isAdding && activeTab === 'home' && !showHistoryFor && !deleteDialog.isOpen && !editingMed && !manualLogMed && !takeWithReasonMed && !editingLog && !isQuickAdding && !isReordering && !showStockList && !showAllMedsList && (
         <>
           <button onClick={() => window.location.reload()} className="absolute bottom-20 left-5 z-30 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-slate-500 hover:text-blue-600 hover:rotate-180 transition-all duration-500 border border-slate-200" title="Päivitä sovellus"><RotateCcw size={24} /></button>
@@ -1307,8 +1315,7 @@ const MedicineTracker = () => {
         </>
       )}
 
-      {/* --- MODALIT (KAIKKI TÄÄLLÄ) --- */}
-      {/* ... (TÄSSÄ KAIKKI MODALIT KUTEN AIEMMIN, LÄÄKELUETTELO, OSTOSLISTA, DOSETIT JNE.) ... */}
+      {/* --- MODALIT --- */}
       
       {/* LÄÄKELUETTELO MODAL (UUSI VÄRIKOODEILLA) */}
       {showAllMedsList && (
@@ -1616,14 +1623,13 @@ const MedicineTracker = () => {
       {/* OHJEET */}
       {showHelp && <HelpView onClose={() => setShowHelp(false)} />}
 
-      {/* PIKALISÄYS */}
+      {/* PIKALISÄYS (SALAMA) */}
       {isQuickAdding && (
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Zap className="text-orange-500"/> Kirjaa kertaluontoinen</h2>
             <form onSubmit={handleQuickAdd}>
               
-              {/* VETOVALIKKO */}
               <div className="mb-4">
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Valitse listalta (valinnainen)</label>
                 <select 
@@ -1645,7 +1651,6 @@ const MedicineTracker = () => {
                 </select>
               </div>
 
-              {/* PIKA-NAPIT (VARASTOTUOTTEET) */}
               <div className="flex flex-wrap gap-2 mb-3 max-h-32 overflow-y-auto">
                 {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).map(m => (
                   <button key={m.id} type="button" onClick={() => setQuickAddName(m.name)} className="px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-600 active:bg-blue-100 active:border-blue-300 active:text-blue-700">{m.name}</button>
@@ -1680,7 +1685,6 @@ const MedicineTracker = () => {
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[95vh] overflow-y-auto">
             
-            {/* VÄRIVALINTA */}
             <div className="flex flex-wrap gap-3 justify-center mb-6 pt-2">
               {colorList.map(c => {
                 const colors = getColors(c);
@@ -1693,7 +1697,6 @@ const MedicineTracker = () => {
               })}
             </div>
 
-            {/* TYYPPIVALINTA */}
             <div className="flex p-1 bg-slate-100 rounded-xl mb-6">
               <button 
                 onClick={() => setAddMode('single')}
@@ -1719,7 +1722,6 @@ const MedicineTracker = () => {
                 <input className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" placeholder="Annostus / Lisätiedot (valinnainen)" value={newMedDosage} onChange={e => setNewMedDosage(e.target.value)} />
               )}
 
-              {/* DOSETTIN SISÄLTÖ */}
               {addMode === 'dosett' && (
                 <div className="mb-6 bg-blue-50 p-3 rounded-xl border border-blue-100">
                    <label className="block text-xs font-bold text-blue-800 uppercase mb-2">Valitse sisältö (Pakollinen)</label>
@@ -1746,7 +1748,6 @@ const MedicineTracker = () => {
                 </div>
               )}
 
-              {/* SINGLE MODE OPTIONS */}
               {addMode === 'single' && (
                 <div className="mb-4">
                   <label className="flex items-center gap-2 cursor-pointer bg-slate-50 p-3 rounded-xl border border-slate-200">
@@ -1756,7 +1757,6 @@ const MedicineTracker = () => {
                 </div>
               )}
 
-              {/* VARASTOSALDO (VAIN SINGLE) */}
               {addMode === 'single' && (
                 <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
                   <label className="flex items-center gap-2 mb-2 cursor-pointer">
@@ -1784,11 +1784,9 @@ const MedicineTracker = () => {
                 </div>
               )}
 
-              {/* AIKATAULU JA PÄIVÄT (MOLEMMAT) */}
               <div className="mb-6">
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Aikataulu (Valinnainen)</label>
                 
-                {/* VIIKONPÄIVÄT */}
                 <div className="flex justify-between mb-4 bg-slate-50 p-2 rounded-xl border border-slate-200">
                   {WEEKDAYS.map(day => {
                     const isSelected = selectedWeekdays.includes(day.id);
@@ -1810,7 +1808,6 @@ const MedicineTracker = () => {
                   })}
                 </div>
 
-                {/* AIKASLOTIT */}
                 <div className="grid grid-cols-1 gap-2">
                   {TIME_SLOTS.map(slot => {
                     const isSelected = selectedSchedule.includes(slot.id);
@@ -1850,7 +1847,6 @@ const MedicineTracker = () => {
             <h2 className="text-lg font-bold mb-4">Muokkaa: {editingMed.name}</h2>
             <form onSubmit={handleUpdateMedication}>
               
-              {/* VÄRI */}
               <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Väri</label>
               <div className="flex flex-wrap gap-3 justify-center mb-6">
                 {colorList.map(c => {
@@ -1866,7 +1862,6 @@ const MedicineTracker = () => {
 
               <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-blue-500" value={editingMed.name} onChange={e => setEditingMed({...editingMed, name: e.target.value})} />
               
-              {/* NÄYTETÄÄN VAIN JOS EI OLE DOSETTI */}
               {(!editingMed.ingredients || editingMed.ingredients.length === 0) && (
                 <input className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" placeholder="Annostus / Lisätiedot" value={editingMed.dosage || ''} onChange={e => setEditingMed({...editingMed, dosage: e.target.value})} />
               )}
@@ -1878,7 +1873,6 @@ const MedicineTracker = () => {
                 </label>
               </div>
 
-              {/* NÄYTETÄÄN VAIN JOS ON DOSETTI (Sisältää ingredients) */}
               {editingMed.ingredients && editingMed.ingredients.length > 0 && (
                 <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Koostumus / Dosetti</label>
@@ -1904,7 +1898,6 @@ const MedicineTracker = () => {
                 </div>
               )}
 
-              {/* VARASTOSEURANTA (Vain jos ei dosetti) */}
               {(!editingMed.ingredients || editingMed.ingredients.length === 0) && (
                 <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
                   <label className="flex items-center gap-2 mb-2 cursor-pointer">
@@ -1930,7 +1923,6 @@ const MedicineTracker = () => {
                 </div>
               )}
 
-              {/* VIIKONPÄIVÄT (PUUTTUI AIEMMIN) */}
               <div className="mb-4">
                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Viikonpäivät</label>
                  <div className="flex justify-between mb-4 bg-slate-50 p-2 rounded-xl border border-slate-200">
@@ -1986,7 +1978,7 @@ const MedicineTracker = () => {
         </div>
       )}
 
-      {/* 3. LÄÄKKEEN HISTORIA NÄKYMÄ (YKSITTÄINEN) */}
+      {/* 3. LÄÄKKEEN HISTORIA NÄKYMÄ (YKSITTÄINEN) - TÄMÄ PUUTTUI */}
       {showHistoryFor && (
         <div className="absolute inset-0 z-50 bg-white flex flex-col animate-in slide-in-from-right duration-300">
            <div className="flex items-center gap-3 p-4 border-b border-slate-200 bg-slate-50">
@@ -2013,7 +2005,7 @@ const MedicineTracker = () => {
         </div>
       )}
 
-      {/* 4. MUOKKAA HISTORIAMERKINTÄÄ */}
+      {/* 4. MUOKKAA HISTORIAMERKINTÄÄ - TÄMÄ PUUTTUI */}
       {editingLog && (
         <div className="absolute inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
