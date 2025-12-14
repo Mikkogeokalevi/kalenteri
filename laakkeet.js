@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info, List, CalendarDays, AlertCircle, Volume2, VolumeX } from 'lucide-react';
+import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info, List, CalendarDays, AlertCircle } from 'lucide-react';
 
 // TUODAAN OHJEET ERILLISESTÄ TIEDOSTOSTA
 import { ohjeData } from './ohjeet.js';
@@ -85,7 +85,7 @@ const HelpView = ({ onClose }) => {
         ))}
         
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v4.7 (Hälytyspäivitys) - {new Date().getFullYear()}
+          Lääkemuistio v4.8 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -191,7 +191,10 @@ const MedicineTracker = () => {
   const [showStockList, setShowStockList] = useState(false); 
   const [showAllMedsList, setShowAllMedsList] = useState(false); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [missedMedsDialog, setMissedMedsDialog] = useState(null); // UUSI: Tervetuloa takaisin -dialogi
+  
+  // HÄLYTYSTEN TILA
+  const [missedMedsDialog, setMissedMedsDialog] = useState(null);
+  const [hasCheckedMissed, setHasCheckedMissed] = useState(false); // UUSI: Estää ikkunan avautumisen uudestaan
 
   // Raportin tila
   const [reportStartDate, setReportStartDate] = useState('');
@@ -216,7 +219,7 @@ const MedicineTracker = () => {
   const [newMedLowLimit, setNewMedLowLimit] = useState('10'); 
   const [newMedIsCourse, setNewMedIsCourse] = useState(false); 
   const [showOnDashboard, setShowOnDashboard] = useState(true);
-  const [newMedAlertEnabled, setNewMedAlertEnabled] = useState(true); // UUSI: Hälytysvalinta
+  const [newMedAlertEnabled, setNewMedAlertEnabled] = useState(true); 
   
   const [selectedColor, setSelectedColor] = useState('blue');
   const [selectedSchedule, setSelectedSchedule] = useState([]); 
@@ -286,9 +289,9 @@ const MedicineTracker = () => {
     return () => { unsubMeds(); unsubLogs(); };
   }, [user]);
 
-  // UUSI: TARKISTA MYÖHÄSSÄ OLEVAT KUN SOVELLUS AUKEAA / DATA LATAUTUU
+  // TARKISTA MYÖHÄSSÄ OLEVAT (KORJATTU LOGIIKKA)
   useEffect(() => {
-    if (loadingData || !notificationsEnabled || medications.length === 0) return;
+    if (loadingData || medications.length === 0 || hasCheckedMissed) return; // Jos tarkistus tehty, älä tee uudestaan
 
     const checkMissed = () => {
       const now = new Date();
@@ -298,7 +301,7 @@ const MedicineTracker = () => {
       const missed = [];
 
       medications.forEach(med => {
-        if (med.isArchived || med.alertEnabled === false) return; // Ohita jos ei hälytystä
+        if (med.isArchived || med.alertEnabled === false) return;
         
         const activeWeekdays = med.weekdays || [0,1,2,3,4,5,6];
         if (!activeWeekdays.includes(currentWeekday)) return;
@@ -329,7 +332,7 @@ const MedicineTracker = () => {
     const timer = setTimeout(checkMissed, 2000);
     return () => clearTimeout(timer);
 
-  }, [medications, logs, loadingData, notificationsEnabled]);
+  }, [medications, logs, loadingData, hasCheckedMissed]); // hasCheckedMissed estää loopin
 
 
   // Aseta oletusarvot raportille
@@ -378,7 +381,6 @@ const MedicineTracker = () => {
     });
   };
 
-  // UUSI: CHECK REMINDERS HUOMIOI NYT alertEnabled -asetuksen
   useEffect(() => {
     if (!notificationsEnabled || medications.length === 0) return;
     const checkReminders = () => {
@@ -387,7 +389,7 @@ const MedicineTracker = () => {
       const currentWeekday = now.getDay();
       medications.forEach(med => {
         if (med.isArchived) return;
-        if (med.alertEnabled === false) return; // TÄMÄ ON UUSI EHTO: Älä hälytä jos estetty
+        if (med.alertEnabled === false) return; 
 
         const activeWeekdays = med.weekdays || [0,1,2,3,4,5,6];
         if (!activeWeekdays.includes(currentWeekday)) return;
@@ -457,7 +459,7 @@ const MedicineTracker = () => {
     setNewMedLowLimit('10'); setNewMedIsCourse(false);
     setSelectedColor(getSmartColor()); setSelectedSchedule([]); setScheduleTimes({});
     setSelectedWeekdays([0,1,2,3,4,5,6]);
-    setNewMedAlertEnabled(true); // Oletus: Hälytys päällä
+    setNewMedAlertEnabled(true); 
     setCurrentIngredients([]);
     setShowOnDashboard(true);
     setIsAdding(true);
@@ -541,7 +543,7 @@ const MedicineTracker = () => {
         weekdays: selectedWeekdays,
         ingredients: addMode === 'dosett' ? currentIngredients : [], 
         showOnDashboard: addMode === 'dosett' ? true : showOnDashboard,
-        alertEnabled: addMode === 'single' ? newMedAlertEnabled : true, // UUSI: TALLENNETAAN VALINTA
+        alertEnabled: addMode === 'single' ? newMedAlertEnabled : true, 
         createdAt: Date.now(), 
         order: maxOrder + 1, 
         isArchived: false
@@ -569,7 +571,7 @@ const MedicineTracker = () => {
         weekdays: editingMed.weekdays || [0,1,2,3,4,5,6],
         ingredients: currentIngredients,
         showOnDashboard: editingMed.showOnDashboard !== undefined ? editingMed.showOnDashboard : true,
-        alertEnabled: editingMed.alertEnabled !== undefined ? editingMed.alertEnabled : true // UUSI: TALLENNETAAN VALINTA
+        alertEnabled: editingMed.alertEnabled !== undefined ? editingMed.alertEnabled : true 
       });
       setEditingMed(null);
     } catch (error) { alert("Virhe muokkauksessa."); }
@@ -579,7 +581,7 @@ const MedicineTracker = () => {
     setEditingMed({
       ...med, 
       weekdays: med.weekdays || [0,1,2,3,4,5,6],
-      alertEnabled: med.alertEnabled !== undefined ? med.alertEnabled : true // OLETUS TRUE
+      alertEnabled: med.alertEnabled !== undefined ? med.alertEnabled : true 
     });
     setCurrentIngredients(med.ingredients || []);
   };
@@ -821,15 +823,15 @@ const MedicineTracker = () => {
 
   const archivedMeds = medications.filter(m => m.isArchived);
   
-  // OSTOSLISTAN LOGIIKKA PÄIVITETTY (Värikoodit ja ennakko)
   const shoppingListMeds = medications.filter(m => {
     if (m.isArchived || !m.trackStock || m.isCourse || m.stock === null) return false;
     const limit = m.lowStockLimit || 10;
     return m.stock <= (limit + 5); 
   });
   
-  // LASKETAAN KRIITTISET (Etusivun ilmoitukseen)
+  // Lasketaan kriittisten määrä etusivun ilmoitusta varten
   const criticalStockCount = activeMeds.filter(m => m.trackStock && !m.isCourse && m.stock <= (m.lowStockLimit || 10)).length;
+
 
   const getLogName = (log) => {
     const med = medications.find(m => m.id === log.medId);
@@ -1044,7 +1046,7 @@ const MedicineTracker = () => {
           <>
           {activeTab === 'home' && (
             <>
-              {/* VAROITUSPALKKI (UUSI) */}
+              {/* VAROITUSPALKKI JOS KRIITTISESTI LOPPUMASSA (UUSI) */}
               {criticalStockCount > 0 && (
                 <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl mb-2 flex items-center gap-3 animate-pulse">
                    <AlertCircle size={20} className="text-red-600" />
@@ -1068,7 +1070,8 @@ const MedicineTracker = () => {
                         </div>
                       ))}
                     </div>
-                    <button onClick={() => setMissedMedsDialog(null)} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold">Selvä, hoidan!</button>
+                    {/* KORJATTU BUTTON: Asettaa hasCheckedMissed = true jotta ikkuna ei aukea heti uudestaan */}
+                    <button onClick={() => { setMissedMedsDialog(null); setHasCheckedMissed(true); }} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold">Selvä, hoidan!</button>
                   </div>
                 </div>
               )}
@@ -1095,7 +1098,7 @@ const MedicineTracker = () => {
                 const hasSchedule = med.schedule && med.schedule.length > 0;
                 const isCombo = med.ingredients && med.ingredients.length > 0;
                 
-                // Määritellään rajat (UUSI)
+                // Määritellään rajat
                 const limit = med.lowStockLimit || 10;
                 const isCriticalStock = !isCombo && med.trackStock && !med.isCourse && med.stock !== null && med.stock <= limit;
                 const isWarningStock = !isCombo && med.trackStock && !med.isCourse && med.stock !== null && med.stock > limit && med.stock <= (limit + 5);
@@ -1106,7 +1109,7 @@ const MedicineTracker = () => {
                 if (hasSchedule) isDoneForToday = med.schedule.every(slotId => isSlotTakenToday(med.id, slotId));
                 else isDoneForToday = isGenericTakenToday(med.id);
 
-                // --- ONKO MYÖHÄSSÄ? (UUSI) ---
+                // --- ONKO MYÖHÄSSÄ? ---
                 let isLate = false;
                 if (hasSchedule) {
                   const now = new Date();
@@ -1122,11 +1125,11 @@ const MedicineTracker = () => {
                   });
                 }
 
-                // Määritetään tyylit (UUSI)
+                // Määritetään tyylit
                 let cardStyleClass = `${c.bg} ${c.border}`; 
                 if (isLate) cardStyleClass = "bg-red-50 border-red-500 border-2 shadow-red-100"; 
-                else if (isCriticalStock) cardStyleClass = "bg-red-50 border-red-400 border-2 shadow-sm"; 
-                else if (isWarningStock) cardStyleClass = "bg-orange-50 border-orange-300 border-2 shadow-sm"; 
+                else if (isCriticalStock) cardStyleClass = "bg-red-50 border-red-400 border-2 shadow-sm"; // KRIITTINEN PUNAINEN
+                else if (isWarningStock) cardStyleClass = "bg-orange-50 border-orange-300 border-2 shadow-sm"; // VAROITUS ORANSSI
 
                 return (
                   <div key={med.id} className={`rounded-xl shadow-sm border transition-all duration-200 overflow-hidden ${cardStyleClass} ${!isExpanded?'hover:shadow-md':''} relative group`}>
@@ -1696,7 +1699,6 @@ const MedicineTracker = () => {
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Zap className="text-orange-500"/> Kirjaa kertaluontoinen</h2>
             <form onSubmit={handleQuickAdd}>
               
-              {/* VETOVALIKKO */}
               <div className="mb-4">
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Valitse listalta (valinnainen)</label>
                 <select 
@@ -1718,7 +1720,6 @@ const MedicineTracker = () => {
                 </select>
               </div>
 
-              {/* PIKA-NAPIT (VARASTOTUOTTEET) */}
               <div className="flex flex-wrap gap-2 mb-3 max-h-32 overflow-y-auto">
                 {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).map(m => (
                   <button key={m.id} type="button" onClick={() => setQuickAddName(m.name)} className="px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-600 active:bg-blue-100 active:border-blue-300 active:text-blue-700">{m.name}</button>
@@ -1753,7 +1754,6 @@ const MedicineTracker = () => {
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[95vh] overflow-y-auto">
             
-            {/* VÄRIVALINTA */}
             <div className="flex flex-wrap gap-3 justify-center mb-6 pt-2">
               {colorList.map(c => {
                 const colors = getColors(c);
@@ -1766,7 +1766,6 @@ const MedicineTracker = () => {
               })}
             </div>
 
-            {/* TYYPPIVALINTA */}
             <div className="flex p-1 bg-slate-100 rounded-xl mb-6">
               <button 
                 onClick={() => setAddMode('single')}
@@ -1792,7 +1791,6 @@ const MedicineTracker = () => {
                 <input className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" placeholder="Annostus / Lisätiedot (valinnainen)" value={newMedDosage} onChange={e => setNewMedDosage(e.target.value)} />
               )}
 
-              {/* DOSETTIN SISÄLTÖ */}
               {addMode === 'dosett' && (
                 <div className="mb-6 bg-blue-50 p-3 rounded-xl border border-blue-100">
                    <label className="block text-xs font-bold text-blue-800 uppercase mb-2">Valitse sisältö (Pakollinen)</label>
@@ -1819,7 +1817,6 @@ const MedicineTracker = () => {
                 </div>
               )}
 
-              {/* SINGLE MODE OPTIONS */}
               {addMode === 'single' && (
                 <div className="mb-4">
                   <label className="flex items-center gap-2 cursor-pointer bg-slate-50 p-3 rounded-xl border border-slate-200">
@@ -1829,7 +1826,6 @@ const MedicineTracker = () => {
                 </div>
               )}
 
-              {/* VARASTOSALDO (VAIN SINGLE) */}
               {addMode === 'single' && (
                 <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
                   <label className="flex items-center gap-2 mb-2 cursor-pointer">
@@ -1857,11 +1853,25 @@ const MedicineTracker = () => {
                 </div>
               )}
 
-              {/* AIKATAULU JA PÄIVÄT (MOLEMMAT) */}
+              {/* UUSI: HÄLYTYSVALINTA */}
+              {addMode === 'single' && (
+                <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={newMedAlertEnabled} onChange={(e) => setNewMedAlertEnabled(e.target.checked)} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+                    <span className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                      {newMedAlertEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                      Hälytä äänimerkillä/ilmoituksella
+                    </span>
+                  </label>
+                  <p className="text-[10px] text-slate-500 mt-1 ml-6">
+                    Jos otat tämän pois, lääke näkyy listalla, mutta puhelin ei piippaa vaikka aika menisi ohi.
+                  </p>
+                </div>
+              )}
+
               <div className="mb-6">
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Aikataulu (Valinnainen)</label>
                 
-                {/* VIIKONPÄIVÄT */}
                 <div className="flex justify-between mb-4 bg-slate-50 p-2 rounded-xl border border-slate-200">
                   {WEEKDAYS.map(day => {
                     const isSelected = selectedWeekdays.includes(day.id);
@@ -1883,7 +1893,6 @@ const MedicineTracker = () => {
                   })}
                 </div>
 
-                {/* AIKASLOTIT */}
                 <div className="grid grid-cols-1 gap-2">
                   {TIME_SLOTS.map(slot => {
                     const isSelected = selectedSchedule.includes(slot.id);
@@ -1923,7 +1932,6 @@ const MedicineTracker = () => {
             <h2 className="text-lg font-bold mb-4">Muokkaa: {editingMed.name}</h2>
             <form onSubmit={handleUpdateMedication}>
               
-              {/* VÄRI */}
               <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Väri</label>
               <div className="flex flex-wrap gap-3 justify-center mb-6">
                 {colorList.map(c => {
@@ -2003,7 +2011,19 @@ const MedicineTracker = () => {
                 </div>
               )}
 
-              {/* VIIKONPÄIVÄT (PUUTTUI AIEMMIN) */}
+              {/* UUSI: HÄLYTYSVALINTA (MUOKKAUS) */}
+              {(!editingMed.ingredients || editingMed.ingredients.length === 0) && (
+                <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={editingMed.alertEnabled !== false} onChange={(e) => setEditingMed({...editingMed, alertEnabled: e.target.checked})} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+                    <span className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                      {editingMed.alertEnabled !== false ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                      Hälytä äänimerkillä/ilmoituksella
+                    </span>
+                  </label>
+                </div>
+              )}
+
               <div className="mb-4">
                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Viikonpäivät</label>
                  <div className="flex justify-between mb-4 bg-slate-50 p-2 rounded-xl border border-slate-200">
@@ -2059,7 +2079,7 @@ const MedicineTracker = () => {
         </div>
       )}
 
-      {/* 3. LÄÄKKEEN HISTORIA NÄKYMÄ (YKSITTÄINEN) - TÄMÄ PUUTTUI */}
+      {/* 3. LÄÄKKEEN HISTORIA NÄKYMÄ (YKSITTÄINEN) */}
       {showHistoryFor && (
         <div className="absolute inset-0 z-50 bg-white flex flex-col animate-in slide-in-from-right duration-300">
            <div className="flex items-center gap-3 p-4 border-b border-slate-200 bg-slate-50">
@@ -2086,7 +2106,7 @@ const MedicineTracker = () => {
         </div>
       )}
 
-      {/* 4. MUOKKAA HISTORIAMERKINTÄÄ - TÄMÄ PUUTTUI */}
+      {/* 4. MUOKKAA HISTORIAMERKINTÄÄ */}
       {editingLog && (
         <div className="absolute inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
