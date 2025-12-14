@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info, List, CalendarDays, AlertCircle } from 'lucide-react';
+import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info, List, CalendarDays, AlertCircle, Volume2, VolumeX } from 'lucide-react';
 
 // TUODAAN OHJEET ERILLISESTÄ TIEDOSTOSTA
 import { ohjeData } from './ohjeet.js';
@@ -85,7 +85,7 @@ const HelpView = ({ onClose }) => {
         ))}
         
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v4.8 - {new Date().getFullYear()}
+          Lääkemuistio v4.8 (Korjattu) - {new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -194,7 +194,7 @@ const MedicineTracker = () => {
   
   // HÄLYTYSTEN TILA
   const [missedMedsDialog, setMissedMedsDialog] = useState(null);
-  const [hasCheckedMissed, setHasCheckedMissed] = useState(false); // UUSI: Estää ikkunan avautumisen uudestaan
+  const [hasCheckedMissed, setHasCheckedMissed] = useState(false);
 
   // Raportin tila
   const [reportStartDate, setReportStartDate] = useState('');
@@ -289,9 +289,9 @@ const MedicineTracker = () => {
     return () => { unsubMeds(); unsubLogs(); };
   }, [user]);
 
-  // TARKISTA MYÖHÄSSÄ OLEVAT (KORJATTU LOGIIKKA)
+  // TARKISTA MYÖHÄSSÄ OLEVAT
   useEffect(() => {
-    if (loadingData || medications.length === 0 || hasCheckedMissed) return; // Jos tarkistus tehty, älä tee uudestaan
+    if (loadingData || medications.length === 0 || hasCheckedMissed) return;
 
     const checkMissed = () => {
       const now = new Date();
@@ -314,7 +314,6 @@ const MedicineTracker = () => {
                const [h, m] = timeStr.split(':').map(Number);
                const slotMinutes = h * 60 + m;
                
-               // Jos lääke on myöhässä yli 15 min mutta alle 12 tuntia
                if (currentMinutes > slotMinutes + 15 && currentMinutes < slotMinutes + 720) {
                  missed.push({ name: med.name, slot: TIME_SLOTS.find(s => s.id === slotId)?.label });
                }
@@ -328,11 +327,10 @@ const MedicineTracker = () => {
       }
     };
 
-    // Tarkistetaan pienellä viiveellä jotta kaikki on ladattu
     const timer = setTimeout(checkMissed, 2000);
     return () => clearTimeout(timer);
 
-  }, [medications, logs, loadingData, hasCheckedMissed]); // hasCheckedMissed estää loopin
+  }, [medications, logs, loadingData, hasCheckedMissed]);
 
 
   // Aseta oletusarvot raportille
@@ -828,10 +826,8 @@ const MedicineTracker = () => {
     const limit = m.lowStockLimit || 10;
     return m.stock <= (limit + 5); 
   });
-  
-  // Lasketaan kriittisten määrä etusivun ilmoitusta varten
-  const criticalStockCount = activeMeds.filter(m => m.trackStock && !m.isCourse && m.stock <= (m.lowStockLimit || 10)).length;
 
+  const criticalStockCount = activeMeds.filter(m => m.trackStock && !m.isCourse && m.stock <= (m.lowStockLimit || 10)).length;
 
   const getLogName = (log) => {
     const med = medications.find(m => m.id === log.medId);
@@ -1038,6 +1034,7 @@ const MedicineTracker = () => {
         </div>
       </header>
 
+      {/* --- PÄÄSISÄLTÖ --- */}
       <main className="flex-1 overflow-y-auto p-3 pb-20 z-0 relative">
         <div className="max-w-md mx-auto space-y-3">
           {loadingData ? (
@@ -1046,7 +1043,7 @@ const MedicineTracker = () => {
           <>
           {activeTab === 'home' && (
             <>
-              {/* VAROITUSPALKKI JOS KRIITTISESTI LOPPUMASSA (UUSI) */}
+              {/* VAROITUSPALKKI JOS KRIITTISESTI LOPPUMASSA */}
               {criticalStockCount > 0 && (
                 <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl mb-2 flex items-center gap-3 animate-pulse">
                    <AlertCircle size={20} className="text-red-600" />
@@ -1754,6 +1751,7 @@ const MedicineTracker = () => {
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[95vh] overflow-y-auto">
             
+            {/* VÄRIVALINTA */}
             <div className="flex flex-wrap gap-3 justify-center mb-6 pt-2">
               {colorList.map(c => {
                 const colors = getColors(c);
@@ -1766,6 +1764,7 @@ const MedicineTracker = () => {
               })}
             </div>
 
+            {/* TYYPPIVALINTA */}
             <div className="flex p-1 bg-slate-100 rounded-xl mb-6">
               <button 
                 onClick={() => setAddMode('single')}
@@ -1791,6 +1790,7 @@ const MedicineTracker = () => {
                 <input className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" placeholder="Annostus / Lisätiedot (valinnainen)" value={newMedDosage} onChange={e => setNewMedDosage(e.target.value)} />
               )}
 
+              {/* DOSETTIN SISÄLTÖ */}
               {addMode === 'dosett' && (
                 <div className="mb-6 bg-blue-50 p-3 rounded-xl border border-blue-100">
                    <label className="block text-xs font-bold text-blue-800 uppercase mb-2">Valitse sisältö (Pakollinen)</label>
@@ -1817,6 +1817,7 @@ const MedicineTracker = () => {
                 </div>
               )}
 
+              {/* SINGLE MODE OPTIONS */}
               {addMode === 'single' && (
                 <div className="mb-4">
                   <label className="flex items-center gap-2 cursor-pointer bg-slate-50 p-3 rounded-xl border border-slate-200">
@@ -1826,6 +1827,7 @@ const MedicineTracker = () => {
                 </div>
               )}
 
+              {/* VARASTOSALDO (VAIN SINGLE) */}
               {addMode === 'single' && (
                 <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
                   <label className="flex items-center gap-2 mb-2 cursor-pointer">
@@ -2079,7 +2081,7 @@ const MedicineTracker = () => {
         </div>
       )}
 
-      {/* 3. LÄÄKKEEN HISTORIA NÄKYMÄ (YKSITTÄINEN) */}
+      {/* 3. LÄÄKKEEN HISTORIA NÄKYMÄ (YKSITTÄINEN) - TÄMÄ PUUTTUI */}
       {showHistoryFor && (
         <div className="absolute inset-0 z-50 bg-white flex flex-col animate-in slide-in-from-right duration-300">
            <div className="flex items-center gap-3 p-4 border-b border-slate-200 bg-slate-50">
@@ -2106,7 +2108,7 @@ const MedicineTracker = () => {
         </div>
       )}
 
-      {/* 4. MUOKKAA HISTORIAMERKINTÄÄ */}
+      {/* 4. MUOKKAA HISTORIAMERKINTÄÄ - TÄMÄ PUUTTUI */}
       {editingLog && (
         <div className="absolute inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
