@@ -1,5 +1,5 @@
 // ohjeet.js
-// Lääkemuistion päivitetyt ohjeet (Versio 1.2 yhteensopiva)
+// Lääkemuistion päivitetyt ohjee t (Versio 1.2 yhteensopiva)
 
 import { Info, PlusSquare, Plus, CheckCircle, Zap, Package, BarChart2, Bell, List, Layers, AlertTriangle, ShoppingCart } from 'lucide-react';
 
