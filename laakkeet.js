@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info, List, CalendarDays, Settings } from 'lucide-react';
 
 // TUODAAN OHJEET ERILLISESTÄ TIEDOSTOSTA
-// Varmista että sinulla on ohjeet.js tiedosto samassa kansiossa!
+// Varmista et2tä sinulla on ohjeet.js tiedosto samassa kansiossa!
 import { ohjeData } from './ohjeet.js';
 
 // --- FIREBASE IMPORTS ---
