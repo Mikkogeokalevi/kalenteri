@@ -85,7 +85,7 @@ const HelpView = ({ onClose }) => {
         ))}
         
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v4.4 - {new Date().getFullYear()}
+          Lääkemuistio v4.5 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -1323,25 +1323,57 @@ const MedicineTracker = () => {
                    {medications
                      .filter(m => !m.isArchived && (!m.ingredients || m.ingredients.length === 0))
                      .sort((a,b) => a.name.localeCompare(b.name))
-                     .map(med => (
-                     <div key={med.id} className="flex justify-between items-center p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                        <div className="flex-1 min-w-0 pr-2">
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2.5 h-2.5 rounded-full ${getColors(med.colorKey).dot}`} />
-                            <div className="font-bold text-slate-800 truncate">{med.name}</div>
-                          </div>
-                          <div className="text-[10px] text-slate-500 mt-0.5 flex gap-2 flex-wrap">
-                            {!med.showOnDashboard && <span className="bg-slate-200 px-1.5 rounded">Piilotettu</span>}
-                            {med.trackStock && <span>Varasto: {med.stock}</span>}
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          {/* KORJATTU: OTA NAPPI POIS, VAIN HISTORIA JA MUOKKAUS */}
-                          <button onClick={() => { setShowHistoryFor(med.id); setShowAllMedsList(false); }} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600" title="Historia"><History size={16}/></button>
-                          <button onClick={() => openEditMed(med)} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600"><Pencil size={16}/></button>
-                        </div>
-                     </div>
-                   ))}
+                     .map(med => {
+                        // LASKETAAN TILAT (KRIITTINEN / VAROITUS / MYÖHÄSSÄ)
+                        const limit = med.lowStockLimit || 10;
+                        const isCriticalStock = med.trackStock && !med.isCourse && med.stock !== null && med.stock <= limit;
+                        const isWarningStock = med.trackStock && !med.isCourse && med.stock !== null && med.stock > limit && med.stock <= (limit + 5);
+                        
+                        let isLate = false;
+                        if (med.schedule && med.schedule.length > 0) {
+                          const now = new Date();
+                          const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                          isLate = med.schedule.some(slotId => {
+                            const isTaken = isSlotTakenToday(med.id, slotId);
+                            if (isTaken) return false; 
+                            const timeStr = med.scheduleTimes?.[slotId] || TIME_SLOTS.find(s => s.id === slotId).defaultTime;
+                            const [h, m] = timeStr.split(':').map(Number);
+                            const slotMinutes = h * 60 + m;
+                            return currentMinutes > slotMinutes;
+                          });
+                        }
+
+                        // VÄRIT LISTALLE
+                        let listClass = "bg-slate-50 border-slate-100"; // Oletus
+                        if (isLate) listClass = "bg-red-50 border-red-500 border-2"; 
+                        else if (isCriticalStock) listClass = "bg-red-50 border-red-300 border";
+                        else if (isWarningStock) listClass = "bg-orange-50 border-orange-200 border";
+
+                        return (
+                         <div key={med.id} className={`flex justify-between items-center p-3 border rounded-xl ${listClass}`}>
+                            <div className="flex-1 min-w-0 pr-2">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2.5 h-2.5 rounded-full ${getColors(med.colorKey).dot}`} />
+                                <div className="font-bold text-slate-800 truncate">{med.name}</div>
+                                {isLate && <Clock size={14} className="text-red-600 animate-pulse"/>}
+                                {!isLate && isCriticalStock && <AlertCircle size={14} className="text-red-500"/>}
+                              </div>
+                              <div className="text-[10px] text-slate-500 mt-0.5 flex gap-2 flex-wrap">
+                                {!med.showOnDashboard && <span className="bg-slate-200 px-1.5 rounded">Piilotettu</span>}
+                                {med.trackStock && (
+                                  <span className={isCriticalStock ? 'text-red-600 font-bold' : isWarningStock ? 'text-orange-600 font-bold' : ''}>
+                                    Varasto: {med.stock}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={() => { setShowHistoryFor(med.id); setShowAllMedsList(false); }} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600" title="Historia"><History size={16}/></button>
+                              <button onClick={() => openEditMed(med)} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600"><Pencil size={16}/></button>
+                            </div>
+                         </div>
+                       );
+                   })}
                    {medications.filter(m => !m.isArchived && (!m.ingredients || m.ingredients.length === 0)).length === 0 && <p className="text-xs text-slate-400 italic">Ei yksittäisiä lääkkeitä.</p>}
                  </div>
                </div>
@@ -1353,24 +1385,44 @@ const MedicineTracker = () => {
                    {medications
                      .filter(m => !m.isArchived && m.ingredients && m.ingredients.length > 0)
                      .sort((a,b) => a.name.localeCompare(b.name))
-                     .map(med => (
-                     <div key={med.id} className="flex justify-between items-center p-3 bg-blue-50/50 border border-blue-100 rounded-xl">
-                        <div className="flex-1 min-w-0 pr-2">
-                          <div className="flex items-center gap-2">
-                            <Layers size={14} className="text-blue-500"/>
-                            <div className="font-bold text-slate-800 truncate">{med.name}</div>
-                          </div>
-                          <div className="text-[10px] text-slate-500 mt-0.5 truncate">
-                            Sisältää: {med.ingredients.map(i => i.name).join(', ')}
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          {/* KORJATTU: OTA NAPPI POIS */}
-                          <button onClick={() => { setShowHistoryFor(med.id); setShowAllMedsList(false); }} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600" title="Historia"><History size={16}/></button>
-                          <button onClick={() => openEditMed(med)} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600"><Pencil size={16}/></button>
-                        </div>
-                     </div>
-                   ))}
+                     .map(med => {
+                        // LASKETAAN MYÖHÄSSÄ TILA DOSETILLE
+                        let isLate = false;
+                        if (med.schedule && med.schedule.length > 0) {
+                          const now = new Date();
+                          const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                          isLate = med.schedule.some(slotId => {
+                            const isTaken = isSlotTakenToday(med.id, slotId);
+                            if (isTaken) return false; 
+                            const timeStr = med.scheduleTimes?.[slotId] || TIME_SLOTS.find(s => s.id === slotId).defaultTime;
+                            const [h, m] = timeStr.split(':').map(Number);
+                            const slotMinutes = h * 60 + m;
+                            return currentMinutes > slotMinutes;
+                          });
+                        }
+
+                        let listClass = "bg-blue-50/50 border-blue-100";
+                        if (isLate) listClass = "bg-red-50 border-red-500 border-2";
+
+                        return (
+                         <div key={med.id} className={`flex justify-between items-center p-3 border rounded-xl ${listClass}`}>
+                            <div className="flex-1 min-w-0 pr-2">
+                              <div className="flex items-center gap-2">
+                                <Layers size={14} className="text-blue-500"/>
+                                <div className="font-bold text-slate-800 truncate">{med.name}</div>
+                                {isLate && <Clock size={14} className="text-red-600 animate-pulse"/>}
+                              </div>
+                              <div className="text-[10px] text-slate-500 mt-0.5 truncate">
+                                Sisältää: {med.ingredients.map(i => i.name).join(', ')}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={() => { setShowHistoryFor(med.id); setShowAllMedsList(false); }} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600" title="Historia"><History size={16}/></button>
+                              <button onClick={() => openEditMed(med)} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600"><Pencil size={16}/></button>
+                            </div>
+                         </div>
+                       );
+                   })}
                    {medications.filter(m => !m.isArchived && m.ingredients && m.ingredients.length > 0).length === 0 && <p className="text-xs text-slate-400 italic">Ei dosetteja.</p>}
                  </div>
                </div>
@@ -1390,20 +1442,33 @@ const MedicineTracker = () => {
              </div>
              
              <div className="space-y-3">
-               {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).map(med => (
-                 <div key={med.id} className="flex justify-between items-center p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                    <div className="flex-1">
-                      <div className="font-bold text-slate-800">{med.name}</div>
-                      <div className={`text-xs font-bold ${med.stock <= med.lowStockLimit ? 'text-red-500' : 'text-slate-500'}`}>
-                        Saldo: {med.stock} kpl (Raja: {med.lowStockLimit})
+               {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).map(med => {
+                 // LASKETAAN VARASTON TILAT
+                 const limit = med.lowStockLimit || 10;
+                 const isCritical = med.stock <= limit;
+                 const isWarning = med.stock > limit && med.stock <= (limit + 5);
+
+                 // VÄRIT VARASTOLISTALLE
+                 let listClass = "bg-slate-50 border-slate-100";
+                 let textClass = "text-slate-500";
+                 if (isCritical) { listClass = "bg-red-50 border-red-300 border-2"; textClass = "text-red-600"; }
+                 else if (isWarning) { listClass = "bg-orange-50 border-orange-200 border-2"; textClass = "text-orange-600"; }
+
+                 return (
+                   <div key={med.id} className={`flex justify-between items-center p-3 border rounded-xl ${listClass}`}>
+                      <div className="flex-1">
+                        <div className="font-bold text-slate-800">{med.name}</div>
+                        <div className={`text-xs font-bold ${textClass}`}>
+                          Saldo: {med.stock} kpl (Raja: {limit})
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => { setShowHistoryFor(med.id); setShowStockList(false); }} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600" title="Historia"><History size={16}/></button>
-                      <button onClick={() => openEditMed(med)} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600"><Pencil size={16}/></button>
-                    </div>
-                 </div>
-               ))}
+                      <div className="flex gap-2">
+                        <button onClick={() => { setShowHistoryFor(med.id); setShowStockList(false); }} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600" title="Historia"><History size={16}/></button>
+                        <button onClick={() => openEditMed(med)} className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600"><Pencil size={16}/></button>
+                      </div>
+                   </div>
+                 );
+               })}
                {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).length === 0 && (
                  <p className="text-center text-slate-400 text-sm py-4">Ei varastoseurannassa olevia lääkkeitä.</p>
                )}
@@ -1911,108 +1976,6 @@ const MedicineTracker = () => {
                 <button type="button" onClick={() => setEditingMed(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
                 <button type="submit" disabled={!editingMed.name.trim()} className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm disabled:opacity-50">Tallenna</button>
               </div>
-            </form>
-            <div className="h-6"></div>
-          </div>
-        </div>
-      )}
-
-      {/* 3. LÄÄKKEEN HISTORIA NÄKYMÄ (YKSITTÄINEN) - TÄMÄ PUUTTUI */}
-      {showHistoryFor && (
-        <div className="absolute inset-0 z-50 bg-white flex flex-col animate-in slide-in-from-right duration-300">
-           <div className="flex items-center gap-3 p-4 border-b border-slate-200 bg-slate-50">
-             <button onClick={() => setShowHistoryFor(null)} className="p-2 bg-white rounded-full shadow-sm border border-slate-200"><X size={20}/></button>
-             <h2 className="text-lg font-bold text-slate-800">
-               {medications.find(m => m.id === showHistoryFor)?.name || 'Lääkkeen historia'}
-             </h2>
-           </div>
-           <div className="flex-1 overflow-y-auto p-4 bg-slate-50">
-             <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-               {logs.filter(l => l.medId === showHistoryFor).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).map((log, i) => (
-                 <div key={log.id} className="p-4 border-b border-slate-100 last:border-0 flex justify-between items-start">
-                    <div>
-                      <div className="font-bold text-slate-700">{new Date(log.timestamp).toLocaleDateString()} klo {formatTime(log.timestamp)}</div>
-                      {log.reason && <div className="text-sm text-slate-500 italic mt-1">"{log.reason}"</div>}
-                      {log.slot && <div className="text-xs text-blue-500 uppercase font-bold mt-1">{TIME_SLOTS.find(s=>s.id===log.slot)?.label}</div>}
-                    </div>
-                    <button onClick={() => openLogEdit(log)} className="p-2 text-slate-400 hover:text-blue-600"><Pencil size={18}/></button>
-                 </div>
-               ))}
-               {logs.filter(l => l.medId === showHistoryFor).length === 0 && <div className="p-8 text-center text-slate-400">Ei merkintöjä.</div>}
-             </div>
-           </div>
-        </div>
-      )}
-
-      {/* 4. MUOKKAA HISTORIAMERKINTÄÄ - TÄMÄ PUUTTUI */}
-      {editingLog && (
-        <div className="absolute inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in">
-          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><History className="text-blue-600"/> Muokkaa merkintää</h2>
-            <form onSubmit={handleSaveLogEdit}>
-               <div className="mb-4">
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Aika</label>
-                  <input type="datetime-local" required className="w-full bg-slate-50 p-3 rounded-xl border outline-none" value={editingLogDate} onChange={e => setEditingLogDate(e.target.value)} />
-               </div>
-               <div className="mb-6">
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Syy / Huomio</label>
-                  <input className="w-full bg-slate-50 p-3 rounded-xl border outline-none" placeholder="Kirjoita syy..." value={editingLogReason} onChange={e => setEditingLogReason(e.target.value)} />
-               </div>
-               <div className="flex gap-3">
-                 <button type="button" onClick={requestDeleteLog} className="p-3 text-red-500 bg-red-50 rounded-xl font-bold"><Trash2 size={20}/></button>
-                 <button type="button" onClick={() => setEditingLog(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
-                 <button type="submit" className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm">Tallenna</button>
-               </div>
-            </form>
-            <div className="h-6"></div>
-          </div>
-        </div>
-      )}
-
-      {/* 5. POISTON VARMISTUS */}
-      {deleteDialog.isOpen && (
-        <div className="absolute inset-0 z-[70] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
-             <div className="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-4 mx-auto"><AlertTriangle size={24}/></div>
-             <h3 className="text-lg font-bold text-center mb-2">{deleteDialog.title || 'Poista lääke?'}</h3>
-             <p className="text-center text-slate-600 text-sm mb-6">{deleteDialog.message}</p>
-             
-             {deleteDialog.mode === 'med' ? (
-               <div className="space-y-3">
-                 <button onClick={handleDeleteAll} className="w-full py-3 bg-red-600 text-white rounded-xl font-bold text-sm">Poista lääke ja historia</button>
-                 {deleteDialog.hasHistory && (
-                   <button onClick={handleDeleteKeepHistory} className="w-full py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm">Poista lääke, säilytä historia</button>
-                 )}
-                 <button onClick={() => setDeleteDialog({...deleteDialog, isOpen: false})} className="w-full py-3 text-slate-500 text-sm font-bold">Peruuta</button>
-               </div>
-             ) : (
-               <div className="flex gap-3">
-                  <button onClick={() => setDeleteDialog({...deleteDialog, isOpen: false})} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600">Peruuta</button>
-                  <button onClick={handleDeleteSingleLog} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold">Poista</button>
-               </div>
-             )}
-          </div>
-        </div>
-      )}
-
-      {/* 6. MANUAALINEN LISÄYS */}
-      {manualLogMed && (
-        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in">
-          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full">
-            <h2 className="text-lg font-bold mb-4">Merkitse otetuksi: {manualLogMed.name}</h2>
-            <form onSubmit={handleManualLog}>
-               <div className="mb-4">
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Aika</label>
-                  <input type="datetime-local" required className="w-full bg-slate-50 p-3 rounded-xl border outline-none" value={manualDate} onChange={e => setManualDate(e.target.value)} />
-               </div>
-               <div className="mb-6">
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Syy (valinnainen)</label>
-                  <input className="w-full bg-slate-50 p-3 rounded-xl border outline-none" placeholder="Esim. Päänsärky" value={manualReason} onChange={e => setManualReason(e.target.value)} />
-               </div>
-               <div className="flex gap-3">
-                 <button type="button" onClick={() => setManualLogMed(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
-                 <button type="submit" className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm">Tallenna</button>
-               </div>
             </form>
             <div className="h-6"></div>
           </div>
