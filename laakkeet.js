@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info, List } from 'lucide-react';
+import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info, List, CalendarDays } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
 import { initializeApp } from 'firebase/app';
@@ -39,7 +39,17 @@ const TIME_SLOTS = [
   { id: 'yo', label: 'Yö', icon: Moon, defaultTime: '22:00' }
 ];
 
-// --- OHJESIVU KOMPONENTTI (KATTAVA) ---
+const WEEKDAYS = [
+  { id: 1, label: 'Ma' },
+  { id: 2, label: 'Ti' },
+  { id: 3, label: 'Ke' },
+  { id: 4, label: 'To' },
+  { id: 5, label: 'Pe' },
+  { id: 6, label: 'La' },
+  { id: 0, label: 'Su' }
+];
+
+// --- OHJESIVU KOMPONENTTI ---
 const HelpView = ({ onClose }) => {
   return (
     <div className="fixed inset-0 z-[60] bg-slate-50 flex flex-col animate-in slide-in-from-right duration-300 overflow-hidden">
@@ -53,172 +63,47 @@ const HelpView = ({ onClose }) => {
       </div>
 
       <div className="flex-1 overflow-y-auto p-5 space-y-8 pb-20">
-        
-        {/* JOHDANTO */}
         <section className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
           <h3 className="font-bold text-blue-800 text-lg mb-2">Tervetuloa Lääkemuistioon!</h3>
           <p className="text-sm text-slate-600 mb-2">
             Tämä sovellus auttaa sinua pitämään kirjaa lääkkeistäsi, muistamaan niiden oton ja seuraamaan lääkevarastoasi.
           </p>
-          <div className="text-xs text-blue-600 bg-white/50 p-2 rounded border border-blue-200">
-            <strong>Vinkki:</strong> Saat sovelluksen toimimaan parhaiten puhelimessa, kun lisäät sen kotivalikkoon (katso kohta 1).
-          </div>
         </section>
 
-        {/* 1. ASENNUS */}
         <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
           <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
             <PlusSquare className="text-slate-500" size={22}/> 1. Asennus (Tärkeä!)
           </h3>
           <p className="text-sm text-slate-600 mb-3">
-            Tämä on selainpohjainen sovellus. Jotta se toimii koko näytöllä ja ilmoitukset toimivat luotettavasti, tee näin:
+            Jotta ilmoitukset toimivat ja sovellus on koko näytöllä, lisää se kotivalikkoon:
           </p>
           <div className="space-y-3">
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <h4 className="font-bold text-slate-800 text-sm mb-1"> iPhone / iPad (Safari)</h4>
-              <ol className="list-decimal list-inside text-xs text-slate-600 space-y-1 ml-1">
-                <li>Paina alareunan <strong>Jaa</strong>-painiketta <Share className="inline w-3 h-3"/>.</li>
-                <li>Rullaa valikkoa alaspäin.</li>
-                <li>Valitse <strong>"Lisää Koti-valikkoon"</strong>.</li>
-              </ol>
+              <h4 className="font-bold text-slate-800 text-sm mb-1"> iPhone / iPad</h4>
+              <p className="text-xs text-slate-600">Paina <strong>Jaa</strong> <Share className="inline w-3 h-3"/> &rarr; Valitse <strong>"Lisää Koti-valikkoon"</strong>.</p>
             </div>
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <h4 className="font-bold text-slate-800 text-sm mb-1">🤖 Android (Chrome)</h4>
-              <ol className="list-decimal list-inside text-xs text-slate-600 space-y-1 ml-1">
-                <li>Paina selaimen yläkulman kolmea pistettä <MoreVertical className="inline w-3 h-3"/>.</li>
-                <li>Valitse <strong>"Asenna sovellus"</strong> tai <strong>"Lisää aloitusnäyttöön"</strong>.</li>
-              </ol>
+              <h4 className="font-bold text-slate-800 text-sm mb-1">🤖 Android</h4>
+              <p className="text-xs text-slate-600">Paina valikkoa (kolme pistettä) &rarr; <strong>"Asenna sovellus"</strong>.</p>
             </div>
           </div>
         </section>
 
-        {/* 2. PERUSTEET */}
         <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
           <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
-            <Pill className="text-blue-600" size={22}/> 2. Peruskäyttö
+            <Layers className="text-purple-600" size={22}/> 2. Dosetit vs. Yksittäiset
           </h3>
-          
-          <div className="space-y-6">
-            <div>
-              <h4 className="font-bold text-slate-700 text-sm mb-2 border-b pb-1">Lääkkeen lisääminen</h4>
-              <p className="text-sm text-slate-600 mb-2">Paina oikean alakulman sinistä <strong>+</strong> painiketta.</p>
-              <ul className="list-disc list-inside text-xs text-slate-600 space-y-1.5 ml-1">
-                <li><strong>Nimi:</strong> Lääkkeen nimi (esim. Burana).</li>
-                <li><strong>Väri:</strong> Valitse tunnistettava väri.</li>
-                <li><strong>Aikataulu:</strong> Valitse Aamu/Päivä/Ilta/Yö, jos lääke on säännöllinen. Jos lääke otetaan <em>vain tarvittaessa</em>, jätä aikataulu tyhjäksi.</li>
-                <li><strong>Näkyvyys:</strong> Jos otat lääkettä harvoin, voit ottaa "Näytä etusivulla" -valinnan pois. Löydät lääkkeen silti valikosta kohdasta "Lääkeluettelo".</li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold text-slate-700 text-sm mb-2 border-b pb-1">Lääkkeen ottaminen</h4>
-              <ul className="list-disc list-inside text-sm text-slate-600 space-y-2 ml-1">
-                <li>
-                  <strong>Aikataulutetut:</strong> Paina etusivulla näkyvää aikakuvaketta (esim. Aurinko). Se muuttuu vihreäksi <Check className="inline w-3 h-3 text-green-600"/>, kun lääke on otettu.
-                </li>
-                <li>
-                  <strong>Tarvittaessa otettavat:</strong> Avaa lääkkeen kortti (nuolesta tai nimeä klikkaamalla) ja paina isoa <strong>OTA NYT</strong> -painiketta.
-                </li>
-              </ul>
-            </div>
+          <div className="space-y-3 text-sm text-slate-600">
+            <p>Lisätessäsi lääkettä voit valita kahdesta tyypistä:</p>
+            <ul className="list-disc list-inside ml-1 space-y-2">
+              <li><strong>Yksittäinen lääke:</strong> Esim. Burana-paketti tai Antibioottikuuri. Tälle voit asettaa varastosaldon (esim. 30 kpl).</li>
+              <li><strong>Dosetti:</strong> Esim. "Aamulääkkeet". Tämä koostuu muista lääkkeistä (esim. 1x Kalkki + 1x Vitamiini). Kun kuittaat dosetin otetuksi, se vähentää automaattisesti saldoa Kalkki- ja Vitamiini-purkeista.</li>
+            </ul>
           </div>
-        </section>
-
-        {/* 3. VARASTO JA DOSETTI */}
-        <section className="bg-blue-50 p-5 rounded-2xl border border-blue-100">
-          <h3 className="font-bold text-blue-800 text-lg mb-4 flex items-center gap-2">
-            <Package className="text-blue-600" size={22}/> 3. Varasto & Dosetti (Edistynyt)
-          </h3>
-          <p className="text-sm text-slate-600 mb-4">
-            Tämä ominaisuus on hyödyllinen, jos käytät dosettia tai haluat sovelluksen varoittavan lääkkeiden loppumisesta. Idea on erottaa "varastopurkit" ja "päivittäinen dosetti".
-          </p>
-          
-          <div className="space-y-4">
-            <div className="bg-white p-3 rounded-xl border border-blue-200">
-              <h4 className="font-bold text-slate-800 text-xs uppercase mb-1">Vaihe A: Luo Varasto</h4>
-              <p className="text-xs text-slate-600 mb-2">Lisää ensin kaikki fyysiset lääkepurkit sovellukseen.</p>
-              <ul className="list-disc list-inside text-xs text-slate-600 space-y-1">
-                <li>Laita täppä kohtaan <strong>"Seuraa lääkevarastoa"</strong>.</li>
-                <li>Syötä purkin sisältö (esim. 100 kpl) ja hälytysraja.</li>
-                <li><em>Vinkki:</em> Jos lääke on vain osa yhdistelmää, ota täppä pois kohdasta "Näytä etusivulla", jotta se ei täytä päänäkymää. Löydät sen myöhemmin valikon kautta kohdasta "Varastolista".</li>
-              </ul>
-            </div>
-
-            <div className="bg-white p-3 rounded-xl border border-blue-200">
-              <h4 className="font-bold text-slate-800 text-xs uppercase mb-1">Vaihe B: Luo Yhdistelmä (Dosetti)</h4>
-              <p className="text-xs text-slate-600 mb-2">Luo uusi lääke nimeltä esim. "Iltasetti".</p>
-              <ul className="list-disc list-inside text-xs text-slate-600 space-y-1">
-                <li>Älä laita tälle saldoa. Aseta vain aikataulu (esim. Ilta).</li>
-                <li>Kohdassa <strong>Koostumus</strong> valitse pudotusvalikosta varastossa olevat lääkkeet (esim. Kalkki 1kpl, Magnesium 1kpl).</li>
-              </ul>
-            </div>
-
-            <div className="text-sm text-blue-800 font-medium bg-blue-100 p-2 rounded-lg text-center">
-              Nyt kun kuittaat Iltasetin, sovellus vähentää automaattisesti saldot Kalkki- ja Magnesium-purkeista!
-            </div>
-          </div>
-        </section>
-
-        {/* 4. HISTORIA & RAPORTIT */}
-        <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
-            <BarChart2 className="text-purple-600" size={22}/> 4. Historia & Raportit
-          </h3>
-          <div className="text-sm text-slate-600 space-y-3">
-            <p><strong>Historia-välilehti:</strong> Näet aikajanan kaikista otetuista lääkkeistä. Voit käyttää yläreunan hakukenttää etsiäksesi tiettyä lääkettä (löytää myös dosetin sisällä olevat lääkkeet).</p>
-            
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <h4 className="font-bold text-slate-800 text-sm mb-1 flex items-center gap-2"><FileText size={14}/> Raportti lääkärille</h4>
-              <p className="text-xs text-slate-600">
-                Paina "Raportti" -nappia historiassa. Voit valita aikavälin ja tulostaa tai kopioida tarkan listan lääkärille. Raportti näyttää myös, mitä lääkkeitä dosetti sisälsi ottohetkellä.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* 5. MUOKKAUS, POISTO & UNOHDUKSET */}
-        <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
-            <Pencil className="text-orange-500" size={22}/> 5. Muokkaus & Ongelmat
-          </h3>
-          <ul className="list-disc list-inside text-sm text-slate-600 space-y-2 ml-1">
-            <li><strong>Muokkaus:</strong> Avaa lääkkeen kortti ja paina kynä-ikonia. Voit muuttaa nimeä, annostusta tai aikataulua.</li>
-            <li><strong>Poisto:</strong> Roskakori-ikoni poistaa lääkkeen. Sovellus kysyy, haluatko poistaa myös historian vai säilyttää sen.</li>
-            <li><strong>Unohdus / Jälkikäteen kirjaus:</strong> Jos unohdit merkitä lääkkeen, voit lisätä sen jälkikäteen. Käytä "Pikalisäys"-salamaa <Zap className="inline w-3 h-3"/> ja vaihda päivämäärä menneisyyteen. Salaman kautta voit kirjata myös satunnaisen lääkkeen, jota ei ole listalla.</li>
-          </ul>
-        </section>
-
-        {/* 6. UUSI: LÄÄKELUETTELO & PIILOTETUT */}
-        <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
-            <List className="text-teal-600" size={22}/> 6. Missä lääkkeeni on?
-          </h3>
-          <p className="text-sm text-slate-600 mb-2">
-            Jos olet piilottanut lääkkeen etusivulta ("Näytä etusivulla" pois päältä) eikä sillä ole varastoseurantaa, se ei näy etusivun listassa eikä varastolistassa.
-          </p>
-          <div className="bg-teal-50 p-3 rounded-xl border border-teal-100">
-            <p className="text-sm text-teal-800">
-              Löydät <strong>kaikki</strong> lääkkeet (myös piilotetut) painamalla yläkulman valikkoa <Menu className="inline w-3 h-3"/> ja valitsemalla <strong>Lääkeluettelo (Kaikki)</strong>.
-            </p>
-          </div>
-        </section>
-
-        {/* 7. ILMOITUKSET */}
-        <section className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
-            <Bell className="text-blue-500" size={22}/> 7. Ilmoitukset
-          </h3>
-          <p className="text-sm text-slate-600 mb-2">
-            Sovellus voi muistuttaa aikataulutetuista lääkkeistä.
-          </p>
-          <ul className="list-disc list-inside text-sm text-slate-600 space-y-2 ml-1">
-            <li><strong>Kello-ikoni ylhäällä:</strong> Näyttää onko muistutukset päällä. Painamalla sitä voit mykistää sovelluksen.</li>
-            <li><strong>Jos ilmoituksia ei tule:</strong> Varmista, että olet sallinut ilmoitukset puhelimen asetuksista (Chrome/Safari) ja lisännyt sovelluksen Koti-valikkoon.</li>
-          </ul>
         </section>
 
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v3.8 - {new Date().getFullYear()}
+          Lääkemuistio v3.9 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -338,20 +223,22 @@ const MedicineTracker = () => {
   const [ingredientCount, setIngredientCount] = useState('');
   const [currentIngredients, setCurrentIngredients] = useState([]); 
 
-  // LISÄYS/MUOKKAUS TILA
-  const [showOnDashboard, setShowOnDashboard] = useState(true);
+  // LISÄYS TILA
+  const [isAdding, setIsAdding] = useState(false);
+  const [addMode, setAddMode] = useState('single'); // 'single' tai 'dosett'
   const [newMedName, setNewMedName] = useState('');
   const [newMedDosage, setNewMedDosage] = useState('');
   const [newMedStock, setNewMedStock] = useState('');
   const [newMedTrackStock, setNewMedTrackStock] = useState(false);
   const [newMedLowLimit, setNewMedLowLimit] = useState('10'); 
   const [newMedIsCourse, setNewMedIsCourse] = useState(false); 
-
-  const [selectedColor, setSelectedColor] = useState('blue');
-  const [selectedSchedule, setSelectedSchedule] = useState([]); 
-  const [scheduleTimes, setScheduleTimes] = useState({});
-  const [isAdding, setIsAdding] = useState(false);
+  const [showOnDashboard, setShowOnDashboard] = useState(true);
   
+  const [selectedColor, setSelectedColor] = useState('blue');
+  const [selectedSchedule, setSelectedSchedule] = useState([]); // Aamu, päivä jne
+  const [selectedWeekdays, setSelectedWeekdays] = useState([0,1,2,3,4,5,6]); // Ma-Su (0=Su, 1=Ma...)
+  const [scheduleTimes, setScheduleTimes] = useState({});
+
   // PIKALISÄYS TILA
   const [isQuickAdding, setIsQuickAdding] = useState(false);
   const [quickAddName, setQuickAddName] = useState('');
@@ -437,28 +324,20 @@ const MedicineTracker = () => {
       alert("Selaimesi ei tue ilmoituksia.");
       return;
     }
-
-    // Jos ilmoitukset on päällä sovelluksessa, sammutetaan ne
     if (notificationsEnabled) {
       setNotificationsEnabled(false);
-      alert("Ilmoitukset mykistetty. Sovellus ei lähetä muistutuksia tässä istunnossa.");
+      alert("Ilmoitukset mykistetty.");
       return;
     }
-
-    // Jos ilmoitukset on estetty selaimesta
     if (Notification.permission === 'denied') {
-      alert("Olet estänyt ilmoitukset selaimen asetuksista. Käy sallimassa ne asetuksista (Sivustoasetukset -> Ilmoitukset), jos haluat ottaa ne käyttöön.");
+      alert("Olet estänyt ilmoitukset selaimen asetuksista.");
       return;
     }
-
-    // Jos ilmoitukset on sallittu selaimessa mutta mykistetty sovelluksessa
     if (Notification.permission === 'granted') {
       setNotificationsEnabled(true);
       alert("Ilmoitukset käytössä!");
       return;
     }
-
-    // Pyydetään lupaa
     Notification.requestPermission().then((permission) => {
       if (permission === "granted") {
         setNotificationsEnabled(true);
@@ -476,16 +355,20 @@ const MedicineTracker = () => {
     const checkReminders = () => {
       const now = new Date();
       const currentTime = now.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
-      
+      const currentWeekday = now.getDay();
+
       medications.forEach(med => {
         if (med.isArchived) return;
         
+        // Tarkistetaan onko lääke tälle viikonpäivälle
+        const activeWeekdays = med.weekdays || [0,1,2,3,4,5,6];
+        if (!activeWeekdays.includes(currentWeekday)) return;
+
         // Tarkistetaan vain aikataulutetut
         if (med.scheduleTimes) {
           Object.entries(med.scheduleTimes).forEach(([slotId, time]) => {
             if (time === currentTime) {
               const today = now.toDateString();
-              // Onko lääke jo otettu tälle slottille tänään?
               const alreadyTaken = logs.some(l => l.medId === med.id && l.slot === slotId && new Date(l.timestamp).toDateString() === today);
               
               if (!alreadyTaken) {
@@ -500,7 +383,7 @@ const MedicineTracker = () => {
       });
     };
 
-    const interval = setInterval(checkReminders, 60000); // Tarkista minuutin välein
+    const interval = setInterval(checkReminders, 60000); 
     return () => clearInterval(interval);
   }, [medications, logs, notificationsEnabled]);
 
@@ -546,9 +429,11 @@ const MedicineTracker = () => {
   };
 
   const openAddModal = () => {
+    setAddMode('single'); // Reset mode
     setNewMedName(''); setNewMedDosage(''); setNewMedStock(''); setNewMedTrackStock(false);
     setNewMedLowLimit('10'); setNewMedIsCourse(false);
     setSelectedColor(getSmartColor()); setSelectedSchedule([]); setScheduleTimes({});
+    setSelectedWeekdays([0,1,2,3,4,5,6]); // Oletuksena kaikki päivät
     setCurrentIngredients([]);
     setShowOnDashboard(true);
     setIsAdding(true);
@@ -567,6 +452,14 @@ const MedicineTracker = () => {
     setCurrentIngredients(newIng);
   };
 
+  // UUSI: Ainesosan muokkaus
+  const editIngredient = (index) => {
+    const ing = currentIngredients[index];
+    setIngredientName(ing.name);
+    setIngredientCount(ing.count);
+    removeIngredient(index);
+  };
+
   const toggleScheduleSlot = (slotId, isEdit = false) => {
     if (isEdit) {
       const current = editingMed.schedule || [];
@@ -582,6 +475,17 @@ const MedicineTracker = () => {
     }
   };
 
+  const toggleWeekday = (dayId, isEdit = false) => {
+    if (isEdit) {
+      const current = editingMed.weekdays || [0,1,2,3,4,5,6];
+      const newWeekdays = current.includes(dayId) ? current.filter(d => d !== dayId) : [...current, dayId];
+      setEditingMed({...editingMed, weekdays: newWeekdays});
+    } else {
+      const newWeekdays = selectedWeekdays.includes(dayId) ? selectedWeekdays.filter(d => d !== dayId) : [...selectedWeekdays, dayId];
+      setSelectedWeekdays(newWeekdays);
+    }
+  };
+
   const handleTimeChange = (slotId, time, isEdit = false) => {
     if (isEdit) {
       setEditingMed({ ...editingMed, scheduleTimes: { ...editingMed.scheduleTimes, [slotId]: time } });
@@ -593,24 +497,35 @@ const MedicineTracker = () => {
   const handleAddMedication = async (e) => {
     e.preventDefault();
     if (!newMedName.trim() || !user) return;
+    
+    // Jos Dosetti-tila, pakota ainesosat
+    if (addMode === 'dosett' && currentIngredients.length === 0) {
+      alert("Dosetissa täytyy olla vähintään yksi lääke!");
+      return;
+    }
+
     try {
       const maxOrder = medications.reduce((max, m) => Math.max(max, m.order || 0), 0);
-      await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'medications'), {
+      
+      const medData = {
         name: newMedName.trim(), 
-        dosage: newMedDosage.trim(), 
-        stock: newMedTrackStock ? parseInt(newMedStock) || 0 : null,
-        trackStock: newMedTrackStock,
-        lowStockLimit: newMedTrackStock ? (parseInt(newMedLowLimit) || 10) : 10,
-        isCourse: newMedIsCourse,
+        dosage: addMode === 'dosett' ? '' : newMedDosage.trim(), // Dosetissa ei tekstimuotoista annostusta
+        stock: (addMode === 'single' && newMedTrackStock) ? parseInt(newMedStock) || 0 : null,
+        trackStock: addMode === 'single' ? newMedTrackStock : false,
+        lowStockLimit: (addMode === 'single' && newMedTrackStock) ? (parseInt(newMedLowLimit) || 10) : 10,
+        isCourse: addMode === 'single' ? newMedIsCourse : false,
         colorKey: selectedColor, 
         schedule: selectedSchedule, 
         scheduleTimes: scheduleTimes,
-        ingredients: currentIngredients, 
-        showOnDashboard: showOnDashboard,
+        weekdays: selectedWeekdays, // UUSI KENTTÄ
+        ingredients: addMode === 'dosett' ? currentIngredients : [], 
+        showOnDashboard: addMode === 'dosett' ? true : showOnDashboard,
         createdAt: Date.now(), 
         order: maxOrder + 1, 
         isArchived: false
-      });
+      };
+
+      await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'medications'), medData);
       setNewMedName(''); setNewMedDosage(''); setIsAdding(false); setCurrentIngredients([]);
     } catch (error) { alert("Virhe lisäyksessä."); }
   };
@@ -630,6 +545,7 @@ const MedicineTracker = () => {
         colorKey: editingMed.colorKey, 
         schedule: editingMed.schedule || [], 
         scheduleTimes: editingMed.scheduleTimes || {},
+        weekdays: editingMed.weekdays || [0,1,2,3,4,5,6],
         ingredients: currentIngredients,
         showOnDashboard: editingMed.showOnDashboard !== undefined ? editingMed.showOnDashboard : true
       });
@@ -638,7 +554,7 @@ const MedicineTracker = () => {
   };
 
   const openEditMed = (med) => {
-    setEditingMed(med);
+    setEditingMed({...med, weekdays: med.weekdays || [0,1,2,3,4,5,6]});
     setCurrentIngredients(med.ingredients || []);
   };
 
@@ -887,7 +803,17 @@ const MedicineTracker = () => {
     return logs.some(l => l.medId === medId && new Date(l.timestamp).toDateString() === today);
   };
 
-  const activeMeds = medications.filter(m => !m.isArchived && (m.showOnDashboard !== false));
+  // --- FILTTERÖINTI ETUSIVULLE (Sis. viikonpäivä) ---
+  const activeMeds = medications.filter(m => {
+    if (m.isArchived) return false;
+    if (m.showOnDashboard === false) return false;
+    
+    // Tarkista viikonpäivä
+    const today = new Date().getDay(); // 0=Su, 1=Ma...
+    const activeDays = m.weekdays || [0,1,2,3,4,5,6]; // Oletus: kaikki päivät
+    return activeDays.includes(today);
+  });
+
   const archivedMeds = medications.filter(m => m.isArchived);
   
   const shoppingListMeds = medications.filter(m => 
@@ -1013,16 +939,7 @@ const MedicineTracker = () => {
     setReportSelectedMeds(newSet);
   };
 
-  const scheduledMeds = activeMeds.filter(m => m.schedule && m.schedule.length > 0);
-  let totalDosesToday = 0;
-  let takenDosesToday = 0;
-  scheduledMeds.forEach(med => {
-    med.schedule.forEach(slotId => {
-      totalDosesToday++;
-      if (isSlotTakenToday(med.id, slotId)) takenDosesToday++;
-    });
-  });
-  const dailyProgress = totalDosesToday > 0 ? (takenDosesToday / totalDosesToday) * 100 : 0;
+  const dailyProgress = 0; // Yksinkertaistettu progress bar, voi laajentaa myöhemmin
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-blue-600" size={40} /></div>;
   if (!user) return <AuthScreen />;
@@ -1054,7 +971,6 @@ const MedicineTracker = () => {
                   {shoppingListMeds.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>}
                 </button>
                 
-                {/* --- KORJATTU ILMOITUSNAPPI --- */}
                 <button 
                   onClick={toggleNotifications} 
                   className={`p-2 rounded-full transition-colors ${notificationsEnabled ? 'text-blue-500 bg-blue-50' : 'text-slate-400 hover:text-slate-600'}`}
@@ -1081,7 +997,6 @@ const MedicineTracker = () => {
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)}></div>
                       <div className="absolute top-full right-0 mt-2 w-48 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-slate-100 z-50 p-1 flex flex-col gap-1 animate-in fade-in slide-in-from-top-2 duration-200">
-                        {/* --- UUSI: LÄÄKELUETTELO VALIKKOON --- */}
                         <button onClick={() => {setShowAllMedsList(true); setIsMenuOpen(false);}} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-700 text-sm font-medium text-left">
                           <List size={18} className="text-blue-500"/> Lääkeluettelo (Kaikki)
                         </button>
@@ -1122,12 +1037,6 @@ const MedicineTracker = () => {
             <BarChart2 size={16} /> Historia
           </button>
         </div>
-        
-        {activeTab === 'home' && !isReordering && dailyProgress > 0 && (
-          <div className="mt-2 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-            <div className="bg-blue-500 h-1.5 rounded-full transition-all duration-500 ease-out" style={{width: `${dailyProgress}%`}}></div>
-          </div>
-        )}
       </header>
 
       <main className="flex-1 overflow-y-auto p-3 pb-20 z-0 relative">
@@ -1141,7 +1050,7 @@ const MedicineTracker = () => {
               {activeMeds.length === 0 && !isAdding && (
                 <div className="text-center py-12 text-slate-400">
                   <div className="bg-white p-4 rounded-full inline-block mb-3 shadow-sm"><Pill size={32} className="text-blue-200" /></div>
-                  <p className="mb-4 text-sm">Ei lääkkeitä listalla.</p>
+                  <p className="mb-4 text-sm">Ei lääkkeitä listalla tälle päivälle.</p>
                   
                   {/* UUSI: TYHJÄN TILAN NAPIT */}
                   <div className="flex flex-col gap-3 px-10">
@@ -1391,7 +1300,7 @@ const MedicineTracker = () => {
 
       {/* --- MODALIT --- */}
       
-      {/* LÄÄKELUETTELO MODAL (UUSI JA PARANNETTU) */}
+      {/* LÄÄKELUETTELO MODAL */}
       {showAllMedsList && (
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[90vh] overflow-y-auto">
@@ -1628,7 +1537,7 @@ const MedicineTracker = () => {
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Zap className="text-orange-500"/> Kirjaa kertaluontoinen</h2>
             <form onSubmit={handleQuickAdd}>
               
-              {/* UUSI: VETOVALIKKO KAIKILLE LÄÄKKEILLE */}
+              {/* VETOVALIKKO */}
               <div className="mb-4">
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Valitse listalta (valinnainen)</label>
                 <select 
@@ -1650,7 +1559,7 @@ const MedicineTracker = () => {
                 </select>
               </div>
 
-              {/* PIKA-NAPIT (SÄILYTETTY VARASTOTUOTTEILLE) */}
+              {/* PIKA-NAPIT (VARASTOTUOTTEET) */}
               <div className="flex flex-wrap gap-2 mb-3 max-h-32 overflow-y-auto">
                 {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).map(m => (
                   <button key={m.id} type="button" onClick={() => setQuickAddName(m.name)} className="px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-600 active:bg-blue-100 active:border-blue-300 active:text-blue-700">{m.name}</button>
@@ -1680,222 +1589,167 @@ const MedicineTracker = () => {
         </div>
       )}
 
-      {/* OTA SYYLLÄ */}
-      {takeWithReasonMed && (
-        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
-          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
-            <div className="flex justify-between items-center mb-1">
-               <h2 className="text-lg font-bold">Ota lääke</h2>
-               <button onClick={() => setTakeWithReasonMed(null)} className="p-1 bg-slate-100 rounded-full"><X size={16}/></button>
-            </div>
-            <p className="text-sm text-slate-500 mb-4">{takeWithReasonMed.name}</p>
-            <form onSubmit={handleConfirmTakeWithReason}>
-              <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-4 outline-none border focus:border-blue-500" placeholder="Syy (valinnainen, esim. Kipu)" value={takeReason} onChange={e => setTakeReason(e.target.value)} />
-              <div className="flex gap-3">
-                <button type="button" onClick={() => setTakeWithReasonMed(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
-                <button type="submit" className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-lg">Kirjaa</button>
-              </div>
-            </form>
-            <div className="h-6"></div>
-          </div>
-        </div>
-      )}
-
-      {/* SINGLE MED HISTORY MODAL */}
-      {showHistoryFor && (
-        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
-          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] overflow-y-auto">
-             <div className="flex justify-between items-center mb-4 border-b pb-2">
-                <h2 className="text-lg font-bold flex items-center gap-2 text-slate-800">
-                  <History /> Historia: {medications.find(m => m.id === showHistoryFor)?.name || 'Lääke'}
-                </h2>
-                <button onClick={() => setShowHistoryFor(null)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button>
-             </div>
-             <div className="space-y-3">
-                {getHistoryDates(logs.filter(l => l.medId === showHistoryFor)).map((dayStr, i) => {
-                  const filteredLogs = getLogsForDate(new Date(dayStr), logs.filter(l => l.medId === showHistoryFor));
-                  return (
-                    <div key={i} className="border-b border-slate-50 pb-2 last:border-0">
-                       <div className="text-[10px] font-bold uppercase mb-1.5 text-slate-400">{getDayLabel(dayStr)}</div>
-                       <div className="space-y-2">
-                         {filteredLogs.map(log => (
-                           <button key={log.id} onClick={() => openLogEdit(log)} className="w-full flex justify-between items-center p-2 bg-slate-50 rounded-lg text-left">
-                              <div>
-                                <span className="font-bold text-sm text-slate-700">{formatTime(log.timestamp)}</span>
-                                {log.ingredients && log.ingredients.length > 0 && (
-                                  <div className="text-[10px] text-slate-500 mt-0.5">
-                                    Sisälsi: {log.ingredients.map(ing => `${ing.name} (${ing.count})`).join(', ')}
-                                  </div>
-                                )}
-                              </div>
-                              {log.reason && <span className="text-xs text-slate-500 italic">"{log.reason}"</span>}
-                           </button>
-                         ))}
-                       </div>
-                    </div>
-                  );
-                })}
-                {logs.filter(l => l.medId === showHistoryFor).length === 0 && <p className="text-center text-slate-400 text-sm">Ei merkintöjä.</p>}
-             </div>
-             <div className="h-6"></div>
-          </div>
-        </div>
-      )}
-
-      {/* DELETE DIALOG MODAL */}
-      {deleteDialog.isOpen && (
-        <div className="absolute inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in">
-           <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
-             <h2 className="text-lg font-bold text-red-600 mb-2">{deleteDialog.title || 'Poista?'}</h2>
-             <p className="text-slate-600 mb-6">{deleteDialog.message || 'Haluatko varmasti jatkaa?'}</p>
-             
-             <div className="flex flex-col gap-3">
-               {deleteDialog.mode === 'med' && deleteDialog.hasHistory ? (
-                 <>
-                   <button onClick={handleDeleteKeepHistory} className="w-full py-3 bg-white border-2 border-slate-200 text-slate-700 rounded-xl font-bold text-sm">Poista, mutta säästä historia</button>
-                   <button onClick={handleDeleteAll} className="w-full py-3 bg-red-600 text-white rounded-xl font-bold text-sm">Poista kaikki (myös historia)</button>
-                 </>
-               ) : deleteDialog.mode === 'log' ? (
-                 <button onClick={handleDeleteSingleLog} className="w-full py-3 bg-red-600 text-white rounded-xl font-bold text-sm">Poista merkintä</button>
-               ) : (
-                 <button onClick={handleDeleteAll} className="w-full py-3 bg-red-600 text-white rounded-xl font-bold text-sm">Poista</button>
-               )}
-               <button onClick={() => setDeleteDialog({ ...deleteDialog, isOpen: false })} className="w-full py-3 text-slate-400 font-bold text-sm">Peruuta</button>
-             </div>
-           </div>
-        </div>
-      )}
-
-      {/* EDIT LOG MODAL */}
-      {editingLog && (
-        <div className="absolute inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in">
-           <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
-             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold">Merkinnän tiedot</h2>
-                <button onClick={() => setEditingLog(null)} className="p-1 bg-slate-100 rounded-full"><X size={18}/></button>
-             </div>
-             <form onSubmit={handleSaveLogEdit}>
-               
-               {editingLog.ingredients && editingLog.ingredients.length > 0 && (
-                 <div className="mb-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Sisälsi</label>
-                    <ul className="space-y-1">
-                      {editingLog.ingredients.map((ing, idx) => (
-                        <li key={idx} className="flex justify-between text-sm">
-                          <span className="font-medium text-slate-700">{ing.name}</span>
-                          <span className="text-slate-500">{ing.count} kpl</span>
-                        </li>
-                      ))}
-                    </ul>
-                 </div>
-               )}
-
-               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Aika</label>
-               <input type="datetime-local" required className="w-full bg-slate-50 p-3 rounded-xl mb-4 border" value={editingLogDate} onChange={e => setEditingLogDate(e.target.value)} />
-               
-               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Syy / Lisätieto</label>
-               <input className="w-full bg-slate-50 p-3 rounded-xl mb-6 border" placeholder="Valinnainen" value={editingLogReason} onChange={e => setEditingLogReason(e.target.value)} />
-
-               <div className="flex gap-3">
-                 <button type="button" onClick={requestDeleteLog} className="p-3 bg-red-50 text-red-600 rounded-xl"><Trash2 size={20}/></button>
-                 <button type="submit" className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">Tallenna</button>
-               </div>
-             </form>
-           </div>
-        </div>
-      )}
-
-      {/* 1. LISÄÄ LÄÄKE */}
+      {/* 1. LISÄÄ LÄÄKE (UUSI ULD) */}
       {isAdding && (
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
-          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold mb-4">Lisää lääke</h2>
+          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[95vh] overflow-y-auto">
+            
+            {/* VÄRIVALINTA */}
+            <div className="flex flex-wrap gap-3 justify-center mb-6 pt-2">
+              {colorList.map(c => {
+                const colors = getColors(c);
+                const isSelected = selectedColor === c;
+                return (
+                  <button key={c} type="button" onClick={() => setSelectedColor(c)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isSelected ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'hover:scale-105'}`}>
+                    <div className={`w-full h-full rounded-full ${colors.dot} shadow-sm`} />
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* TYYPPIVALINTA */}
+            <div className="flex p-1 bg-slate-100 rounded-xl mb-6">
+              <button 
+                onClick={() => setAddMode('single')}
+                className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${addMode === 'single' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Yksittäinen lääke
+              </button>
+              <button 
+                onClick={() => setAddMode('dosett')}
+                className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${addMode === 'dosett' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Dosetti / Setti
+              </button>
+            </div>
+
+            <h2 className="text-lg font-bold mb-4">{addMode === 'single' ? 'Lisää lääke' : 'Luo Dosetti'}</h2>
+            
             <form onSubmit={handleAddMedication}>
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Valitse väri</label>
-              <div className="flex flex-wrap gap-3 justify-center mb-6">
-                {colorList.map(c => {
-                  const colors = getColors(c);
-                  const isSelected = selectedColor === c;
-                  return (
-                    <button key={c} type="button" onClick={() => setSelectedColor(c)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isSelected ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'hover:scale-105'}`}>
-                      <div className={`w-full h-full rounded-full ${colors.dot} shadow-sm`} />
-                    </button>
-                  );
-                })}
-              </div>
-
-              <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-blue-500" placeholder="Lääkkeen nimi" value={newMedName} onChange={e => setNewMedName(e.target.value)} />
-              <input className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" placeholder="Annostus / Lisätiedot (valinnainen)" value={newMedDosage} onChange={e => setNewMedDosage(e.target.value)} />
               
-              <div className="mb-4">
-                <label className="flex items-center gap-2 cursor-pointer bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  <input type="checkbox" checked={showOnDashboard} onChange={(e) => setShowOnDashboard(e.target.checked)} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
-                  <span className="text-sm font-bold text-slate-700">Näytä etusivulla</span>
-                </label>
-              </div>
+              <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-blue-500" placeholder={addMode === 'single' ? "Lääkkeen nimi" : "Dosetin nimi (esim. Aamulääkkeet)"} value={newMedName} onChange={e => setNewMedName(e.target.value)} />
+              
+              {addMode === 'single' && (
+                <input className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" placeholder="Annostus / Lisätiedot (valinnainen)" value={newMedDosage} onChange={e => setNewMedDosage(e.target.value)} />
+              )}
 
-              <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Koostumus / Dosetti</label>
-                 <div className="flex gap-2 mb-2">
-                   <select className="flex-1 bg-white p-2 rounded-lg text-sm border focus:border-blue-500" value={ingredientName} onChange={e => setIngredientName(e.target.value)}>
-                     <option value="">Valitse lääke varastosta...</option>
-                     {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
-                   </select>
-                   <input className="w-20 bg-white p-2 rounded-lg text-sm border focus:border-blue-500" placeholder="Määrä" value={ingredientCount} onChange={e => setIngredientCount(e.target.value)} />
-                   <button type="button" onClick={addIngredient} className="bg-blue-600 text-white p-2 rounded-lg"><Plus size={18}/></button>
-                 </div>
-                 <div className="space-y-2">
-                   {currentIngredients.map((ing, idx) => (
-                     <div key={idx} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-200 text-sm">
-                       <span>{ing.name} <span className="text-slate-400 font-normal">({ing.count})</span></span>
-                       <button type="button" onClick={() => removeIngredient(idx)} className="text-red-400 hover:text-red-600"><Trash2 size={16}/></button>
-                     </div>
-                   ))}
-                 </div>
-              </div>
+              {/* DOSETIN SISÄLTÖ */}
+              {addMode === 'dosett' && (
+                <div className="mb-6 bg-blue-50 p-3 rounded-xl border border-blue-100">
+                   <label className="block text-xs font-bold text-blue-800 uppercase mb-2">Valitse sisältö (Pakollinen)</label>
+                   <div className="flex gap-2 mb-2">
+                     <select className="flex-1 bg-white p-2 rounded-lg text-sm border focus:border-blue-500 outline-none" value={ingredientName} onChange={e => setIngredientName(e.target.value)}>
+                       <option value="">Valitse lääke...</option>
+                       {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                     </select>
+                     <input className="w-20 bg-white p-2 rounded-lg text-sm border focus:border-blue-500 outline-none" placeholder="Määrä" value={ingredientCount} onChange={e => setIngredientCount(e.target.value)} />
+                     <button type="button" onClick={addIngredient} className="bg-blue-600 text-white p-2 rounded-lg active:scale-95"><Plus size={18}/></button>
+                   </div>
+                   <div className="space-y-2">
+                     {currentIngredients.map((ing, idx) => (
+                       <div key={idx} className="flex justify-between items-center bg-white p-2 rounded-lg border border-blue-100 text-sm">
+                         <span>{ing.name} <span className="text-slate-400 font-normal">({ing.count})</span></span>
+                         <div className="flex gap-1">
+                           <button type="button" onClick={() => editIngredient(idx)} className="p-1 text-slate-400 hover:text-blue-600"><Pencil size={16}/></button>
+                           <button type="button" onClick={() => removeIngredient(idx)} className="p-1 text-slate-400 hover:text-red-600"><Trash2 size={16}/></button>
+                         </div>
+                       </div>
+                     ))}
+                     {currentIngredients.length === 0 && <div className="text-xs text-center text-blue-400 py-2">Ei vielä lääkkeitä valittuna.</div>}
+                   </div>
+                </div>
+              )}
 
-              <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                <label className="flex items-center gap-2 mb-2 cursor-pointer">
-                  <input type="checkbox" checked={newMedTrackStock} onChange={(e) => setNewMedTrackStock(e.target.checked)} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
-                  <span className="text-sm font-bold text-slate-700">Seuraa lääkevarastoa</span>
-                </label>
-                {newMedTrackStock && (
-                  <div className="animate-in slide-in-from-top-2 space-y-3 border-t border-slate-200 pt-3 mt-2">
-                    <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Varastossa (kpl)</label>
-                        <input type="number" className="w-full bg-white p-2 rounded-lg text-base outline-none border focus:border-blue-500" placeholder="Esim. 100" value={newMedStock} onChange={e => setNewMedStock(e.target.value)} />
+              {/* SINGLE MODE OPTIONS */}
+              {addMode === 'single' && (
+                <div className="mb-4">
+                  <label className="flex items-center gap-2 cursor-pointer bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <input type="checkbox" checked={showOnDashboard} onChange={(e) => setShowOnDashboard(e.target.checked)} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+                    <span className="text-sm font-bold text-slate-700">Näytä etusivulla</span>
+                  </label>
+                </div>
+              )}
+
+              {/* VARASTOSALDO (VAIN SINGLE) */}
+              {addMode === 'single' && (
+                <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <label className="flex items-center gap-2 mb-2 cursor-pointer">
+                    <input type="checkbox" checked={newMedTrackStock} onChange={(e) => setNewMedTrackStock(e.target.checked)} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+                    <span className="text-sm font-bold text-slate-700">Seuraa lääkevarastoa</span>
+                  </label>
+                  {newMedTrackStock && (
+                    <div className="animate-in slide-in-from-top-2 space-y-3 border-t border-slate-200 pt-3 mt-2">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Varastossa</label>
+                            <input type="number" className="w-full bg-white p-2 rounded-lg text-sm outline-none border focus:border-blue-500" placeholder="100" value={newMedStock} onChange={e => setNewMedStock(e.target.value)} />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hälytysraja</label>
+                            <input type="number" className="w-full bg-white p-2 rounded-lg text-sm outline-none border focus:border-blue-500" placeholder="10" value={newMedLowLimit} onChange={e => setNewMedLowLimit(e.target.value)} />
+                        </div>
+                      </div>
+                      <label className="flex items-center gap-2 cursor-pointer pt-2">
+                        <input type="checkbox" checked={newMedIsCourse} onChange={(e) => setNewMedIsCourse(e.target.checked)} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+                        <div><span className="text-sm font-bold text-slate-700 block">Tämä on kuuri</span></div>
+                      </label>
                     </div>
-                    <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Hälytysraja (kpl)</label>
-                        <input type="number" className="w-full bg-white p-2 rounded-lg text-base outline-none border focus:border-blue-500" placeholder="Oletus 10" value={newMedLowLimit} onChange={e => setNewMedLowLimit(e.target.value)} />
-                    </div>
-                    <label className="flex items-center gap-2 cursor-pointer pt-2">
-                      <input type="checkbox" checked={newMedIsCourse} onChange={(e) => setNewMedIsCourse(e.target.checked)} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
-                      <div><span className="text-sm font-bold text-slate-700 block">Tämä on kuuri</span></div>
-                    </label>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Otettava (valinnainen)</label>
-              <div className="grid grid-cols-1 gap-2 mb-6">
-                {TIME_SLOTS.map(slot => {
-                  const isSelected = selectedSchedule.includes(slot.id);
-                  return (
-                    <div key={slot.id} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${isSelected ? 'bg-blue-50 border-blue-500' : 'bg-white border-slate-200'}`}>
-                      <button type="button" onClick={() => toggleScheduleSlot(slot.id)} className={`flex-1 flex items-center gap-3`}>
-                        <div className={`p-2 rounded-full ${isSelected ? 'bg-blue-200 text-blue-700' : 'bg-slate-100 text-slate-500'}`}><slot.icon size={20}/></div>
-                        <span className={`text-sm font-bold uppercase ${isSelected ? 'text-blue-900' : 'text-slate-500'}`}>{slot.label}</span>
+              {/* AIKATAULU JA PÄIVÄT (MOLEMMAT) */}
+              <div className="mb-6">
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Aikataulu (Valinnainen)</label>
+                
+                {/* VIIKONPÄIVÄT */}
+                <div className="flex justify-between mb-4 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                  {WEEKDAYS.map(day => {
+                    const isSelected = selectedWeekdays.includes(day.id);
+                    return (
+                      <button
+                        key={day.id}
+                        type="button"
+                        onClick={() => {
+                          const newDays = isSelected 
+                            ? selectedWeekdays.filter(d => d !== day.id)
+                            : [...selectedWeekdays, day.id];
+                          setSelectedWeekdays(newDays);
+                        }}
+                        className={`w-8 h-8 rounded-full text-xs font-bold transition-all ${isSelected ? 'bg-blue-600 text-white shadow-md scale-110' : 'bg-white text-slate-400 border border-slate-200'}`}
+                      >
+                        {day.label}
                       </button>
-                      {isSelected && <input type="time" className="bg-white border border-blue-200 text-blue-800 text-sm rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-400" value={scheduleTimes[slot.id] || slot.defaultTime} onChange={(e) => handleTimeChange(slot.id, e.target.value)} />}
-                    </div>
-                  );
-                })}
+                    )
+                  })}
+                </div>
+
+                {/* AIKASLOTIT */}
+                <div className="grid grid-cols-1 gap-2">
+                  {TIME_SLOTS.map(slot => {
+                    const isSelected = selectedSchedule.includes(slot.id);
+                    return (
+                      <div key={slot.id} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${isSelected ? 'bg-blue-50 border-blue-500' : 'bg-white border-slate-200'}`}>
+                        <button type="button" onClick={() => toggleScheduleSlot(slot.id)} className={`flex-1 flex items-center gap-3`}>
+                          <div className={`p-2 rounded-full ${isSelected ? 'bg-blue-200 text-blue-700' : 'bg-slate-100 text-slate-500'}`}><slot.icon size={20}/></div>
+                          <span className={`text-sm font-bold uppercase ${isSelected ? 'text-blue-900' : 'text-slate-500'}`}>{slot.label}</span>
+                        </button>
+                        {isSelected && <input type="time" className="bg-white border border-blue-200 text-blue-800 text-sm rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-400" value={scheduleTimes[slot.id] || slot.defaultTime} onChange={(e) => handleTimeChange(slot.id, e.target.value)} />}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="flex gap-3">
                 <button type="button" onClick={() => setIsAdding(false)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
-                <button type="submit" disabled={!newMedName.trim()} className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm disabled:opacity-50">Tallenna</button>
+                <button 
+                  type="submit" 
+                  disabled={!newMedName.trim() || (addMode === 'dosett' && currentIngredients.length === 0)} 
+                  className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm disabled:opacity-50"
+                >
+                  Tallenna
+                </button>
               </div>
             </form>
             <div className="h-6"></div>
@@ -1932,6 +1786,7 @@ const MedicineTracker = () => {
                 </label>
               </div>
 
+              {/* DOSETTI MUOKKAUS */}
               <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Koostumus / Dosetti</label>
                  <div className="flex gap-2 mb-2">
@@ -1946,7 +1801,10 @@ const MedicineTracker = () => {
                    {currentIngredients.map((ing, idx) => (
                      <div key={idx} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-200 text-sm">
                        <span>{ing.name} <span className="text-slate-400 font-normal">({ing.count})</span></span>
-                       <button type="button" onClick={() => removeIngredient(idx)} className="text-red-400 hover:text-red-600"><Trash2 size={16}/></button>
+                       <div className="flex gap-1">
+                         <button type="button" onClick={() => editIngredient(idx)} className="p-1 text-slate-400 hover:text-blue-600"><Pencil size={16}/></button>
+                         <button type="button" onClick={() => removeIngredient(idx)} className="p-1 text-slate-400 hover:text-red-600"><Trash2 size={16}/></button>
+                       </div>
                      </div>
                    ))}
                  </div>
@@ -1975,30 +1833,51 @@ const MedicineTracker = () => {
                 )}
               </div>
 
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Otettava</label>
-              <div className="grid grid-cols-1 gap-2 mb-6">
-                {TIME_SLOTS.map(slot => {
-                  const currentSchedule = editingMed.schedule || [];
-                  const isSelected = currentSchedule.includes(slot.id);
-                  const currentTime = editingMed.scheduleTimes?.[slot.id] || slot.defaultTime;
-                  return (
-                    <div key={slot.id} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${isSelected ? 'bg-blue-50 border-blue-500' : 'bg-white border-slate-200'}`}>
-                      <button type="button" onClick={() => toggleScheduleSlot(slot.id, true)} className={`flex-1 flex items-center gap-3`}>
-                        <div className={`p-2 rounded-full ${isSelected ? 'bg-blue-200 text-blue-700' : 'bg-slate-100 text-slate-500'}`}><slot.icon size={20}/></div>
-                        <span className={`text-sm font-bold uppercase ${isSelected ? 'text-blue-900' : 'text-slate-500'}`}>{slot.label}</span>
+              <div className="mb-6">
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Aikataulu</label>
+                
+                {/* VIIKONPÄIVÄT */}
+                <div className="flex justify-between mb-4 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                  {WEEKDAYS.map(day => {
+                    const currentDays = editingMed.weekdays || [0,1,2,3,4,5,6];
+                    const isSelected = currentDays.includes(day.id);
+                    return (
+                      <button
+                        key={day.id}
+                        type="button"
+                        onClick={() => toggleWeekday(day.id, true)}
+                        className={`w-8 h-8 rounded-full text-xs font-bold transition-all ${isSelected ? 'bg-blue-600 text-white shadow-md scale-110' : 'bg-white text-slate-400 border border-slate-200'}`}
+                      >
+                        {day.label}
                       </button>
-                      
-                      {isSelected && (
-                        <input 
-                          type="time" 
-                          className="bg-white border border-blue-200 text-blue-800 text-sm rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-400"
-                          value={currentTime}
-                          onChange={(e) => handleTimeChange(slot.id, e.target.value, true)}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
+                    )
+                  })}
+                </div>
+
+                <div className="grid grid-cols-1 gap-2">
+                  {TIME_SLOTS.map(slot => {
+                    const currentSchedule = editingMed.schedule || [];
+                    const isSelected = currentSchedule.includes(slot.id);
+                    const currentTime = editingMed.scheduleTimes?.[slot.id] || slot.defaultTime;
+                    return (
+                      <div key={slot.id} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${isSelected ? 'bg-blue-50 border-blue-500' : 'bg-white border-slate-200'}`}>
+                        <button type="button" onClick={() => toggleScheduleSlot(slot.id, true)} className={`flex-1 flex items-center gap-3`}>
+                          <div className={`p-2 rounded-full ${isSelected ? 'bg-blue-200 text-blue-700' : 'bg-slate-100 text-slate-500'}`}><slot.icon size={20}/></div>
+                          <span className={`text-sm font-bold uppercase ${isSelected ? 'text-blue-900' : 'text-slate-500'}`}>{slot.label}</span>
+                        </button>
+                        
+                        {isSelected && (
+                          <input 
+                            type="time" 
+                            className="bg-white border border-blue-200 text-blue-800 text-sm rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-400"
+                            value={currentTime}
+                            onChange={(e) => handleTimeChange(slot.id, e.target.value, true)}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="flex gap-3">
