@@ -85,7 +85,7 @@ const HelpView = ({ onClose }) => {
         ))}
         
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v4.5 - {new Date().getFullYear()}
+          Lääkemuistio v4.6 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -227,11 +227,14 @@ const MedicineTracker = () => {
   const [quickAddReason, setQuickAddReason] = useState('');
   const [quickAddDate, setQuickAddDate] = useState('');
   
+  // TÄMÄ PALAUTETTIIN VARMUUDEN VUOKSI
   const [takeWithReasonMed, setTakeWithReasonMed] = useState(null);
   const [takeReason, setTakeReason] = useState('');
 
   // EDITOINTI JA LOGITUS TILAT
   const [editingMed, setEditingMed] = useState(null);
+  
+  // MANUAALINEN LOGI
   const [manualLogMed, setManualLogMed] = useState(null);
   const [manualDate, setManualDate] = useState('');
   const [manualReason, setManualReason] = useState('');
@@ -601,6 +604,15 @@ const MedicineTracker = () => {
     } catch (error) { console.error(error); }
   };
 
+  // PALAUTETTU TOIMINTO (Varmuuden vuoksi)
+  const handleConfirmTakeWithReason = async (e) => {
+    e.preventDefault();
+    if(!takeWithReasonMed) return;
+    await takeMedicine(takeWithReasonMed, null, takeReason);
+    setTakeWithReasonMed(null);
+    setTakeReason('');
+  };
+
   const handleRefill = async (med) => {
     if (!user) return;
     const amount = prompt("Paljonko lisätään varastoon?", "30");
@@ -763,8 +775,7 @@ const MedicineTracker = () => {
 
   const archivedMeds = medications.filter(m => m.isArchived);
   
-  // OSTOSLISTAN LOGIIKKA (PÄIVITETTY)
-  // Näytetään jos varasto <= raja (PUNAINEN) TAI varasto <= raja + 5 (ORANSSI)
+  // OSTOSLISTAN LOGIIKKA (PÄIVITETTY VÄRIKOODEILLA)
   const shoppingListMeds = medications.filter(m => {
     if (m.isArchived || !m.trackStock || m.isCourse || m.stock === null) return false;
     const limit = m.lowStockLimit || 10;
@@ -988,7 +999,7 @@ const MedicineTracker = () => {
           <>
           {activeTab === 'home' && (
             <>
-              {/* VAROITUSPALKKI JOS KRIITTISESTI LOPPUMASSA */}
+              {/* VAROITUSPALKKI JOS KRIITTISESTI LOPPUMASSA (UUSI) */}
               {criticalStockCount > 0 && (
                 <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl mb-2 flex items-center gap-3 animate-pulse">
                    <AlertCircle size={20} className="text-red-600" />
@@ -1018,7 +1029,7 @@ const MedicineTracker = () => {
                 const hasSchedule = med.schedule && med.schedule.length > 0;
                 const isCombo = med.ingredients && med.ingredients.length > 0;
                 
-                // Määritellään rajat
+                // Määritellään rajat (UUSI LOGIIKKA)
                 const limit = med.lowStockLimit || 10;
                 const isCriticalStock = !isCombo && med.trackStock && !med.isCourse && med.stock !== null && med.stock <= limit;
                 const isWarningStock = !isCombo && med.trackStock && !med.isCourse && med.stock !== null && med.stock > limit && med.stock <= (limit + 5);
@@ -1029,7 +1040,7 @@ const MedicineTracker = () => {
                 if (hasSchedule) isDoneForToday = med.schedule.every(slotId => isSlotTakenToday(med.id, slotId));
                 else isDoneForToday = isGenericTakenToday(med.id);
 
-                // --- ONKO MYÖHÄSSÄ? ---
+                // --- ONKO MYÖHÄSSÄ? (UUSI LOGIIKKA) ---
                 let isLate = false;
                 if (hasSchedule) {
                   const now = new Date();
@@ -1067,7 +1078,7 @@ const MedicineTracker = () => {
                             {isCombo && <Layers size={20} className="text-slate-600" />}
                             <h3 className="text-lg font-bold text-slate-800 leading-tight">{med.name}</h3>
                             
-                            {/* Tilanneikonit */}
+                            {/* Tilanneikonit (UUSI) */}
                             {expandedMedId !== med.id && isDoneForToday && <CheckCircle size={18} className="text-green-600 shrink-0" />}
                             {expandedMedId !== med.id && isLate && <Clock size={18} className="text-red-500 animate-pulse shrink-0" />}
                             {expandedMedId !== med.id && !isLate && isCriticalStock && <AlertCircle size={18} className="text-red-600 shrink-0" />}
@@ -1146,7 +1157,7 @@ const MedicineTracker = () => {
                                 const isTaken = isSlotTakenToday(med.id, slot.id);
                                 const scheduleTime = med.scheduleTimes?.[slot.id] || slot.defaultTime;
                                 
-                                // Onko juuri tämä slotti myöhässä?
+                                // Onko juuri tämä slotti myöhässä? (UUSI)
                                 const [h, m] = scheduleTime.split(':').map(Number);
                                 const now = new Date();
                                 const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -1306,7 +1317,7 @@ const MedicineTracker = () => {
 
       {/* --- MODALIT --- */}
       
-      {/* LÄÄKELUETTELO MODAL (UUSI JA PARANNETTU) */}
+      {/* LÄÄKELUETTELO MODAL (UUSI VÄRIKOODEILLA) */}
       {showAllMedsList && (
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[90vh] overflow-y-auto">
@@ -1432,7 +1443,7 @@ const MedicineTracker = () => {
         </div>
       )}
 
-      {/* VARASTOLISTA MODAL */}
+      {/* VARASTOLISTA MODAL (UUSI VÄRIKOODEILLA) */}
       {showStockList && (
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[90vh] overflow-y-auto">
@@ -1612,14 +1623,13 @@ const MedicineTracker = () => {
       {/* OHJEET */}
       {showHelp && <HelpView onClose={() => setShowHelp(false)} />}
 
-      {/* PIKALISÄYS */}
+      {/* PIKALISÄYS (SALAMA) */}
       {isQuickAdding && (
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Zap className="text-orange-500"/> Kirjaa kertaluontoinen</h2>
             <form onSubmit={handleQuickAdd}>
               
-              {/* VETOVALIKKO */}
               <div className="mb-4">
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Valitse listalta (valinnainen)</label>
                 <select 
@@ -1641,7 +1651,6 @@ const MedicineTracker = () => {
                 </select>
               </div>
 
-              {/* PIKA-NAPIT (VARASTOTUOTTEET) */}
               <div className="flex flex-wrap gap-2 mb-3 max-h-32 overflow-y-auto">
                 {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).map(m => (
                   <button key={m.id} type="button" onClick={() => setQuickAddName(m.name)} className="px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-600 active:bg-blue-100 active:border-blue-300 active:text-blue-700">{m.name}</button>
@@ -1676,7 +1685,6 @@ const MedicineTracker = () => {
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[95vh] overflow-y-auto">
             
-            {/* VÄRIVALINTA */}
             <div className="flex flex-wrap gap-3 justify-center mb-6 pt-2">
               {colorList.map(c => {
                 const colors = getColors(c);
@@ -1689,7 +1697,6 @@ const MedicineTracker = () => {
               })}
             </div>
 
-            {/* TYYPPIVALINTA */}
             <div className="flex p-1 bg-slate-100 rounded-xl mb-6">
               <button 
                 onClick={() => setAddMode('single')}
@@ -1715,7 +1722,6 @@ const MedicineTracker = () => {
                 <input className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" placeholder="Annostus / Lisätiedot (valinnainen)" value={newMedDosage} onChange={e => setNewMedDosage(e.target.value)} />
               )}
 
-              {/* DOSETTIN SISÄLTÖ */}
               {addMode === 'dosett' && (
                 <div className="mb-6 bg-blue-50 p-3 rounded-xl border border-blue-100">
                    <label className="block text-xs font-bold text-blue-800 uppercase mb-2">Valitse sisältö (Pakollinen)</label>
@@ -1742,7 +1748,6 @@ const MedicineTracker = () => {
                 </div>
               )}
 
-              {/* SINGLE MODE OPTIONS */}
               {addMode === 'single' && (
                 <div className="mb-4">
                   <label className="flex items-center gap-2 cursor-pointer bg-slate-50 p-3 rounded-xl border border-slate-200">
@@ -1752,7 +1757,6 @@ const MedicineTracker = () => {
                 </div>
               )}
 
-              {/* VARASTOSALDO (VAIN SINGLE) */}
               {addMode === 'single' && (
                 <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
                   <label className="flex items-center gap-2 mb-2 cursor-pointer">
@@ -1780,11 +1784,9 @@ const MedicineTracker = () => {
                 </div>
               )}
 
-              {/* AIKATAULU JA PÄIVÄT (MOLEMMAT) */}
               <div className="mb-6">
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Aikataulu (Valinnainen)</label>
                 
-                {/* VIIKONPÄIVÄT */}
                 <div className="flex justify-between mb-4 bg-slate-50 p-2 rounded-xl border border-slate-200">
                   {WEEKDAYS.map(day => {
                     const isSelected = selectedWeekdays.includes(day.id);
@@ -1806,7 +1808,6 @@ const MedicineTracker = () => {
                   })}
                 </div>
 
-                {/* AIKASLOTIT */}
                 <div className="grid grid-cols-1 gap-2">
                   {TIME_SLOTS.map(slot => {
                     const isSelected = selectedSchedule.includes(slot.id);
@@ -1846,7 +1847,6 @@ const MedicineTracker = () => {
             <h2 className="text-lg font-bold mb-4">Muokkaa: {editingMed.name}</h2>
             <form onSubmit={handleUpdateMedication}>
               
-              {/* VÄRI */}
               <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Väri</label>
               <div className="flex flex-wrap gap-3 justify-center mb-6">
                 {colorList.map(c => {
@@ -1862,7 +1862,6 @@ const MedicineTracker = () => {
 
               <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-blue-500" value={editingMed.name} onChange={e => setEditingMed({...editingMed, name: e.target.value})} />
               
-              {/* NÄYTETÄÄN VAIN JOS EI OLE DOSETTI */}
               {(!editingMed.ingredients || editingMed.ingredients.length === 0) && (
                 <input className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" placeholder="Annostus / Lisätiedot" value={editingMed.dosage || ''} onChange={e => setEditingMed({...editingMed, dosage: e.target.value})} />
               )}
@@ -1874,7 +1873,6 @@ const MedicineTracker = () => {
                 </label>
               </div>
 
-              {/* NÄYTETÄÄN VAIN JOS ON DOSETTI (Sisältää ingredients) */}
               {editingMed.ingredients && editingMed.ingredients.length > 0 && (
                 <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Koostumus / Dosetti</label>
@@ -1900,7 +1898,6 @@ const MedicineTracker = () => {
                 </div>
               )}
 
-              {/* VARASTOSEURANTA (Vain jos ei dosetti) */}
               {(!editingMed.ingredients || editingMed.ingredients.length === 0) && (
                 <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
                   <label className="flex items-center gap-2 mb-2 cursor-pointer">
@@ -1926,7 +1923,6 @@ const MedicineTracker = () => {
                 </div>
               )}
 
-              {/* VIIKONPÄIVÄT (PUUTTUI AIEMMIN) */}
               <div className="mb-4">
                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Viikonpäivät</label>
                  <div className="flex justify-between mb-4 bg-slate-50 p-2 rounded-xl border border-slate-200">
@@ -1976,6 +1972,108 @@ const MedicineTracker = () => {
                 <button type="button" onClick={() => setEditingMed(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
                 <button type="submit" disabled={!editingMed.name.trim()} className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm disabled:opacity-50">Tallenna</button>
               </div>
+            </form>
+            <div className="h-6"></div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. LÄÄKKEEN HISTORIA NÄKYMÄ (YKSITTÄINEN) - TÄMÄ PUUTTUI */}
+      {showHistoryFor && (
+        <div className="absolute inset-0 z-50 bg-white flex flex-col animate-in slide-in-from-right duration-300">
+           <div className="flex items-center gap-3 p-4 border-b border-slate-200 bg-slate-50">
+             <button onClick={() => setShowHistoryFor(null)} className="p-2 bg-white rounded-full shadow-sm border border-slate-200"><X size={20}/></button>
+             <h2 className="text-lg font-bold text-slate-800">
+               {medications.find(m => m.id === showHistoryFor)?.name || 'Lääkkeen historia'}
+             </h2>
+           </div>
+           <div className="flex-1 overflow-y-auto p-4 bg-slate-50">
+             <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+               {logs.filter(l => l.medId === showHistoryFor).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).map((log, i) => (
+                 <div key={log.id} className="p-4 border-b border-slate-100 last:border-0 flex justify-between items-start">
+                    <div>
+                      <div className="font-bold text-slate-700">{new Date(log.timestamp).toLocaleDateString()} klo {formatTime(log.timestamp)}</div>
+                      {log.reason && <div className="text-sm text-slate-500 italic mt-1">"{log.reason}"</div>}
+                      {log.slot && <div className="text-xs text-blue-500 uppercase font-bold mt-1">{TIME_SLOTS.find(s=>s.id===log.slot)?.label}</div>}
+                    </div>
+                    <button onClick={() => openLogEdit(log)} className="p-2 text-slate-400 hover:text-blue-600"><Pencil size={18}/></button>
+                 </div>
+               ))}
+               {logs.filter(l => l.medId === showHistoryFor).length === 0 && <div className="p-8 text-center text-slate-400">Ei merkintöjä.</div>}
+             </div>
+           </div>
+        </div>
+      )}
+
+      {/* 4. MUOKKAA HISTORIAMERKINTÄÄ - TÄMÄ PUUTTUI */}
+      {editingLog && (
+        <div className="absolute inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in">
+          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
+            <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><History className="text-blue-600"/> Muokkaa merkintää</h2>
+            <form onSubmit={handleSaveLogEdit}>
+               <div className="mb-4">
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Aika</label>
+                  <input type="datetime-local" required className="w-full bg-slate-50 p-3 rounded-xl border outline-none" value={editingLogDate} onChange={e => setEditingLogDate(e.target.value)} />
+               </div>
+               <div className="mb-6">
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Syy / Huomio</label>
+                  <input className="w-full bg-slate-50 p-3 rounded-xl border outline-none" placeholder="Kirjoita syy..." value={editingLogReason} onChange={e => setEditingLogReason(e.target.value)} />
+               </div>
+               <div className="flex gap-3">
+                 <button type="button" onClick={requestDeleteLog} className="p-3 text-red-500 bg-red-50 rounded-xl font-bold"><Trash2 size={20}/></button>
+                 <button type="button" onClick={() => setEditingLog(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
+                 <button type="submit" className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm">Tallenna</button>
+               </div>
+            </form>
+            <div className="h-6"></div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. POISTON VARMISTUS */}
+      {deleteDialog.isOpen && (
+        <div className="absolute inset-0 z-[70] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+             <div className="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-4 mx-auto"><AlertTriangle size={24}/></div>
+             <h3 className="text-lg font-bold text-center mb-2">{deleteDialog.title || 'Poista lääke?'}</h3>
+             <p className="text-center text-slate-600 text-sm mb-6">{deleteDialog.message}</p>
+             
+             {deleteDialog.mode === 'med' ? (
+               <div className="space-y-3">
+                 <button onClick={handleDeleteAll} className="w-full py-3 bg-red-600 text-white rounded-xl font-bold text-sm">Poista lääke ja historia</button>
+                 {deleteDialog.hasHistory && (
+                   <button onClick={handleDeleteKeepHistory} className="w-full py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm">Poista lääke, säilytä historia</button>
+                 )}
+                 <button onClick={() => setDeleteDialog({...deleteDialog, isOpen: false})} className="w-full py-3 text-slate-500 text-sm font-bold">Peruuta</button>
+               </div>
+             ) : (
+               <div className="flex gap-3">
+                  <button onClick={() => setDeleteDialog({...deleteDialog, isOpen: false})} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600">Peruuta</button>
+                  <button onClick={handleDeleteSingleLog} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold">Poista</button>
+               </div>
+             )}
+          </div>
+        </div>
+      )}
+
+      {/* 6. MANUAALINEN LISÄYS */}
+      {manualLogMed && (
+        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in">
+          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full">
+            <h2 className="text-lg font-bold mb-4">Merkitse otetuksi: {manualLogMed.name}</h2>
+            <form onSubmit={handleManualLog}>
+               <div className="mb-4">
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Aika</label>
+                  <input type="datetime-local" required className="w-full bg-slate-50 p-3 rounded-xl border outline-none" value={manualDate} onChange={e => setManualDate(e.target.value)} />
+               </div>
+               <div className="mb-6">
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Syy (valinnainen)</label>
+                  <input className="w-full bg-slate-50 p-3 rounded-xl border outline-none" placeholder="Esim. Päänsärky" value={manualReason} onChange={e => setManualReason(e.target.value)} />
+               </div>
+               <div className="flex gap-3">
+                 <button type="button" onClick={() => setManualLogMed(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 text-sm">Peruuta</button>
+                 <button type="submit" className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm">Tallenna</button>
+               </div>
             </form>
             <div className="h-6"></div>
           </div>
