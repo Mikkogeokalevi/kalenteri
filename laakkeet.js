@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info, List, CalendarDays } from 'lucide-react';
+import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info, List, CalendarDays, AlertCircle } from 'lucide-react';
 
 // TUODAAN OHJEET ERILLISESTÄ TIEDOSTOSTA
-// Varmista että sinulla on ohjeet.js tiedosto samassa kansiossa!
 import { ohjeData } from './ohjeet.js';
 
 // --- FIREBASE IMPORTS ---
@@ -86,7 +85,7 @@ const HelpView = ({ onClose }) => {
         ))}
         
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v4.3 - {new Date().getFullYear()}
+          Lääkemuistio v4.4 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -764,12 +763,17 @@ const MedicineTracker = () => {
 
   const archivedMeds = medications.filter(m => m.isArchived);
   
-  const shoppingListMeds = medications.filter(m => 
-    !m.isArchived &&
-    m.trackStock && 
-    !m.isCourse && 
-    (m.stock !== null && m.stock <= (m.lowStockLimit || 10))
-  );
+  // OSTOSLISTAN LOGIIKKA (PÄIVITETTY)
+  // Näytetään jos varasto <= raja (PUNAINEN) TAI varasto <= raja + 5 (ORANSSI)
+  const shoppingListMeds = medications.filter(m => {
+    if (m.isArchived || !m.trackStock || m.isCourse || m.stock === null) return false;
+    const limit = m.lowStockLimit || 10;
+    return m.stock <= (limit + 5); 
+  });
+  
+  // Lasketaan kriittisten määrä etusivun ilmoitusta varten
+  const criticalStockCount = activeMeds.filter(m => m.trackStock && !m.isCourse && m.stock <= (m.lowStockLimit || 10)).length;
+
 
   const getLogName = (log) => {
     const med = medications.find(m => m.id === log.medId);
@@ -984,6 +988,14 @@ const MedicineTracker = () => {
           <>
           {activeTab === 'home' && (
             <>
+              {/* VAROITUSPALKKI JOS KRIITTISESTI LOPPUMASSA */}
+              {criticalStockCount > 0 && (
+                <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl mb-2 flex items-center gap-3 animate-pulse">
+                   <AlertCircle size={20} className="text-red-600" />
+                   <span className="font-bold text-sm">Huomio: {criticalStockCount} lääkettä loppumassa!</span>
+                </div>
+              )}
+
               {activeMeds.length === 0 && !isAdding && (
                 <div className="text-center py-12 text-slate-400">
                   <div className="bg-white p-4 rounded-full inline-block mb-3 shadow-sm"><Pill size={32} className="text-blue-200" /></div>
@@ -1005,14 +1017,19 @@ const MedicineTracker = () => {
                 const c = getColors(med.colorKey || 'blue');
                 const hasSchedule = med.schedule && med.schedule.length > 0;
                 const isCombo = med.ingredients && med.ingredients.length > 0;
-                const isLowStock = !isCombo && med.trackStock && !med.isCourse && med.stock !== null && med.stock <= (med.lowStockLimit || 10);
+                
+                // Määritellään rajat
+                const limit = med.lowStockLimit || 10;
+                const isCriticalStock = !isCombo && med.trackStock && !med.isCourse && med.stock !== null && med.stock <= limit;
+                const isWarningStock = !isCombo && med.trackStock && !med.isCourse && med.stock !== null && med.stock > limit && med.stock <= (limit + 5);
+
                 const isExpanded = expandedMedId === med.id || isReordering; 
                 
                 let isDoneForToday = false;
                 if (hasSchedule) isDoneForToday = med.schedule.every(slotId => isSlotTakenToday(med.id, slotId));
                 else isDoneForToday = isGenericTakenToday(med.id);
 
-                // --- UUSI ÄLYKÄS LOGIIKKA: ONKO MYÖHÄSSÄ? ---
+                // --- ONKO MYÖHÄSSÄ? ---
                 let isLate = false;
                 if (hasSchedule) {
                   const now = new Date();
@@ -1020,22 +1037,19 @@ const MedicineTracker = () => {
                   
                   isLate = med.schedule.some(slotId => {
                     const isTaken = isSlotTakenToday(med.id, slotId);
-                    if (isTaken) return false; // Jos otettu, ei ole myöhässä
-                    
-                    // Haetaan slotin aika (oletus tai käyttäjän asettama)
+                    if (isTaken) return false; 
                     const timeStr = med.scheduleTimes?.[slotId] || TIME_SLOTS.find(s => s.id === slotId).defaultTime;
                     const [h, m] = timeStr.split(':').map(Number);
                     const slotMinutes = h * 60 + m;
-                    
-                    // Jos nykyhetki on enemmän kuin lääkeaika, se on myöhässä
                     return currentMinutes > slotMinutes;
                   });
                 }
 
-                // Määritetään tyylit tilanteen mukaan (Prioriteetti: Myöhässä > Vähissä > Normaali)
+                // Määritetään tyylit (Prioriteetti: Myöhässä > Kriittinen > Varoitus > Normaali)
                 let cardStyleClass = `${c.bg} ${c.border}`; // Normaali
-                if (isLate) cardStyleClass = "bg-red-50 border-red-500 border-2 shadow-red-100"; // Myöhässä
-                else if (isLowStock) cardStyleClass = "bg-orange-50 border-orange-400 border-2 shadow-orange-100"; // Vähissä
+                if (isLate) cardStyleClass = "bg-red-50 border-red-500 border-2 shadow-red-100"; 
+                else if (isCriticalStock) cardStyleClass = "bg-red-50 border-red-400 border-2 shadow-sm"; // KRIITTINEN PUNAINEN
+                else if (isWarningStock) cardStyleClass = "bg-orange-50 border-orange-300 border-2 shadow-sm"; // VAROITUS ORANSSI
 
                 return (
                   <div key={med.id} className={`rounded-xl shadow-sm border transition-all duration-200 overflow-hidden ${cardStyleClass} ${!isExpanded?'hover:shadow-md':''} relative group`}>
@@ -1056,7 +1070,8 @@ const MedicineTracker = () => {
                             {/* Tilanneikonit */}
                             {expandedMedId !== med.id && isDoneForToday && <CheckCircle size={18} className="text-green-600 shrink-0" />}
                             {expandedMedId !== med.id && isLate && <Clock size={18} className="text-red-500 animate-pulse shrink-0" />}
-                            {expandedMedId !== med.id && !isLate && isLowStock && <AlertTriangle size={18} className="text-orange-500 shrink-0" />}
+                            {expandedMedId !== med.id && !isLate && isCriticalStock && <AlertCircle size={18} className="text-red-600 shrink-0" />}
+                            {expandedMedId !== med.id && !isLate && !isCriticalStock && isWarningStock && <AlertTriangle size={18} className="text-orange-500 shrink-0" />}
                          </div>
                          
                          {expandedMedId !== med.id && (
@@ -1065,8 +1080,10 @@ const MedicineTracker = () => {
                                <span className="text-xs font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded">MYÖHÄSSÄ!</span>
                              ) : isCombo ? (
                                <span className="text-xs font-bold text-slate-500 bg-white/50 px-1.5 py-0.5 rounded uppercase tracking-wider">Dosetti</span>
-                             ) : isLowStock ? (
-                               <span className="text-xs text-orange-600 font-bold truncate">Vain {med.stock} kpl jäljellä!</span>
+                             ) : isCriticalStock ? (
+                               <span className="text-xs text-red-600 font-bold truncate">Loppumassa! {med.stock} kpl</span>
+                             ) : isWarningStock ? (
+                               <span className="text-xs text-orange-600 font-bold truncate">Vain {med.stock} kpl jäljellä</span>
                              ) : med.trackStock && med.isCourse ? (
                                <span className="text-xs text-slate-500 font-bold truncate">Kuuri: {med.stock} kpl</span>
                              ) : med.dosage ? (
@@ -1105,7 +1122,7 @@ const MedicineTracker = () => {
                          {!isCombo && med.dosage && <div className="text-sm text-slate-700 mb-2 font-medium bg-white/50 p-2 rounded-lg inline-block mr-2">{med.dosage}</div>}
 
                          {!isCombo && med.trackStock && (
-                           <div className={`text-sm mb-3 font-medium bg-white/50 p-2 rounded-lg inline-flex items-center gap-2 ${isLowStock ? 'text-red-600 border border-red-200' : 'text-slate-700'}`}>
+                           <div className={`text-sm mb-3 font-medium bg-white/50 p-2 rounded-lg inline-flex items-center gap-2 ${isCriticalStock ? 'text-red-600 border border-red-200' : isWarningStock ? 'text-orange-600 border border-orange-200' : 'text-slate-700'}`}>
                              <Package size={14} /> <span>{med.stock !== null ? med.stock : 0} kpl</span>
                            </div>
                          )}
@@ -1500,15 +1517,26 @@ const MedicineTracker = () => {
              </div>
              {shoppingListMeds.length === 0 ? <div className="text-center text-slate-400 py-8">Kaikki lääkkeet hyvässä tilanteessa!</div> : (
                <div className="space-y-3">
-                 {shoppingListMeds.map(med => (
-                   <div key={med.id} className="flex justify-between items-center p-3 bg-red-50 border border-red-100 rounded-xl">
+                 {shoppingListMeds.map(med => {
+                   // Tarkista onko kriittinen (PUNAINEN) vai varoitus (ORANSSI)
+                   const limit = med.lowStockLimit || 10;
+                   const isCritical = med.stock <= limit;
+                   const style = isCritical ? "bg-red-50 border-red-200" : "bg-orange-50 border-orange-200";
+                   const textStyle = isCritical ? "text-red-600" : "text-orange-600";
+                   const iconStyle = isCritical ? "text-red-300" : "text-orange-300";
+
+                   return (
+                   <div key={med.id} className={`flex justify-between items-center p-3 border rounded-xl ${style}`}>
                       <div>
                         <div className="font-bold text-slate-800">{med.name}</div>
-                        <div className="text-xs text-red-600 font-bold">Jäljellä: {med.stock} kpl (Raja: {med.lowStockLimit||10})</div>
+                        <div className={`text-xs font-bold ${textStyle}`}>
+                          {isCritical ? 'LOPPUMASSA!' : 'VÄHISSÄ'} - Jäljellä: {med.stock} kpl
+                        </div>
                       </div>
-                      <Package className="text-red-300" size={24}/>
+                      <Package className={iconStyle} size={24}/>
                    </div>
-                 ))}
+                   );
+                 })}
                </div>
              )}
              <div className="h-6"></div>
