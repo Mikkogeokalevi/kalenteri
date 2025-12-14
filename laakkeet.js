@@ -1,175 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info, List, CalendarDays, AlertCircle } from 'lucide-react';
+import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info, List, CalendarDays, AlertCircle } from 'lucide-react';
 
-// TUODAAN OHJEET ERILLISESTÄ TIEDOSTOSTA
-import { ohjeData } from './ohjeet.js';
+// --- MODUULIT ---
+import { auth, db, APP_ID } from './firebase.js';
+import { TIME_SLOTS, WEEKDAYS, getColors, getSmartColor, colorList } from './vakiot.js';
+import AuthScreen from './AuthScreen.js';
+import HelpView from './HelpView.js';
 
 // --- FIREBASE IMPORTS ---
-import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  onAuthStateChanged, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut,
-  setPersistence,
-  browserLocalPersistence
-} from 'firebase/auth';
-import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, getDocs, query, where } from 'firebase/firestore';
-
-// --- ASETUKSET ---
-const firebaseConfig = {
-  apiKey: "AIzaSyCZIupycr2puYrPK2KajAW7PcThW9Pjhb0",
-  authDomain: "perhekalenteri-projekti.firebaseapp.com",
-  databaseURL: "https://perhekalenteri-projekti-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "perhekalenteri-projekti",
-  storageBucket: "perhekalenteri-projekti.appspot.com",
-  messagingSenderId: "588536838615",
-  appId: "1:588536838615:web:148de0581bbd46c42c7392"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const APP_ID = 'laakemuistio';
-
-// --- VAKIOT ---
-const TIME_SLOTS = [
-  { id: 'aamu', label: 'Aamu', icon: Sunrise, defaultTime: '08:00' },
-  { id: 'paiva', label: 'Päivä', icon: Sun, defaultTime: '12:00' },
-  { id: 'ilta', label: 'Ilta', icon: Sunset, defaultTime: '20:00' },
-  { id: 'yo', label: 'Yö', icon: Moon, defaultTime: '22:00' }
-];
-
-const WEEKDAYS = [
-  { id: 1, label: 'Ma' },
-  { id: 2, label: 'Ti' },
-  { id: 3, label: 'Ke' },
-  { id: 4, label: 'To' },
-  { id: 5, label: 'Pe' },
-  { id: 6, label: 'La' },
-  { id: 0, label: 'Su' }
-];
-
-const getIconComponent = (iconName) => {
-  const icons = { Info, PlusSquare, Plus, CheckCircle, Zap, Package, BarChart2, Bell, List, Layers };
-  const Icon = icons[iconName] || HelpCircle;
-  return <Icon size={22} className="text-blue-600" />;
-};
-
-// --- OHJESIVU KOMPONENTTI ---
-const HelpView = ({ onClose }) => {
-  if (!ohjeData) return <div className="fixed inset-0 z-[60] bg-white p-5">Virhe: ohjeet.js puuttuu.</div>;
-
-  return (
-    <div className="fixed inset-0 z-[60] bg-slate-50 flex flex-col animate-in slide-in-from-right duration-300 overflow-hidden">
-      <div className="bg-white px-4 py-4 border-b border-slate-200 flex items-center justify-between shadow-sm flex-none">
-        <div className="flex items-center gap-2 text-blue-600 font-bold text-lg">
-          <HelpCircle /> Käyttöopas
-        </div>
-        <button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
-          <X size={20} />
-        </button>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-5 space-y-6 pb-20">
-        {ohjeData.map((section) => (
-          <section key={section.id} className={`${section.id === 'intro' ? 'bg-blue-50 border-blue-100' : 'bg-white shadow-sm border-slate-100'} p-5 rounded-2xl border`}>
-            <h3 className={`font-bold text-lg mb-3 flex items-center gap-2 ${section.id === 'intro' ? 'text-blue-800' : 'text-slate-800'}`}>
-              {section.icon && getIconComponent(section.icon)} 
-              {section.title}
-            </h3>
-            <div className="text-sm text-slate-600" dangerouslySetInnerHTML={{ __html: section.content }} />
-          </section>
-        ))}
-        
-        <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v4.6 - {new Date().getFullYear()}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- KIRJAUTUMISNÄKYMÄ ---
-const AuthScreen = () => {
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleAuth = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      await setPersistence(auth, browserLocalPersistence);
-      if (isRegistering) {
-        await createUserWithEmailAndPassword(auth, email, password);
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
-      }
-    } catch (err) {
-      console.error(err);
-      let msg = "Tapahtui virhe.";
-      if (err.code === 'auth/invalid-email') msg = "Virheellinen sähköposti.";
-      if (err.code === 'auth/missing-password') msg = "Syötä salasana.";
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') msg = "Väärä sähköposti tai salasana.";
-      if (err.code === 'auth/weak-password') msg = "Salasanan tulee olla vähintään 6 merkkiä.";
-      if (err.code === 'auth/email-already-in-use') msg = "Sähköposti on jo käytössä.";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative overflow-hidden">
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-         <img src="https://img.geocaching.com/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" alt="" className="w-3/4 opacity-[0.15] grayscale" />
-      </div>
-      <div className="w-full max-w-sm bg-white/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl z-10 border border-white">
-        <div className="flex justify-center mb-6">
-          <img src="https://img.geocaching.com/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" alt="Logo" className="h-16 w-auto object-contain" />
-        </div>
-        <h2 className="text-2xl font-bold text-center text-slate-800 mb-2">
-          {isRegistering ? 'Luo tunnus' : 'Kirjaudu sisään'}
-        </h2>
-        <p className="text-center text-slate-400 text-sm mb-8">
-          Lääkemuistio - Pidä kirjaa lääkkeistäsi
-        </p>
-        {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 flex items-center gap-2"><AlertTriangle size={16} /> {error}</div>}
-        <form onSubmit={handleAuth} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Sähköposti</label>
-            <div className="relative">
-              <User className="absolute left-3 top-3 text-slate-400" size={18} />
-              <input type="email" required className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all" placeholder="sinun@sahkoposti.fi" value={email} onChange={(e) => setEmail(e.target.value)} />
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Salasana</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 text-slate-400" size={18} />
-              <input type="password" required className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all" placeholder="******" value={password} onChange={(e) => setPassword(e.target.value)} />
-            </div>
-          </div>
-          <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all flex justify-center items-center gap-2 disabled:opacity-70">
-            {loading && <Loader2 size={20} className="animate-spin" />}
-            {isRegistering ? 'Rekisteröidy' : 'Kirjaudu'}
-          </button>
-        </form>
-        <div className="mt-6 text-center">
-          <button onClick={() => { setIsRegistering(!isRegistering); setError(''); }} className="text-sm text-slate-500 hover:text-blue-600 font-medium">
-            {isRegistering ? 'Onko sinulla jo tunnus? Kirjaudu' : 'Uusi käyttäjä? Luo tunnus'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot } from 'firebase/firestore';
 
 // --- PÄÄSOVELLUS ---
 const MedicineTracker = () => {
@@ -227,14 +68,8 @@ const MedicineTracker = () => {
   const [quickAddReason, setQuickAddReason] = useState('');
   const [quickAddDate, setQuickAddDate] = useState('');
   
-  // TÄMÄ PALAUTETTIIN VARMUUDEN VUOKSI
-  const [takeWithReasonMed, setTakeWithReasonMed] = useState(null);
-  const [takeReason, setTakeReason] = useState('');
-
   // EDITOINTI JA LOGITUS TILAT
   const [editingMed, setEditingMed] = useState(null);
-  
-  // MANUAALINEN LOGI
   const [manualLogMed, setManualLogMed] = useState(null);
   const [manualDate, setManualDate] = useState('');
   const [manualReason, setManualReason] = useState('');
@@ -373,29 +208,6 @@ const MedicineTracker = () => {
     setHistorySearch('');
   };
 
-  // Värit
-  const colorList = ['blue', 'green', 'purple', 'orange', 'rose', 'cyan', 'amber', 'teal', 'indigo', 'lime', 'fuchsia', 'slate'];
-  const colorMap = {
-    'blue':   { bg: 'bg-blue-100',   border: 'border-blue-300',   dot: 'bg-blue-600',   text: 'text-blue-800',   btn: 'bg-blue-600 active:bg-blue-700' },
-    'green':  { bg: 'bg-green-100',  border: 'border-green-300',  dot: 'bg-green-600',  text: 'text-green-800',  btn: 'bg-green-600 active:bg-green-700' },
-    'purple': { bg: 'bg-purple-100', border: 'border-purple-300', dot: 'bg-purple-600', text: 'text-purple-800', btn: 'bg-purple-600 active:bg-purple-700' },
-    'orange': { bg: 'bg-orange-100', border: 'border-orange-300', dot: 'bg-orange-500', text: 'text-orange-800', btn: 'bg-orange-500 active:bg-orange-600' },
-    'rose':   { bg: 'bg-red-100',    border: 'border-red-300',    dot: 'bg-red-600',    text: 'text-red-800',    btn: 'bg-red-600 active:bg-red-700' },
-    'cyan':   { bg: 'bg-cyan-100',   border: 'border-cyan-300',   dot: 'bg-cyan-600',   text: 'text-cyan-800',   btn: 'bg-cyan-600 active:bg-cyan-700' },
-    'amber':  { bg: 'bg-amber-100',  border: 'border-amber-300',  dot: 'bg-amber-500',  text: 'text-amber-800',  btn: 'bg-amber-500 active:bg-amber-600' },
-    'teal':   { bg: 'bg-teal-100',   border: 'border-teal-300',   dot: 'bg-teal-600',   text: 'text-teal-800',   btn: 'bg-teal-600 active:bg-teal-700' },
-    'indigo': { bg: 'bg-indigo-100', border: 'border-indigo-300', dot: 'bg-indigo-600', text: 'text-indigo-800', btn: 'bg-indigo-600 active:bg-indigo-700' },
-    'lime':   { bg: 'bg-lime-100',   border: 'border-lime-300',   dot: 'bg-lime-600',   text: 'text-lime-800',   btn: 'bg-lime-600 active:bg-lime-700' },
-    'fuchsia':{ bg: 'bg-fuchsia-100',border: 'border-fuchsia-300',dot: 'bg-fuchsia-600',text: 'text-fuchsia-800',btn: 'bg-fuchsia-600 active:bg-fuchsia-700' },
-    'slate':  { bg: 'bg-slate-200',  border: 'border-slate-300',  dot: 'bg-slate-600',  text: 'text-slate-800',  btn: 'bg-slate-600 active:bg-slate-700' },
-  };
-  const getColors = (key) => colorMap[key] || colorMap['blue'];
-  const getSmartColor = () => {
-    const activeMeds = medications.filter(m => !m.isArchived);
-    const usedColors = new Set(activeMeds.map(m => m.colorKey));
-    return colorList.find(c => !usedColors.has(c)) || colorList[medications.length % colorList.length];
-  };
-
   // --- LOGIIKKA ---
   const handleLogout = () => { if(window.confirm("Kirjaudutaanko ulos?")) signOut(auth); };
 
@@ -407,7 +219,7 @@ const MedicineTracker = () => {
     setAddMode('single'); 
     setNewMedName(''); setNewMedDosage(''); setNewMedStock(''); setNewMedTrackStock(false);
     setNewMedLowLimit('10'); setNewMedIsCourse(false);
-    setSelectedColor(getSmartColor()); setSelectedSchedule([]); setScheduleTimes({});
+    setSelectedColor(getSmartColor(medications)); setSelectedSchedule([]); setScheduleTimes({});
     setSelectedWeekdays([0,1,2,3,4,5,6]);
     setCurrentIngredients([]);
     setShowOnDashboard(true);
@@ -604,15 +416,6 @@ const MedicineTracker = () => {
     } catch (error) { console.error(error); }
   };
 
-  // PALAUTETTU TOIMINTO (Varmuuden vuoksi)
-  const handleConfirmTakeWithReason = async (e) => {
-    e.preventDefault();
-    if(!takeWithReasonMed) return;
-    await takeMedicine(takeWithReasonMed, null, takeReason);
-    setTakeWithReasonMed(null);
-    setTakeReason('');
-  };
-
   const handleRefill = async (med) => {
     if (!user) return;
     const amount = prompt("Paljonko lisätään varastoon?", "30");
@@ -775,16 +578,13 @@ const MedicineTracker = () => {
 
   const archivedMeds = medications.filter(m => m.isArchived);
   
-  // OSTOSLISTAN LOGIIKKA (PÄIVITETTY VÄRIKOODEILLA)
   const shoppingListMeds = medications.filter(m => {
     if (m.isArchived || !m.trackStock || m.isCourse || m.stock === null) return false;
     const limit = m.lowStockLimit || 10;
     return m.stock <= (limit + 5); 
   });
   
-  // Lasketaan kriittisten määrä etusivun ilmoitusta varten
   const criticalStockCount = activeMeds.filter(m => m.trackStock && !m.isCourse && m.stock <= (m.lowStockLimit || 10)).length;
-
 
   const getLogName = (log) => {
     const med = medications.find(m => m.id === log.medId);
@@ -1315,7 +1115,7 @@ const MedicineTracker = () => {
         </>
       )}
 
-      {/* --- MODALIT --- */}
+      {/* --- MODALIT (JATKUU ALHAALLA, JÄÄTÄVÄ MÄÄRÄ MODAALEJA KOOSTUU TÄNNE) --- */}
       
       {/* LÄÄKELUETTELO MODAL (UUSI VÄRIKOODEILLA) */}
       {showAllMedsList && (
@@ -1623,13 +1423,14 @@ const MedicineTracker = () => {
       {/* OHJEET */}
       {showHelp && <HelpView onClose={() => setShowHelp(false)} />}
 
-      {/* PIKALISÄYS (SALAMA) */}
+      {/* PIKALISÄYS */}
       {isQuickAdding && (
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Zap className="text-orange-500"/> Kirjaa kertaluontoinen</h2>
             <form onSubmit={handleQuickAdd}>
               
+              {/* VETOVALIKKO */}
               <div className="mb-4">
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Valitse listalta (valinnainen)</label>
                 <select 
@@ -1651,6 +1452,7 @@ const MedicineTracker = () => {
                 </select>
               </div>
 
+              {/* PIKA-NAPIT (VARASTOTUOTTEET) */}
               <div className="flex flex-wrap gap-2 mb-3 max-h-32 overflow-y-auto">
                 {medications.filter(m => !m.isArchived && m.trackStock && !m.isCourse).map(m => (
                   <button key={m.id} type="button" onClick={() => setQuickAddName(m.name)} className="px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-600 active:bg-blue-100 active:border-blue-300 active:text-blue-700">{m.name}</button>
@@ -1685,6 +1487,7 @@ const MedicineTracker = () => {
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[95vh] overflow-y-auto">
             
+            {/* VÄRIVALINTA */}
             <div className="flex flex-wrap gap-3 justify-center mb-6 pt-2">
               {colorList.map(c => {
                 const colors = getColors(c);
@@ -1697,6 +1500,7 @@ const MedicineTracker = () => {
               })}
             </div>
 
+            {/* TYYPPIVALINTA */}
             <div className="flex p-1 bg-slate-100 rounded-xl mb-6">
               <button 
                 onClick={() => setAddMode('single')}
@@ -1722,6 +1526,7 @@ const MedicineTracker = () => {
                 <input className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" placeholder="Annostus / Lisätiedot (valinnainen)" value={newMedDosage} onChange={e => setNewMedDosage(e.target.value)} />
               )}
 
+              {/* DOSETTIN SISÄLTÖ */}
               {addMode === 'dosett' && (
                 <div className="mb-6 bg-blue-50 p-3 rounded-xl border border-blue-100">
                    <label className="block text-xs font-bold text-blue-800 uppercase mb-2">Valitse sisältö (Pakollinen)</label>
@@ -1748,6 +1553,7 @@ const MedicineTracker = () => {
                 </div>
               )}
 
+              {/* SINGLE MODE OPTIONS */}
               {addMode === 'single' && (
                 <div className="mb-4">
                   <label className="flex items-center gap-2 cursor-pointer bg-slate-50 p-3 rounded-xl border border-slate-200">
@@ -1757,6 +1563,7 @@ const MedicineTracker = () => {
                 </div>
               )}
 
+              {/* VARASTOSALDO (VAIN SINGLE) */}
               {addMode === 'single' && (
                 <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
                   <label className="flex items-center gap-2 mb-2 cursor-pointer">
@@ -1784,9 +1591,11 @@ const MedicineTracker = () => {
                 </div>
               )}
 
+              {/* AIKATAULU JA PÄIVÄT (MOLEMMAT) */}
               <div className="mb-6">
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Aikataulu (Valinnainen)</label>
                 
+                {/* VIIKONPÄIVÄT */}
                 <div className="flex justify-between mb-4 bg-slate-50 p-2 rounded-xl border border-slate-200">
                   {WEEKDAYS.map(day => {
                     const isSelected = selectedWeekdays.includes(day.id);
@@ -1808,6 +1617,7 @@ const MedicineTracker = () => {
                   })}
                 </div>
 
+                {/* AIKASLOTIT */}
                 <div className="grid grid-cols-1 gap-2">
                   {TIME_SLOTS.map(slot => {
                     const isSelected = selectedSchedule.includes(slot.id);
@@ -1847,6 +1657,7 @@ const MedicineTracker = () => {
             <h2 className="text-lg font-bold mb-4">Muokkaa: {editingMed.name}</h2>
             <form onSubmit={handleUpdateMedication}>
               
+              {/* VÄRI */}
               <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Väri</label>
               <div className="flex flex-wrap gap-3 justify-center mb-6">
                 {colorList.map(c => {
@@ -1862,6 +1673,7 @@ const MedicineTracker = () => {
 
               <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-blue-500" value={editingMed.name} onChange={e => setEditingMed({...editingMed, name: e.target.value})} />
               
+              {/* NÄYTETÄÄN VAIN JOS EI OLE DOSETTI */}
               {(!editingMed.ingredients || editingMed.ingredients.length === 0) && (
                 <input className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" placeholder="Annostus / Lisätiedot" value={editingMed.dosage || ''} onChange={e => setEditingMed({...editingMed, dosage: e.target.value})} />
               )}
@@ -1873,6 +1685,7 @@ const MedicineTracker = () => {
                 </label>
               </div>
 
+              {/* NÄYTETÄÄN VAIN JOS ON DOSETTI (Sisältää ingredients) */}
               {editingMed.ingredients && editingMed.ingredients.length > 0 && (
                 <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Koostumus / Dosetti</label>
@@ -1898,6 +1711,7 @@ const MedicineTracker = () => {
                 </div>
               )}
 
+              {/* VARASTOSEURANTA (Vain jos ei dosetti) */}
               {(!editingMed.ingredients || editingMed.ingredients.length === 0) && (
                 <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
                   <label className="flex items-center gap-2 mb-2 cursor-pointer">
@@ -1923,6 +1737,7 @@ const MedicineTracker = () => {
                 </div>
               )}
 
+              {/* VIIKONPÄIVÄT (PUUTTUI AIEMMIN) */}
               <div className="mb-4">
                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Viikonpäivät</label>
                  <div className="flex justify-between mb-4 bg-slate-50 p-2 rounded-xl border border-slate-200">
@@ -1978,7 +1793,7 @@ const MedicineTracker = () => {
         </div>
       )}
 
-      {/* 3. LÄÄKKEEN HISTORIA NÄKYMÄ (YKSITTÄINEN) - TÄMÄ PUUTTUI */}
+      {/* 3. LÄÄKKEEN HISTORIA NÄKYMÄ (YKSITTÄINEN) */}
       {showHistoryFor && (
         <div className="absolute inset-0 z-50 bg-white flex flex-col animate-in slide-in-from-right duration-300">
            <div className="flex items-center gap-3 p-4 border-b border-slate-200 bg-slate-50">
@@ -2005,7 +1820,7 @@ const MedicineTracker = () => {
         </div>
       )}
 
-      {/* 4. MUOKKAA HISTORIAMERKINTÄÄ - TÄMÄ PUUTTUI */}
+      {/* 4. MUOKKAA HISTORIAMERKINTÄÄ */}
       {editingLog && (
         <div className="absolute inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
