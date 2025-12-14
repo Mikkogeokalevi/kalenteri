@@ -1,89 +1,278 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { createRoot } from 'react-dom/client';
-import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info, List, CalendarDays, AlertCircle } from 'lucide-react';
-
-// --- MODUULIT ---
-import { auth, db, APP_ID } from './firebase.js';
-import { TIME_SLOTS, WEEKDAYS, getColors, getSmartColor, colorList } from './vakiot.js';
-import AuthScreen from './AuthScreen.js';
-import HelpView from './HelpView.js';
+// laakkeet.js - ALL IN ONE VERSION 1.5
+import { ohjeData } from './ohjeet.js';
 
 // --- FIREBASE IMPORTS ---
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot } from 'firebase/firestore';
+// Koska käytämme CDN-versiota html-tiedostossa emme voi importata näin.
+// Käytetään globaaleja muuttujia tai Reactin sisäisiä importteja jos importmap ei ole käytössä.
+// MUTTA: Koska palasimme Babel-standalonen peruskäyttöön, meidän täytyy tuoda Firebase eri tavalla 
+// TAI käyttää importteja jos "type=module" toimisi. 
+// KORJAUS: Käytämme tässä nyt importteja, jotka toimivat kun Babel hoitaa ne, 
+// MUTTA html:ssä pitää ladata kirjastot oikein.
+// Yksinkertaisin tapa tässä "hätätilanteessa" on käyttää Firebasea "module" muodossa suoraan koodissa:
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// LUCIDE ICONS (Haetaan globaalista objektista, koska UMD lataus html:ssä)
+const { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info, List, CalendarDays, AlertCircle } = lucide;
+
+// --- ASETUKSET ---
+const firebaseConfig = {
+  apiKey: "AIzaSyCZIupycr2puYrPK2KajAW7PcThW9Pjhb0",
+  authDomain: "perhekalenteri-projekti.firebaseapp.com",
+  databaseURL: "https://perhekalenteri-projekti-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "perhekalenteri-projekti",
+  storageBucket: "perhekalenteri-projekti.appspot.com",
+  messagingSenderId: "588536838615",
+  appId: "1:588536838615:web:148de0581bbd46c42c7392"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const APP_ID = 'laakemuistio';
+
+// --- VAKIOT ---
+const TIME_SLOTS = [
+  { id: 'aamu', label: 'Aamu', icon: Sunrise, defaultTime: '08:00' },
+  { id: 'paiva', label: 'Päivä', icon: Sun, defaultTime: '12:00' },
+  { id: 'ilta', label: 'Ilta', icon: Sunset, defaultTime: '20:00' },
+  { id: 'yo', label: 'Yö', icon: Moon, defaultTime: '22:00' }
+];
+
+const WEEKDAYS = [
+  { id: 1, label: 'Ma' },
+  { id: 2, label: 'Ti' },
+  { id: 3, label: 'Ke' },
+  { id: 4, label: 'To' },
+  { id: 5, label: 'Pe' },
+  { id: 6, label: 'La' },
+  { id: 0, label: 'Su' }
+];
+
+const getIconComponent = (iconName) => {
+  const icons = { Info, PlusSquare, Plus, CheckCircle, Zap, Package, BarChart2, Bell, List, Layers };
+  // Lucide on globaali, joten haetaan sieltä jos stringinä
+  if (typeof iconName === 'string') {
+      return lucide[iconName] || HelpCircle;
+  }
+  return HelpCircle;
+};
+
+// Värit
+const colorList = ['blue', 'green', 'purple', 'orange', 'rose', 'cyan', 'amber', 'teal', 'indigo', 'lime', 'fuchsia', 'slate'];
+const colorMap = {
+  'blue':   { bg: 'bg-blue-100',   border: 'border-blue-300',   dot: 'bg-blue-600',   text: 'text-blue-800',   btn: 'bg-blue-600 active:bg-blue-700' },
+  'green':  { bg: 'bg-green-100',  border: 'border-green-300',  dot: 'bg-green-600',  text: 'text-green-800',  btn: 'bg-green-600 active:bg-green-700' },
+  'purple': { bg: 'bg-purple-100', border: 'border-purple-300', dot: 'bg-purple-600', text: 'text-purple-800', btn: 'bg-purple-600 active:bg-purple-700' },
+  'orange': { bg: 'bg-orange-100', border: 'border-orange-300', dot: 'bg-orange-500', text: 'text-orange-800', btn: 'bg-orange-500 active:bg-orange-600' },
+  'rose':   { bg: 'bg-red-100',    border: 'border-red-300',    dot: 'bg-red-600',    text: 'text-red-800',    btn: 'bg-red-600 active:bg-red-700' },
+  'cyan':   { bg: 'bg-cyan-100',   border: 'border-cyan-300',   dot: 'bg-cyan-600',   text: 'text-cyan-800',   btn: 'bg-cyan-600 active:bg-cyan-700' },
+  'amber':  { bg: 'bg-amber-100',  border: 'border-amber-300',  dot: 'bg-amber-500',  text: 'text-amber-800',  btn: 'bg-amber-500 active:bg-amber-600' },
+  'teal':   { bg: 'bg-teal-100',   border: 'border-teal-300',   dot: 'bg-teal-600',   text: 'text-teal-800',   btn: 'bg-teal-600 active:bg-teal-700' },
+  'indigo': { bg: 'bg-indigo-100', border: 'border-indigo-300', dot: 'bg-indigo-600', text: 'text-indigo-800', btn: 'bg-indigo-600 active:bg-indigo-700' },
+  'lime':   { bg: 'bg-lime-100',   border: 'border-lime-300',   dot: 'bg-lime-600',   text: 'text-lime-800',   btn: 'bg-lime-600 active:bg-lime-700' },
+  'fuchsia':{ bg: 'bg-fuchsia-100',border: 'border-fuchsia-300',dot: 'bg-fuchsia-600',text: 'text-fuchsia-800',btn: 'bg-fuchsia-600 active:bg-fuchsia-700' },
+  'slate':  { bg: 'bg-slate-200',  border: 'border-slate-300',  dot: 'bg-slate-600',  text: 'text-slate-800',  btn: 'bg-slate-600 active:bg-slate-700' },
+};
+const getColors = (key) => colorMap[key] || colorMap['blue'];
+const getSmartColor = (medications) => {
+  const activeMeds = medications.filter(m => !m.isArchived);
+  const usedColors = new Set(activeMeds.map(m => m.colorKey));
+  return colorList.find(c => !usedColors.has(c)) || colorList[medications.length % colorList.length];
+};
+
+// --- KOMPONENTIT ---
+
+// AuthScreen
+const AuthScreen = () => {
+  const [isRegistering, setIsRegistering] = React.useState(false);
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      await setPersistence(auth, browserLocalPersistence);
+      if (isRegistering) {
+        await createUserWithEmailAndPassword(auth, email, password);
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+      }
+    } catch (err) {
+      console.error(err);
+      let msg = "Tapahtui virhe.";
+      if (err.code === 'auth/invalid-email') msg = "Virheellinen sähköposti.";
+      if (err.code === 'auth/missing-password') msg = "Syötä salasana.";
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') msg = "Väärä sähköposti tai salasana.";
+      if (err.code === 'auth/weak-password') msg = "Salasanan tulee olla vähintään 6 merkkiä.";
+      if (err.code === 'auth/email-already-in-use') msg = "Sähköposti on jo käytössä.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative overflow-hidden">
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+         <img src="https://img.geocaching.com/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" alt="" className="w-3/4 opacity-[0.15] grayscale" />
+      </div>
+      <div className="w-full max-w-sm bg-white/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl z-10 border border-white">
+        <div className="flex justify-center mb-6">
+          <img src="https://img.geocaching.com/be1cc7ca-c887-4f38-90b6-813ecf9b342b.png" alt="Logo" className="h-16 w-auto object-contain" />
+        </div>
+        <h2 className="text-2xl font-bold text-center text-slate-800 mb-2">
+          {isRegistering ? 'Luo tunnus' : 'Kirjaudu sisään'}
+        </h2>
+        <p className="text-center text-slate-400 text-sm mb-8">
+          Lääkemuistio - Pidä kirjaa lääkkeistäsi
+        </p>
+        {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 flex items-center gap-2"><AlertTriangle size={16} /> {error}</div>}
+        <form onSubmit={handleAuth} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Sähköposti</label>
+            <div className="relative">
+              <User className="absolute left-3 top-3 text-slate-400" size={18} />
+              <input type="email" required className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all" placeholder="sinun@sahkoposti.fi" value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Salasana</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 text-slate-400" size={18} />
+              <input type="password" required className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all" placeholder="******" value={password} onChange={(e) => setPassword(e.target.value)} />
+            </div>
+          </div>
+          <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all flex justify-center items-center gap-2 disabled:opacity-70">
+            {loading && <Loader2 size={20} className="animate-spin" />}
+            {isRegistering ? 'Rekisteröidy' : 'Kirjaudu'}
+          </button>
+        </form>
+        <div className="mt-6 text-center">
+          <button onClick={() => { setIsRegistering(!isRegistering); setError(''); }} className="text-sm text-slate-500 hover:text-blue-600 font-medium">
+            {isRegistering ? 'Onko sinulla jo tunnus? Kirjaudu' : 'Uusi käyttäjä? Luo tunnus'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// HelpView
+const HelpView = ({ onClose }) => {
+  if (!ohjeData) return <div className="fixed inset-0 z-[60] bg-white p-5">Virhe: ohjeet.js puuttuu.</div>;
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-slate-50 flex flex-col animate-in slide-in-from-right duration-300 overflow-hidden">
+      <div className="bg-white px-4 py-4 border-b border-slate-200 flex items-center justify-between shadow-sm flex-none">
+        <div className="flex items-center gap-2 text-blue-600 font-bold text-lg">
+          <HelpCircle /> Käyttöopas
+        </div>
+        <button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
+          <X size={20} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-5 space-y-6 pb-20">
+        {ohjeData.map((section) => {
+          const IconComp = getIconComponent(section.icon);
+          return (
+            <section key={section.id} className={`${section.id === 'intro' ? 'bg-blue-50 border-blue-100' : 'bg-white shadow-sm border-slate-100'} p-5 rounded-2xl border`}>
+              <h3 className={`font-bold text-lg mb-3 flex items-center gap-2 ${section.id === 'intro' ? 'text-blue-800' : 'text-slate-800'}`}>
+                {IconComp && <IconComp size={22} className="text-blue-600" />} 
+                {section.title}
+              </h3>
+              <div className="text-sm text-slate-600" dangerouslySetInnerHTML={{ __html: section.content }} />
+            </section>
+          );
+        })}
+        
+        <div className="text-center text-xs text-slate-400 pt-6 pb-2">
+          Lääkemuistio v4.6 - {new Date().getFullYear()}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // --- PÄÄSOVELLUS ---
 const MedicineTracker = () => {
-  const [activeTab, setActiveTab] = useState('home');
-  const [user, setUser] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [loadingData, setLoadingData] = useState(true);
+  const [activeTab, setActiveTab] = React.useState('home');
+  const [user, setUser] = React.useState(null);
+  const [authLoading, setAuthLoading] = React.useState(true);
+  const [loadingData, setLoadingData] = React.useState(true);
 
-  const [medications, setMedications] = useState([]);
-  const [logs, setLogs] = useState([]);
+  const [medications, setMedications] = React.useState([]);
+  const [logs, setLogs] = React.useState([]);
   
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [isReordering, setIsReordering] = useState(false);
-  const [expandedMedId, setExpandedMedId] = useState(null);
-  const [showHelp, setShowHelp] = useState(false);
-  const [showShoppingList, setShowShoppingList] = useState(false);
-  const [showDosetti, setShowDosetti] = useState(false);
-  const [showReport, setShowReport] = useState(false);
-  const [showStockList, setShowStockList] = useState(false); 
-  const [showAllMedsList, setShowAllMedsList] = useState(false); 
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = React.useState(false);
+  const [isReordering, setIsReordering] = React.useState(false);
+  const [expandedMedId, setExpandedMedId] = React.useState(null);
+  const [showHelp, setShowHelp] = React.useState(false);
+  const [showShoppingList, setShowShoppingList] = React.useState(false);
+  const [showDosetti, setShowDosetti] = React.useState(false);
+  const [showReport, setShowReport] = React.useState(false);
+  const [showStockList, setShowStockList] = React.useState(false); 
+  const [showAllMedsList, setShowAllMedsList] = React.useState(false); 
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
   // Raportin tila
-  const [reportStartDate, setReportStartDate] = useState('');
-  const [reportEndDate, setReportEndDate] = useState('');
-  const [reportSelectedMeds, setReportSelectedMeds] = useState(new Set());
+  const [reportStartDate, setReportStartDate] = React.useState('');
+  const [reportEndDate, setReportEndDate] = React.useState('');
+  const [reportSelectedMeds, setReportSelectedMeds] = React.useState(new Set());
 
   // HAKU TILA
-  const [historySearch, setHistorySearch] = useState('');
+  const [historySearch, setHistorySearch] = React.useState('');
 
   // Ainesosien tila lisäys/muokkaus ikkunassa
-  const [ingredientName, setIngredientName] = useState('');
-  const [ingredientCount, setIngredientCount] = useState('');
-  const [currentIngredients, setCurrentIngredients] = useState([]); 
+  const [ingredientName, setIngredientName] = React.useState('');
+  const [ingredientCount, setIngredientCount] = React.useState('');
+  const [currentIngredients, setCurrentIngredients] = React.useState([]); 
 
   // LISÄYS TILA
-  const [isAdding, setIsAdding] = useState(false);
-  const [addMode, setAddMode] = useState('single'); 
-  const [newMedName, setNewMedName] = useState('');
-  const [newMedDosage, setNewMedDosage] = useState('');
-  const [newMedStock, setNewMedStock] = useState('');
-  const [newMedTrackStock, setNewMedTrackStock] = useState(false);
-  const [newMedLowLimit, setNewMedLowLimit] = useState('10'); 
-  const [newMedIsCourse, setNewMedIsCourse] = useState(false); 
-  const [showOnDashboard, setShowOnDashboard] = useState(true);
+  const [isAdding, setIsAdding] = React.useState(false);
+  const [addMode, setAddMode] = React.useState('single'); 
+  const [newMedName, setNewMedName] = React.useState('');
+  const [newMedDosage, setNewMedDosage] = React.useState('');
+  const [newMedStock, setNewMedStock] = React.useState('');
+  const [newMedTrackStock, setNewMedTrackStock] = React.useState(false);
+  const [newMedLowLimit, setNewMedLowLimit] = React.useState('10'); 
+  const [newMedIsCourse, setNewMedIsCourse] = React.useState(false); 
+  const [showOnDashboard, setShowOnDashboard] = React.useState(true);
   
-  const [selectedColor, setSelectedColor] = useState('blue');
-  const [selectedSchedule, setSelectedSchedule] = useState([]); 
-  const [selectedWeekdays, setSelectedWeekdays] = useState([0,1,2,3,4,5,6]); 
-  const [scheduleTimes, setScheduleTimes] = useState({});
+  const [selectedColor, setSelectedColor] = React.useState('blue');
+  const [selectedSchedule, setSelectedSchedule] = React.useState([]); 
+  const [selectedWeekdays, setSelectedWeekdays] = React.useState([0,1,2,3,4,5,6]); 
+  const [scheduleTimes, setScheduleTimes] = React.useState({});
 
   // PIKALISÄYS TILA
-  const [isQuickAdding, setIsQuickAdding] = useState(false);
-  const [quickAddName, setQuickAddName] = useState('');
-  const [quickAddReason, setQuickAddReason] = useState('');
-  const [quickAddDate, setQuickAddDate] = useState('');
+  const [isQuickAdding, setIsQuickAdding] = React.useState(false);
+  const [quickAddName, setQuickAddName] = React.useState('');
+  const [quickAddReason, setQuickAddReason] = React.useState('');
+  const [quickAddDate, setQuickAddDate] = React.useState('');
   
   // EDITOINTI JA LOGITUS TILAT
-  const [editingMed, setEditingMed] = useState(null);
-  const [manualLogMed, setManualLogMed] = useState(null);
-  const [manualDate, setManualDate] = useState('');
-  const [manualReason, setManualReason] = useState('');
+  const [editingMed, setEditingMed] = React.useState(null);
+  const [manualLogMed, setManualLogMed] = React.useState(null);
+  const [manualDate, setManualDate] = React.useState('');
+  const [manualReason, setManualReason] = React.useState('');
 
-  const [editingLog, setEditingLog] = useState(null);
-  const [editingLogDate, setEditingLogDate] = useState('');
-  const [editingLogReason, setEditingLogReason] = useState('');
+  const [editingLog, setEditingLog] = React.useState(null);
+  const [editingLogDate, setEditingLogDate] = React.useState('');
+  const [editingLogReason, setEditingLogReason] = React.useState('');
 
-  const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, mode: null, medId: null, medName: '', logId: null, hasHistory: false, message: '' });
-  const [showArchived, setShowArchived] = useState(false);
-  const [showHistoryFor, setShowHistoryFor] = useState(null);
+  const [deleteDialog, setDeleteDialog] = React.useState({ isOpen: false, mode: null, medId: null, medName: '', logId: null, hasHistory: false, message: '' });
+  const [showArchived, setShowArchived] = React.useState(false);
+  const [showHistoryFor, setShowHistoryFor] = React.useState(null);
 
   // Auth Listener
-  useEffect(() => {
+  React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setAuthLoading(false);
@@ -97,7 +286,7 @@ const MedicineTracker = () => {
   }, []);
 
   // Data Listener
-  useEffect(() => {
+  React.useEffect(() => {
     if (!user) return;
     setLoadingData(true);
     const medsRef = collection(db, 'artifacts', APP_ID, 'users', user.uid, 'medications');
@@ -123,7 +312,7 @@ const MedicineTracker = () => {
   }, [user]);
 
   // Aseta oletusarvot raportille
-  useEffect(() => {
+  React.useEffect(() => {
     if (showReport) {
       const end = new Date();
       const start = new Date();
@@ -135,7 +324,7 @@ const MedicineTracker = () => {
   }, [showReport, medications]);
 
   // Ilmoituslogiikka
-  useEffect(() => {
+  React.useEffect(() => {
     if (Notification.permission === 'granted') setNotificationsEnabled(true);
   }, []);
 
@@ -168,7 +357,7 @@ const MedicineTracker = () => {
     });
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!notificationsEnabled || medications.length === 0) return;
     const checkReminders = () => {
       const now = new Date();
@@ -578,12 +767,14 @@ const MedicineTracker = () => {
 
   const archivedMeds = medications.filter(m => m.isArchived);
   
+  // OSTOSLISTAN LOGIIKKA (PÄIVITETTY VÄRIKOODEILLA)
   const shoppingListMeds = medications.filter(m => {
     if (m.isArchived || !m.trackStock || m.isCourse || m.stock === null) return false;
     const limit = m.lowStockLimit || 10;
     return m.stock <= (limit + 5); 
   });
   
+  // Lasketaan kriittisten määrä etusivun ilmoitusta varten
   const criticalStockCount = activeMeds.filter(m => m.trackStock && !m.isCourse && m.stock <= (m.lowStockLimit || 10)).length;
 
   const getLogName = (log) => {
@@ -791,6 +982,7 @@ const MedicineTracker = () => {
         </div>
       </header>
 
+      {/* --- PÄÄSISÄLTÖ JA MODAALIT (SAMA KUIN AIEMMIN, MUTTA NYT YHDESSÄ TIEDOSTOSSA) --- */}
       <main className="flex-1 overflow-y-auto p-3 pb-20 z-0 relative">
         <div className="max-w-md mx-auto space-y-3">
           {loadingData ? (
@@ -799,7 +991,7 @@ const MedicineTracker = () => {
           <>
           {activeTab === 'home' && (
             <>
-              {/* VAROITUSPALKKI JOS KRIITTISESTI LOPPUMASSA (UUSI) */}
+              {/* VAROITUSPALKKI JOS KRIITTISESTI LOPPUMASSA */}
               {criticalStockCount > 0 && (
                 <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl mb-2 flex items-center gap-3 animate-pulse">
                    <AlertCircle size={20} className="text-red-600" />
@@ -829,7 +1021,7 @@ const MedicineTracker = () => {
                 const hasSchedule = med.schedule && med.schedule.length > 0;
                 const isCombo = med.ingredients && med.ingredients.length > 0;
                 
-                // Määritellään rajat (UUSI LOGIIKKA)
+                // Määritellään rajat
                 const limit = med.lowStockLimit || 10;
                 const isCriticalStock = !isCombo && med.trackStock && !med.isCourse && med.stock !== null && med.stock <= limit;
                 const isWarningStock = !isCombo && med.trackStock && !med.isCourse && med.stock !== null && med.stock > limit && med.stock <= (limit + 5);
@@ -840,7 +1032,7 @@ const MedicineTracker = () => {
                 if (hasSchedule) isDoneForToday = med.schedule.every(slotId => isSlotTakenToday(med.id, slotId));
                 else isDoneForToday = isGenericTakenToday(med.id);
 
-                // --- ONKO MYÖHÄSSÄ? (UUSI LOGIIKKA) ---
+                // --- ONKO MYÖHÄSSÄ? ---
                 let isLate = false;
                 if (hasSchedule) {
                   const now = new Date();
@@ -878,7 +1070,7 @@ const MedicineTracker = () => {
                             {isCombo && <Layers size={20} className="text-slate-600" />}
                             <h3 className="text-lg font-bold text-slate-800 leading-tight">{med.name}</h3>
                             
-                            {/* Tilanneikonit (UUSI) */}
+                            {/* Tilanneikonit */}
                             {expandedMedId !== med.id && isDoneForToday && <CheckCircle size={18} className="text-green-600 shrink-0" />}
                             {expandedMedId !== med.id && isLate && <Clock size={18} className="text-red-500 animate-pulse shrink-0" />}
                             {expandedMedId !== med.id && !isLate && isCriticalStock && <AlertCircle size={18} className="text-red-600 shrink-0" />}
@@ -957,7 +1149,7 @@ const MedicineTracker = () => {
                                 const isTaken = isSlotTakenToday(med.id, slot.id);
                                 const scheduleTime = med.scheduleTimes?.[slot.id] || slot.defaultTime;
                                 
-                                // Onko juuri tämä slotti myöhässä? (UUSI)
+                                // Onko juuri tämä slotti myöhässä?
                                 const [h, m] = scheduleTime.split(':').map(Number);
                                 const now = new Date();
                                 const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -1088,7 +1280,7 @@ const MedicineTracker = () => {
         </div>
       </main>
 
-      {/* --- BOTTOM NAV KORJATTU --- */}
+      {/* --- BOTTOM NAV --- */}
       <nav className="flex-none bg-white border-t border-slate-200 px-6 py-2 flex justify-around items-center z-20 pb-safe">
         <button onClick={() => handleTabChange('home')} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-colors ${activeTab === 'home' ? 'text-blue-600 bg-blue-50' : 'text-slate-400'}`}>
           <Pill size={22} strokeWidth={activeTab==='home'?2.5:2} /> <span className="text-[10px] font-bold">Lääkkeet</span>
@@ -1104,7 +1296,7 @@ const MedicineTracker = () => {
         </button>
       </nav>
 
-      {/* FAB BUTTONS - ONLY VISIBLE IF NO MODAL/OVERLAY IS ACTIVE */}
+      {/* FAB BUTTONS */}
       {!isAdding && activeTab === 'home' && !showHistoryFor && !deleteDialog.isOpen && !editingMed && !manualLogMed && !takeWithReasonMed && !editingLog && !isQuickAdding && !isReordering && !showStockList && !showAllMedsList && (
         <>
           <button onClick={() => window.location.reload()} className="absolute bottom-20 left-5 z-30 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-slate-500 hover:text-blue-600 hover:rotate-180 transition-all duration-500 border border-slate-200" title="Päivitä sovellus"><RotateCcw size={24} /></button>
@@ -1115,7 +1307,8 @@ const MedicineTracker = () => {
         </>
       )}
 
-      {/* --- MODALIT (JATKUU ALHAALLA, JÄÄTÄVÄ MÄÄRÄ MODAALEJA KOOSTUU TÄNNE) --- */}
+      {/* --- MODALIT (KAIKKI TÄÄLLÄ) --- */}
+      {/* ... (TÄSSÄ KAIKKI MODALIT KUTEN AIEMMIN, LÄÄKELUETTELO, OSTOSLISTA, DOSETIT JNE.) ... */}
       
       {/* LÄÄKELUETTELO MODAL (UUSI VÄRIKOODEILLA) */}
       {showAllMedsList && (
