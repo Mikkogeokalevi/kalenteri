@@ -86,7 +86,7 @@ const HelpView = ({ onClose }) => {
         ))}
         
         <div className="text-center text-xs text-slate-400 pt-6 pb-2">
-          Lääkemuistio v4.2 - {new Date().getFullYear()}
+          Lääkemuistio v4.3 - {new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -1007,12 +1007,38 @@ const MedicineTracker = () => {
                 const isCombo = med.ingredients && med.ingredients.length > 0;
                 const isLowStock = !isCombo && med.trackStock && !med.isCourse && med.stock !== null && med.stock <= (med.lowStockLimit || 10);
                 const isExpanded = expandedMedId === med.id || isReordering; 
+                
                 let isDoneForToday = false;
                 if (hasSchedule) isDoneForToday = med.schedule.every(slotId => isSlotTakenToday(med.id, slotId));
                 else isDoneForToday = isGenericTakenToday(med.id);
 
+                // --- UUSI ÄLYKÄS LOGIIKKA: ONKO MYÖHÄSSÄ? ---
+                let isLate = false;
+                if (hasSchedule) {
+                  const now = new Date();
+                  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                  
+                  isLate = med.schedule.some(slotId => {
+                    const isTaken = isSlotTakenToday(med.id, slotId);
+                    if (isTaken) return false; // Jos otettu, ei ole myöhässä
+                    
+                    // Haetaan slotin aika (oletus tai käyttäjän asettama)
+                    const timeStr = med.scheduleTimes?.[slotId] || TIME_SLOTS.find(s => s.id === slotId).defaultTime;
+                    const [h, m] = timeStr.split(':').map(Number);
+                    const slotMinutes = h * 60 + m;
+                    
+                    // Jos nykyhetki on enemmän kuin lääkeaika, se on myöhässä
+                    return currentMinutes > slotMinutes;
+                  });
+                }
+
+                // Määritetään tyylit tilanteen mukaan (Prioriteetti: Myöhässä > Vähissä > Normaali)
+                let cardStyleClass = `${c.bg} ${c.border}`; // Normaali
+                if (isLate) cardStyleClass = "bg-red-50 border-red-500 border-2 shadow-red-100"; // Myöhässä
+                else if (isLowStock) cardStyleClass = "bg-orange-50 border-orange-400 border-2 shadow-orange-100"; // Vähissä
+
                 return (
-                  <div key={med.id} className={`rounded-xl shadow-sm border transition-all duration-200 overflow-hidden ${c.bg} ${c.border} ${!isExpanded?'hover:shadow-md':''} relative group`}>
+                  <div key={med.id} className={`rounded-xl shadow-sm border transition-all duration-200 overflow-hidden ${cardStyleClass} ${!isExpanded?'hover:shadow-md':''} relative group`}>
                     
                     {isReordering && (
                       <div className="absolute right-0 top-0 bottom-0 w-14 flex flex-col justify-center gap-2 pr-2 bg-gradient-to-l from-white/80 via-white/50 to-transparent z-30">
@@ -1026,16 +1052,21 @@ const MedicineTracker = () => {
                          <div className="flex items-center gap-2">
                             {isCombo && <Layers size={20} className="text-slate-600" />}
                             <h3 className="text-lg font-bold text-slate-800 leading-tight">{med.name}</h3>
+                            
+                            {/* Tilanneikonit */}
                             {expandedMedId !== med.id && isDoneForToday && <CheckCircle size={18} className="text-green-600 shrink-0" />}
-                            {expandedMedId !== med.id && isLowStock && <AlertTriangle size={18} className="text-red-500 shrink-0" />}
+                            {expandedMedId !== med.id && isLate && <Clock size={18} className="text-red-500 animate-pulse shrink-0" />}
+                            {expandedMedId !== med.id && !isLate && isLowStock && <AlertTriangle size={18} className="text-orange-500 shrink-0" />}
                          </div>
                          
                          {expandedMedId !== med.id && (
                            <div className="flex items-center gap-2 mt-1">
-                             {isCombo ? (
+                             {isLate ? (
+                               <span className="text-xs font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded">MYÖHÄSSÄ!</span>
+                             ) : isCombo ? (
                                <span className="text-xs font-bold text-slate-500 bg-white/50 px-1.5 py-0.5 rounded uppercase tracking-wider">Dosetti</span>
                              ) : isLowStock ? (
-                               <span className="text-xs text-red-600 font-bold truncate">{med.stock} kpl jäljellä!</span>
+                               <span className="text-xs text-orange-600 font-bold truncate">Vain {med.stock} kpl jäljellä!</span>
                              ) : med.trackStock && med.isCourse ? (
                                <span className="text-xs text-slate-500 font-bold truncate">Kuuri: {med.stock} kpl</span>
                              ) : med.dosage ? (
@@ -1097,16 +1128,30 @@ const MedicineTracker = () => {
                               {TIME_SLOTS.filter(slot => med.schedule.includes(slot.id)).map(slot => {
                                 const isTaken = isSlotTakenToday(med.id, slot.id);
                                 const scheduleTime = med.scheduleTimes?.[slot.id] || slot.defaultTime;
+                                
+                                // Onko juuri tämä slotti myöhässä?
+                                const [h, m] = scheduleTime.split(':').map(Number);
+                                const now = new Date();
+                                const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                                const slotMinutes = h * 60 + m;
+                                const isSlotLate = !isTaken && (currentMinutes > slotMinutes);
+
                                 return (
                                   <button 
                                     key={slot.id}
                                     onClick={() => takeMedicine(med, slot.id)}
                                     disabled={isTaken}
-                                    className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${isTaken ? 'bg-green-100 border-green-200 text-green-700' : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-600 active:scale-95'}`}
+                                    className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${
+                                      isTaken 
+                                        ? 'bg-green-100 border-green-200 text-green-700' 
+                                        : isSlotLate 
+                                          ? 'bg-red-50 border-red-300 text-red-600 animate-pulse' // Vilkkuu jos myöhässä
+                                          : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-600 active:scale-95'
+                                    }`}
                                   >
                                     {isTaken ? <Check size={20} strokeWidth={3} /> : <slot.icon size={20} />}
                                     <span className="text-[10px] font-bold mt-1 uppercase">{slot.label}</span>
-                                    {!isTaken && <span className="text-[9px] text-slate-400">{scheduleTime}</span>}
+                                    {!isTaken && <span className="text-[9px] opacity-75">{scheduleTime}</span>}
                                   </button>
                                 );
                               })}
