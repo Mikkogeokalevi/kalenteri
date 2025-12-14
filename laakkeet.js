@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Plus, Pill, Clock, Trash2, CheckCircle, History, X, BarChart2, Calendar, AlertTriangle, Pencil, CalendarPlus, LogOut, User, Lock, Loader2, Archive, ArchiveRestore, ChevronDown, ChevronUp, Sun, Moon, Sunrise, Sunset, Check, Zap, Bell, BellOff, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Package, RefreshCw, ShoppingCart, FileText, Clipboard, MessageSquare, ListChecks, RotateCcw, Share, MoreVertical, PlusSquare, Filter, Layers, LayoutList, Link, Box, Component, Menu, Search, Info, List, CalendarDays, AlertCircle } from 'lucide-react';
 
-// TUODAAN OHJEET ERILLISESTÄ q TIEDOSTOSTA
+// TUODAAN OHJEET ERILLISESTÄ TIEDOSTOSTA
 import { ohjeData } from './ohjeet.js';
 
 // --- FIREBASE IMPORTS ---
@@ -227,14 +227,12 @@ const MedicineTracker = () => {
   const [quickAddReason, setQuickAddReason] = useState('');
   const [quickAddDate, setQuickAddDate] = useState('');
   
-  // TÄMÄ PALAUTETTIIN VARMUUDEN VUOKSI
+  // TÄMÄ ON SE JOKA PUUTTUI, PALAUTETTU NYT
   const [takeWithReasonMed, setTakeWithReasonMed] = useState(null);
   const [takeReason, setTakeReason] = useState('');
 
   // EDITOINTI JA LOGITUS TILAT
   const [editingMed, setEditingMed] = useState(null);
-  
-  // MANUAALINEN LOGI
   const [manualLogMed, setManualLogMed] = useState(null);
   const [manualDate, setManualDate] = useState('');
   const [manualReason, setManualReason] = useState('');
@@ -604,15 +602,6 @@ const MedicineTracker = () => {
     } catch (error) { console.error(error); }
   };
 
-  // PALAUTETTU TOIMINTO (Varmuuden vuoksi)
-  const handleConfirmTakeWithReason = async (e) => {
-    e.preventDefault();
-    if(!takeWithReasonMed) return;
-    await takeMedicine(takeWithReasonMed, null, takeReason);
-    setTakeWithReasonMed(null);
-    setTakeReason('');
-  };
-
   const handleRefill = async (med) => {
     if (!user) return;
     const amount = prompt("Paljonko lisätään varastoon?", "30");
@@ -775,7 +764,7 @@ const MedicineTracker = () => {
 
   const archivedMeds = medications.filter(m => m.isArchived);
   
-  // OSTOSLISTAN LOGIIKKA (PÄIVITETTY VÄRIKOODEILLA)
+  // OSTOSLISTAN LOGIIKKA - PÄIVITETTY VÄRIKOODEILLA
   const shoppingListMeds = medications.filter(m => {
     if (m.isArchived || !m.trackStock || m.isCourse || m.stock === null) return false;
     const limit = m.lowStockLimit || 10;
@@ -784,7 +773,6 @@ const MedicineTracker = () => {
   
   // Lasketaan kriittisten määrä etusivun ilmoitusta varten
   const criticalStockCount = activeMeds.filter(m => m.trackStock && !m.isCourse && m.stock <= (m.lowStockLimit || 10)).length;
-
 
   const getLogName = (log) => {
     const med = medications.find(m => m.id === log.medId);
@@ -1623,7 +1611,7 @@ const MedicineTracker = () => {
       {/* OHJEET */}
       {showHelp && <HelpView onClose={() => setShowHelp(false)} />}
 
-      {/* PIKALISÄYS (SALAMA) */}
+      {/* PIKALISÄYS */}
       {isQuickAdding && (
         <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
@@ -1847,6 +1835,7 @@ const MedicineTracker = () => {
             <h2 className="text-lg font-bold mb-4">Muokkaa: {editingMed.name}</h2>
             <form onSubmit={handleUpdateMedication}>
               
+              {/* VÄRI */}
               <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Väri</label>
               <div className="flex flex-wrap gap-3 justify-center mb-6">
                 {colorList.map(c => {
@@ -1862,6 +1851,7 @@ const MedicineTracker = () => {
 
               <input autoFocus className="w-full bg-slate-50 p-3 rounded-xl text-base mb-3 outline-none border focus:border-blue-500" value={editingMed.name} onChange={e => setEditingMed({...editingMed, name: e.target.value})} />
               
+              {/* NÄYTETÄÄN VAIN JOS EI OLE DOSETTI */}
               {(!editingMed.ingredients || editingMed.ingredients.length === 0) && (
                 <input className="w-full bg-slate-50 p-3 rounded-xl text-base mb-6 outline-none border focus:border-blue-500" placeholder="Annostus / Lisätiedot" value={editingMed.dosage || ''} onChange={e => setEditingMed({...editingMed, dosage: e.target.value})} />
               )}
@@ -1873,6 +1863,7 @@ const MedicineTracker = () => {
                 </label>
               </div>
 
+              {/* NÄYTETÄÄN VAIN JOS ON DOSETTI (Sisältää ingredients) */}
               {editingMed.ingredients && editingMed.ingredients.length > 0 && (
                 <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Koostumus / Dosetti</label>
@@ -1898,6 +1889,7 @@ const MedicineTracker = () => {
                 </div>
               )}
 
+              {/* VARASTOSEURANTA (Vain jos ei dosetti) */}
               {(!editingMed.ingredients || editingMed.ingredients.length === 0) && (
                 <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
                   <label className="flex items-center gap-2 mb-2 cursor-pointer">
@@ -1923,6 +1915,7 @@ const MedicineTracker = () => {
                 </div>
               )}
 
+              {/* VIIKONPÄIVÄT (PUUTTUI AIEMMIN) */}
               <div className="mb-4">
                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Viikonpäivät</label>
                  <div className="flex justify-between mb-4 bg-slate-50 p-2 rounded-xl border border-slate-200">
@@ -1978,7 +1971,7 @@ const MedicineTracker = () => {
         </div>
       )}
 
-      {/* 3. LÄÄKKEEN HISTORIA NÄKYMÄ (YKSITTÄINEN) - TÄMÄ PUUTTUI */}
+      {/* 3. LÄÄKKEEN HISTORIA NÄKYMÄ (YKSITTÄINEN) */}
       {showHistoryFor && (
         <div className="absolute inset-0 z-50 bg-white flex flex-col animate-in slide-in-from-right duration-300">
            <div className="flex items-center gap-3 p-4 border-b border-slate-200 bg-slate-50">
@@ -2005,7 +1998,7 @@ const MedicineTracker = () => {
         </div>
       )}
 
-      {/* 4. MUOKKAA HISTORIAMERKINTÄÄ - TÄMÄ PUUTTUI */}
+      {/* 4. MUOKKAA HISTORIAMERKINTÄÄ */}
       {editingLog && (
         <div className="absolute inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in">
           <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
