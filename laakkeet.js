@@ -2300,7 +2300,53 @@ const MedicineTracker = () => {
           </div>
         </div>
       )}
-
+{/* RAPORTTI MODAL */}
+      {showReport && (
+        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in">
+           <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
+             <div className="flex justify-between items-center mb-4 flex-none">
+                <h2 className="text-lg font-bold">Luo raportti</h2>
+                <button onClick={() => setShowReport(false)} className="p-1 bg-slate-100 rounded-full"><X size={18}/></button>
+             </div>
+             <div className="flex-1 overflow-y-auto pr-2">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Alkaen</label>
+                      <input type="date" className="w-full bg-slate-50 p-2 rounded-lg text-sm border" value={reportStartDate} onChange={e => setReportStartDate(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Päättyen</label>
+                      <input type="date" className="w-full bg-slate-50 p-2 rounded-lg text-sm border" value={reportEndDate} onChange={e => setReportEndDate(e.target.value)} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                       <label className="block text-xs font-bold text-slate-500 uppercase">Valitse lääkkeet</label>
+                       <button onClick={() => {
+                         const allIds = medications.filter(m => !m.isArchived).map(m => m.id);
+                         setReportSelectedMeds(reportSelectedMeds.size === allIds.length ? new Set() : new Set(allIds));
+                       }} className="text-xs text-blue-600 font-bold">Valitse/Poista kaikki</button>
+                    </div>
+                    <div className="space-y-2 max-h-40 overflow-y-auto border rounded-xl p-2 bg-slate-50">
+                      {medications.filter(m => !m.isArchived).map(med => (
+                        <label key={med.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-100 cursor-pointer">
+                          <input type="checkbox" className="w-4 h-4 text-blue-600 rounded" checked={reportSelectedMeds.has(med.id)} onChange={() => toggleReportMedSelection(med.id)} />
+                          <span className="text-sm font-medium text-slate-700 truncate">{med.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+             </div>
+             <div className="flex-none pt-4 mt-2 border-t">
+               <pre className="bg-slate-50 p-3 rounded-xl text-[10px] font-mono overflow-auto h-32 whitespace-pre-wrap mb-3 border">{generateReportText()}</pre>
+               <button onClick={copyReport} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95"><Clipboard size={18} /> Kopioi leikepöydälle</button>
+             </div>
+           </div>
+        </div>
+      )}
+	  
       {/* OHJEET MODAL */}
       {showHelp && <HelpView onClose={() => setShowHelp(false)} />}
 
