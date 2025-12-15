@@ -545,7 +545,7 @@ const MedicineTracker = () => {
         weekdays: selectedWeekdays,
         ingredients: addMode === 'dosett' ? currentIngredients : [], 
         showOnDashboard: addMode === 'dosett' ? true : showOnDashboard,
-        alertEnabled: addMode === 'single' ? newMedAlertEnabled : true, 
+        alertEnabled: newMedAlertEnabled,
         createdAt: Date.now(), 
         order: maxOrder + 1, 
         isArchived: false
@@ -2001,12 +2001,20 @@ const MedicineTracker = () => {
                      <button type="button" onClick={addIngredient} className="bg-blue-600 text-white p-2 rounded-lg"><Plus size={18}/></button>
                    </div>
                    <div className="space-y-2">
-                     {currentIngredients.map((ing, idx) => (
+					{currentIngredients.map((ing, idx) => (
                        <div key={idx} className="flex justify-between items-center bg-white p-2 rounded-lg text-sm">
                          <span>{ing.name} ({ing.count})</span>
                          <button type="button" onClick={() => removeIngredient(idx)} className="text-red-600"><Trash2 size={16}/></button>
                        </div>
                      ))}
+                   </div>
+                   
+                   {/* HÄLYTYSVALINTA DOSETILLE */}
+                   <div className="mt-4 pt-4 border-t border-blue-200">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={newMedAlertEnabled} onChange={(e) => setNewMedAlertEnabled(e.target.checked)} className="w-4 h-4 text-blue-600 rounded" />
+                      <span className="text-sm font-bold text-blue-800 flex items-center gap-2">{newMedAlertEnabled ? <Volume2 size={16}/> : <VolumeX size={16}/>} Hälytä äänimerkillä</span>
+                    </label>
                    </div>
                 </div>
               )}
@@ -2105,7 +2113,7 @@ const MedicineTracker = () => {
                      <button type="button" onClick={addIngredient} className="bg-blue-600 text-white p-2 rounded-lg"><Plus size={18}/></button>
                    </div>
                    <div className="space-y-2">
-                     {currentIngredients.map((ing, idx) => (
+					{currentIngredients.map((ing, idx) => (
                        <div key={idx} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-200 text-sm">
                          <span>{ing.name} <span className="text-slate-400 font-normal">({ing.count})</span></span>
                          <div className="flex gap-1">
@@ -2114,6 +2122,14 @@ const MedicineTracker = () => {
                          </div>
                        </div>
                      ))}
+                   </div>
+
+                   {/* HÄLYTYSVALINTA DOSETILLE (MUOKKAUS) */}
+                   <div className="mt-4 pt-4 border-t border-slate-200">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={editingMed.alertEnabled !== false} onChange={(e) => setEditingMed({...editingMed, alertEnabled: e.target.checked})} className="w-4 h-4 text-blue-600 rounded" />
+                      <span className="text-sm font-bold text-slate-700 flex items-center gap-2">{editingMed.alertEnabled !== false ? <Volume2 size={16}/> : <VolumeX size={16}/>} Hälytä äänimerkillä</span>
+                    </label>
                    </div>
                 </div>
               )}
