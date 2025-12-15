@@ -2218,6 +2218,92 @@ const MedicineTracker = () => {
         </div>
       )}
 
+   {/* --- PUUTTUVAT IKKUNAT (OSTOS, DOSETTI, OHJE) --- */}
+
+      {/* OSTOSLISTA MODAL */}
+      {showShoppingList && (
+        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
+          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[80vh] overflow-y-auto">
+             <div className="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 className="text-lg font-bold flex items-center gap-2 text-red-600"><ShoppingCart/> Ostoslista</h2>
+                <button onClick={() => setShowShoppingList(false)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button>
+             </div>
+             {shoppingListMeds.length === 0 ? <div className="text-center text-slate-400 py-8">Kaikki lääkkeet hyvässä tilanteessa!</div> : (
+               <div className="space-y-3">
+                 {shoppingListMeds.map(med => {
+                   const limit = med.lowStockLimit || 10;
+                   const isCritical = med.stock <= limit;
+                   const style = isCritical ? "bg-red-50 border-red-200" : "bg-orange-50 border-orange-200";
+                   const textStyle = isCritical ? "text-red-600" : "text-orange-600";
+                   const iconStyle = isCritical ? "text-red-300" : "text-orange-300";
+
+                   return (
+                   <div key={med.id} className={`flex justify-between items-center p-3 border rounded-xl ${style}`}>
+                      <div>
+                        <div className="font-bold text-slate-800">{med.name}</div>
+                        <div className={`text-xs font-bold ${textStyle}`}>
+                          {isCritical ? 'LOPPUMASSA!' : 'VÄHISSÄ'} - Jäljellä: {med.stock} kpl
+                        </div>
+                      </div>
+                      <Package className={iconStyle} size={24}/>
+                   </div>
+                   );
+                 })}
+               </div>
+             )}
+             <div className="h-6"></div>
+          </div>
+        </div>
+      )}
+
+      {/* DOSETTI MODAL */}
+      {showDosetti && (
+        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
+          <div className="bg-white w-full rounded-t-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] overflow-y-auto">
+             <div className="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 className="text-lg font-bold flex items-center gap-2 text-blue-600"><LayoutList/> Dosettijako</h2>
+                <button onClick={() => setShowDosetti(false)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button>
+             </div>
+             
+             <div className="space-y-6">
+               {TIME_SLOTS.map(slot => {
+                 const medsForSlot = medications.filter(m => !m.isArchived && m.schedule && m.schedule.includes(slot.id));
+                 return (
+                   <div key={slot.id} className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                     <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-3 uppercase text-sm border-b border-slate-200 pb-1"><slot.icon size={16} className="text-blue-500"/> {slot.label}</h3>
+                     {medsForSlot.length === 0 ? <p className="text-xs text-slate-400 italic">Ei lääkkeitä.</p> : (
+                       <ul className="space-y-2">
+                         {medsForSlot.map(med => {
+                           if (med.ingredients && med.ingredients.length > 0) {
+                             return med.ingredients.map((ing, idx) => (
+                               <li key={`${med.id}-${idx}`} className="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                 <span className="font-medium text-sm text-slate-700">{ing.name}</span>
+                                 <span className="font-bold text-sm text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{ing.count}</span>
+                               </li>
+                             ));
+                           } else {
+                             return (
+                               <li key={med.id} className="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                 <span className="font-medium text-sm text-slate-700">{med.name}</span>
+                                 <span className="font-bold text-sm text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{med.dosage || '1 kpl'}</span>
+                               </li>
+                             );
+                           }
+                         })}
+                       </ul>
+                     )}
+                   </div>
+                 );
+               })}
+             </div>
+             <div className="h-6"></div>
+          </div>
+        </div>
+      )}
+
+      {/* OHJEET MODAL */}
+      {showHelp && <HelpView onClose={() => setShowHelp(false)} />}
+
     </div>
   );
 };
