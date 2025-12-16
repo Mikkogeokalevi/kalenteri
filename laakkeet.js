@@ -711,6 +711,26 @@ const MedicineTracker = () => {
       setManualLogMed(null); setManualDate(''); setManualReason('');
     } catch (error) { alert("Virhe lisäyksessä."); }
   };
+  // UUSI: Merkitse rästilääkkeet unohdetuiksi (ei vähennä varastoa)
+  const handleMarkAsMissed = async () => {
+    if (!user || !missedMedsDialog) return;
+    try {
+      const now = new Date().toISOString();
+      for (const m of missedMedsDialog) {
+        await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
+          medId: m.id,
+          medName: m.name,
+          medColor: m.color || 'blue',
+          slot: m.slotId, // Tärkeä: Tämä kuittaa lääkkeen "hoidetuksi" tältä päivältä
+          timestamp: now,
+          reason: 'UNOHDUS', // Tämä näkyy historiassa
+          ingredients: null
+        });
+      }
+      setMissedMedsDialog(null);
+      setHasCheckedMissed(true);
+    } catch (e) { console.error("Virhe kirjauksessa", e); }
+  };
   const toggleArchive = async (med) => {
     if(!user) return;
     try {
@@ -1151,26 +1171,7 @@ const MedicineTracker = () => {
                 if (isLate) cardStyleClass = "bg-red-50 border-red-500 border-2 shadow-red-100"; 
                 else if (isCriticalStock) cardStyleClass = "bg-red-50 border-red-400 border-2 shadow-sm"; // KRIITTINEN PUNAINEN
                 else if (isWarningStock) cardStyleClass = "bg-orange-50 border-orange-300 border-2 shadow-sm"; // VAROITUS ORANSSI
-// UUSI: Merkitse rästilääkkeet unohdetuiksi (ei vähennä varastoa)
-  const handleMarkAsMissed = async () => {
-    if (!user || !missedMedsDialog) return;
-    try {
-      const now = new Date().toISOString();
-      for (const m of missedMedsDialog) {
-        await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
-          medId: m.id,
-          medName: m.name,
-          medColor: m.color || 'blue',
-          slot: m.slotId, // Tärkeä: Tämä kuittaa lääkkeen "hoidetuksi" tältä päivältä
-          timestamp: now,
-          reason: 'UNOHDUS', // Tämä näkyy historiassa
-          ingredients: null
-        });
-      }
-      setMissedMedsDialog(null);
-      setHasCheckedMissed(true);
-    } catch (e) { console.error("Virhe kirjauksessa", e); }
-  };
+
                 return (
                   <div key={med.id} className={`rounded-xl shadow-sm border transition-all duration-200 overflow-hidden ${cardStyleClass} ${!isExpanded?'hover:shadow-md':''} relative group`}>
                     
