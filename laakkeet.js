@@ -731,6 +731,31 @@ const MedicineTracker = () => {
       setHasCheckedMissed(true);
     } catch (e) { console.error("Virhe kirjauksessa", e); }
   };
+  // UUSI: Merkitse yksittäinen lääke unohdetuksi suoraan kortista
+  const handleMarkSingleMissed = async (med) => {
+    if (!user || !med.schedule) return;
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    
+    // Etsitään kaikki myöhässä olevat ajat tältä päivältä
+    const lateSlots = med.schedule.filter(slotId => {
+       const isTaken = isSlotTakenToday(med.id, slotId);
+       if (isTaken) return false;
+       const timeStr = med.scheduleTimes?.[slotId] || TIME_SLOTS.find(s => s.id === slotId).defaultTime;
+       const [h, m] = timeStr.split(':').map(Number);
+       const slotMinutes = h * 60 + m;
+       return currentMinutes > slotMinutes + 15; // 15min toleranssi
+    });
+
+    try {
+      for (const slotId of lateSlots) {
+        await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
+          medId: med.id, medName: med.name, medColor: med.colorKey,
+          slot: slotId, timestamp: now.toISOString(), reason: 'UNOHDUS', ingredients: null
+        });
+      }
+    } catch (e) { alert("Virhe kirjauksessa"); }
+  };
   const toggleArchive = async (med) => {
     if(!user) return;
     try {
@@ -1261,7 +1286,8 @@ const MedicineTracker = () => {
                             <button onClick={() => requestDeleteMed(med)} className="p-2 bg-white/60 rounded-lg hover:text-red-500 hover:bg-white" title="Poista"><Trash2 size={18}/></button>
                          </div>
 
-                         {hasSchedule ? (
+						{hasSchedule ? (
+                            <>
                             <div className="grid grid-cols-4 gap-2">
                               {TIME_SLOTS.filter(slot => med.schedule.includes(slot.id)).map(slot => {
                                 const isTaken = isSlotTakenToday(med.id, slot.id);
@@ -1281,7 +1307,7 @@ const MedicineTracker = () => {
                                       isTaken 
                                         ? 'bg-green-100 border-green-200 text-green-700' 
                                         : isSlotLate 
-                                          ? 'bg-red-50 border-red-300 text-red-600 animate-pulse' // Vilkkuu jos myöhässä
+                                          ? 'bg-red-50 border-red-300 text-red-600 animate-pulse' 
                                           : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-600 active:scale-95'
                                     }`}
                                   >
@@ -1292,6 +1318,12 @@ const MedicineTracker = () => {
                                 );
                               })}
                             </div>
+                            {isLate && (
+                              <button onClick={() => handleMarkSingleMissed(med)} className="w-full mt-3 py-2 bg-slate-100 text-slate-500 border border-slate-200 rounded-lg text-xs font-bold hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors">
+                                Merkitse rästissä olevat unohdetuiksi
+                              </button>
+                            )}
+                            </>
                           ) : (
                             <button onClick={() => takeMedicine(med)} className={`w-full py-3 rounded-lg font-bold text-white shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform ${c.btn}`}>
                               <CheckCircle size={20} /> OTA NYT
