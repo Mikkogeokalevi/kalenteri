@@ -317,8 +317,15 @@ const MedicineTracker = () => {
                const [h, m] = timeStr.split(':').map(Number);
                const slotMinutes = h * 60 + m;
                
-               if (currentMinutes > slotMinutes + 15 && currentMinutes < slotMinutes + 720) {
-                 missed.push({ name: med.name, slot: TIME_SLOTS.find(s => s.id === slotId)?.label });
+				if (currentMinutes > slotMinutes + 15 && currentMinutes < slotMinutes + 720) {
+                 // MUUTOS: Otetaan talteen myös ID ja väri unohdus-merkintää varten
+                 missed.push({ 
+                   id: med.id, 
+                   name: med.name, 
+                   color: med.colorKey,
+                   slotId: slotId,
+                   slot: TIME_SLOTS.find(s => s.id === slotId)?.label 
+                 });
                }
             }
           });
@@ -1078,7 +1085,14 @@ const MedicineTracker = () => {
                       ))}
                     </div>
                     {/* KORJATTU BUTTON: Asettaa hasCheckedMissed = true jotta ikkuna ei aukea heti uudestaan */}
-                    <button onClick={() => { setMissedMedsDialog(null); setHasCheckedMissed(true); }} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold">Selvä, hoidan!</button>
+              <div className="flex gap-3 mt-4">
+                      <button onClick={handleMarkAsMissed} className="flex-1 py-3 bg-slate-100 text-slate-600 border border-slate-200 rounded-xl font-bold text-xs hover:bg-slate-200 active:scale-95 transition-all">
+                        Merkitse unohdetuiksi
+                      </button>
+                      <button onClick={() => { setMissedMedsDialog(null); setHasCheckedMissed(true); }} className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-md hover:bg-blue-700 active:scale-95 transition-all">
+                        Hoidan nyt!
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1137,7 +1151,26 @@ const MedicineTracker = () => {
                 if (isLate) cardStyleClass = "bg-red-50 border-red-500 border-2 shadow-red-100"; 
                 else if (isCriticalStock) cardStyleClass = "bg-red-50 border-red-400 border-2 shadow-sm"; // KRIITTINEN PUNAINEN
                 else if (isWarningStock) cardStyleClass = "bg-orange-50 border-orange-300 border-2 shadow-sm"; // VAROITUS ORANSSI
-
+// UUSI: Merkitse rästilääkkeet unohdetuiksi (ei vähennä varastoa)
+  const handleMarkAsMissed = async () => {
+    if (!user || !missedMedsDialog) return;
+    try {
+      const now = new Date().toISOString();
+      for (const m of missedMedsDialog) {
+        await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'logs'), {
+          medId: m.id,
+          medName: m.name,
+          medColor: m.color || 'blue',
+          slot: m.slotId, // Tärkeä: Tämä kuittaa lääkkeen "hoidetuksi" tältä päivältä
+          timestamp: now,
+          reason: 'UNOHDUS', // Tämä näkyy historiassa
+          ingredients: null
+        });
+      }
+      setMissedMedsDialog(null);
+      setHasCheckedMissed(true);
+    } catch (e) { console.error("Virhe kirjauksessa", e); }
+  };
                 return (
                   <div key={med.id} className={`rounded-xl shadow-sm border transition-all duration-200 overflow-hidden ${cardStyleClass} ${!isExpanded?'hover:shadow-md':''} relative group`}>
                     
