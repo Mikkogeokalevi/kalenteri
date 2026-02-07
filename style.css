@@ -1,78 +1,165 @@
-/* CSS Muuttujat teemoi lle */
+/* Moderni CSS-väripaletti ja design system */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
+
 :root {
-    --bg-main: #1a2015;
-    --bg-container: #3D4F2B;
-    --bg-sidebar: #2A381C;
-    --bg-calendar-day: #4a5c3a;
-    --text-main: #F8F8F8;
-    --text-accent: #90EE90;
-    --shadow-color: rgba(0, 0, 0, 0.2);
-    /* UUDET STATUS-VÄRIT */
-    --status-tehty: #6c757d; /* harmaa */
-    --status-myohassa: #dc3545; /* punainen */
-    --status-kiireellinen: #ffc107; /* keltainen */
-    --status-ok: #28a745; /* vihreä */
+    /* Moderni väripaletti */
+    --bg-main: #0f1419;
+    --bg-container: #1a1f2e;
+    --bg-sidebar: #252d3d;
+    --bg-card: #1e2433;
+    --bg-calendar-day: #2a3344;
+    --bg-hover: #2d3548;
+    --bg-active: #354058;
+    
+    /* Tekstivärit */
+    --text-main: #e6e9ef;
+    --text-secondary: #a8b2d1;
+    --text-muted: #64748b;
+    --text-accent: #64ffda;
+    --text-link: #88c0d0;
+    
+    /* Perheenjäsenien värit (modernisoitu) */
+    --color-toni: #4ade80;
+    --color-kaisa: #c084fc;
+    --color-oona: #60a5fa;
+    --color-perhe: #fb7185;
+    
+    /* Status-värit */
+    --status-tehty: #64748b;
+    --status-myohassa: #ef4444;
+    --status-kiireellinen: #f59e0b;
+    --status-ok: #10b981;
+    
+    /* Modernit shadowit */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    
+    /* Borderit */
+    --border-color: #334155;
+    --border-hover: #475569;
+    
+    /* Animaatiot */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Spacing */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    
+    /* Border radius */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-full: 9999px;
 }
+/* Teemavaihtoehdot */
 body.theme-kaisa {
-    --bg-main: #2b202b;
-    --bg-container: #4c3b4c;
-    --bg-sidebar: #382c38;
-    --bg-calendar-day: #5f4c5f;
-    --text-main: #f5e6f5;
-    --text-accent: #e6c6e6;
+    --bg-main: #1a0f1f;
+    --bg-container: #2d1b3d;
+    --bg-sidebar: #3d2a4d;
+    --bg-card: #332541;
+    --bg-calendar-day: #4a3a5c;
+    --text-accent: #e9a5ff;
+    --color-kaisa: #e9a5ff;
 }
 body.theme-oona {
-    --bg-main: #1f2a33;
-    --bg-container: #364958;
-    --bg-sidebar: #2c3a47;
-    --bg-calendar-day: #486071;
-    --text-main: #e0e8ef;
-    --text-accent: #a9d6e5;
+    --bg-main: #0f1922;
+    --bg-container: #1a2d3d;
+    --bg-sidebar: #243447;
+    --bg-card: #1e2e3e;
+    --bg-calendar-day: #2a3d4d;
+    --text-accent: #7dd3fc;
+    --color-oona: #7dd3fc;
+}
+body.theme-toni {
+    --bg-main: #0f1a0f;
+    --bg-container: #1a2d1a;
+    --bg-sidebar: #243d24;
+    --bg-card: #1e2e1e;
+    --bg-calendar-day: #2a3d2a;
+    --text-accent: #86efac;
+    --color-toni: #86efac;
 }
 body {
-    background-color: var(--bg-main);
-    font-family: 'Georgia', serif;
+    background: linear-gradient(135deg, var(--bg-main) 0%, var(--bg-container) 100%);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     color: var(--text-main);
     margin: 0;
-    padding: 10px;
-    transition: background-color 0.3s ease;
+    padding: var(--spacing-md);
+    min-height: 100vh;
+    line-height: 1.6;
+    transition: all var(--transition-base);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 .container {
-    max-width: 900px;
+    max-width: 1200px;
     margin: 0 auto;
     display: grid;
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: var(--spacing-lg);
+    animation: fadeIn var(--transition-slow) ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 header {
     grid-column: 1 / -1;
-    border-bottom: 2px solid var(--bg-container);
-    padding-bottom: 15px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
     text-align: center;
     position: sticky;
-    top: 0;
-    background-color: var(--bg-main);
+    top: var(--spacing-md);
     z-index: 100;
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(10px);
 }
 .header-content {
     display: flex;
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;
-    gap: 15px;
+    gap: var(--spacing-md);
 }
 .header-content h1 {
-    font-size: 2em;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
     margin: 0;
+    background: linear-gradient(135deg, var(--text-accent), var(--text-link));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 30px rgba(100, 255, 218, 0.3);
 }
 main, .sivupalkki, footer {
-    background-color: var(--bg-container);
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 4px 15px var(--shadow-color);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-base);
 }
+
+main:hover, .sivupalkki:hover, footer:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
 .sivupalkki {
-    background-color: var(--bg-sidebar);
+    background: var(--bg-sidebar);
+    border-color: var(--border-hover);
 }
 .kalenteri-ylapalkki {
     display: flex;
@@ -138,58 +225,108 @@ main, .sivupalkki, footer {
     margin-bottom: 4px;
 }
 input, select, textarea, button {
-    font-family: 'Georgia', serif;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
 }
 input[type="text"], input[type="password"], input[type="datetime-local"], input[type="search"], select, textarea, input[type="url"], input[type="email"] {
     width: 100%;
-    padding: 12px;
-    margin-bottom: 10px;
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
     box-sizing: border-box;
-    background-color: var(--bg-sidebar);
+    background: var(--bg-sidebar);
     color: var(--text-main);
-    border: 1px solid var(--bg-container);
-    border-radius: 8px;
-    font-size: 1em;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+    font-size: 14px;
+}
+
+input[type="text"]:focus, input[type="password"]:focus, input[type="datetime-local"]:focus, input[type="search"]:focus, select:focus, textarea:focus, input[type="url"]:focus, input[type="email"]:focus {
+    outline: none;
+    border-color: var(--text-accent);
+    box-shadow: 0 0 0 3px rgba(100, 255, 218, 0.1);
+    background: var(--bg-hover);
 }
 button {
     width: 100%;
-    padding: 12px;
-    margin-top: 20px;
-    border: 1px solid var(--text-accent);
-    background-color: transparent;
+    padding: var(--spacing-md) var(--spacing-lg);
+    margin-top: var(--spacing-md);
+    border: 2px solid var(--text-accent);
+    background: linear-gradient(135deg, transparent, rgba(100, 255, 218, 0.1));
     color: var(--text-accent);
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.2s, color 0.2s;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
 }
+
+button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(100, 255, 218, 0.3), transparent);
+    transition: left var(--transition-slow);
+}
+
+button:hover::before {
+    left: 100%;
+}
+
 button:hover {
-    background-color: var(--text-accent);
+    background: var(--text-accent);
     color: var(--bg-main);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(100, 255, 218, 0.3);
+}
+
+button:active {
+    transform: translateY(0);
 }
 .login-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: var(--bg-main);
+    background: linear-gradient(135deg, var(--bg-main), var(--bg-container));
     display: flex; justify-content: center; align-items: center; z-index: 2000;
+    backdrop-filter: blur(10px);
 }
 .login-box {
-    background-color: var(--bg-sidebar);
-    padding: 30px; border-radius: 12px; text-align: center;
-    width: 90%; max-width: 350px;
-    border: 2px solid var(--bg-container);
+    background: var(--bg-card);
+    padding: var(--spacing-xl); border-radius: var(--radius-xl); text-align: center;
+    width: 90%; max-width: 400px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-xl);
+    animation: slideUp var(--transition-slow) ease-out;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 #login-error { color: #e74c3c; margin-top: 10px; }
 .hidden { display: none !important; }
 .modal-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
+    background: rgba(15, 20, 25, 0.8);
     display: flex; justify-content: center; align-items: center; z-index: 1000;
+    backdrop-filter: blur(8px);
 }
 .modal-content {
-    background-color: var(--bg-sidebar);
-    padding: 25px; border-radius: 12px;
-    width: 90%; max-width: 500px;
-    border: 2px solid var(--text-accent);
+    background: var(--bg-card);
+    padding: var(--spacing-xl); border-radius: var(--radius-xl);
+    width: 90%; max-width: 600px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-xl);
+    animation: modalFadeIn var(--transition-base) ease-out;
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
 }
 .modal-content h2, #modal-view-content p strong { color: var(--text-accent); }
 .delete-btn { background-color: #e74c3c; border-color: #c0392b; color: white; }
@@ -210,28 +347,35 @@ button:hover {
 .tuleva-tapahtuma-item {
     display: flex; 
     align-items: center; 
-    padding: 10px;
-    border-radius: 8px;
-    margin-bottom: 8px;
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-sm);
     cursor: pointer;
-    transition: transform 0.2s ease;
+    transition: all var(--transition-base);
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border-color);
 }
 .tuleva-tapahtuma-item:hover {
-    transform: scale(1.02);
+    transform: translateX(4px);
+    background: var(--bg-hover);
+    border-color: var(--text-accent);
+    box-shadow: var(--shadow-md);
 }
 .tapahtuma-item-luoja {
     flex-shrink: 0; 
-    width: 32px;
-    height: 32px;
-    border-radius: 5px;
-    background-color: rgba(0, 0, 0, 0.2);
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    background: var(--bg-card);
     color: var(--text-main);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
-    font-size: 1.1em;
-    margin-right: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    margin-right: var(--spacing-md);
+    border: 2px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
 }
 .tapahtuma-item-tiedot {
     flex-grow: 1;
@@ -798,4 +942,142 @@ input[type="checkbox"] {
 }
 .tehtava-item.status-ok {
     border-left-color: var(--status-ok);
+}
+
+/* Responsiivinen mobiililayout */
+@media (max-width: 768px) {
+    body {
+        padding: var(--spacing-sm);
+    }
+    
+    .container {
+        max-width: 100%;
+        gap: var(--spacing-md);
+    }
+    
+    header {
+        padding: var(--spacing-md);
+        top: var(--spacing-sm);
+    }
+    
+    .header-content h1 {
+        font-size: 1.5rem;
+    }
+    
+    main, .sivupalkki, footer {
+        padding: var(--spacing-md);
+    }
+    
+    .login-box {
+        padding: var(--spacing-lg);
+        margin: var(--spacing-md);
+    }
+    
+    .modal-content {
+        padding: var(--spacing-lg);
+        margin: var(--spacing-md);
+    }
+    
+    .kalenteri-ylapalkki {
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+    }
+    
+    .kalenteri-ylapalkki h2 {
+        font-size: 1.1rem;
+        flex: 1 1 100%;
+        text-align: center;
+        order: -1;
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    #kalenteri-paivat-otsikot, #kalenteri-grid {
+        grid-template-columns: 25px repeat(7, 1fr);
+        gap: 2px;
+    }
+    
+    .paiva {
+        min-height: 60px;
+        padding: 2px;
+    }
+    
+    .paiva-numero {
+        font-size: 0.8em;
+    }
+    
+    .tapahtuma-palkki {
+        font-size: 0.7em;
+        padding: 1px 4px;
+    }
+    
+    .tuleva-tapahtuma-item {
+        padding: var(--spacing-sm);
+    }
+    
+    .tapahtuma-item-luoja {
+        width: 32px;
+        height: 32px;
+        font-size: 12px;
+    }
+    
+    .filter-buttons {
+        flex-wrap: wrap;
+    }
+    
+    .filter-btn {
+        font-size: 0.75em;
+        padding: 6px 4px;
+    }
+    
+    .tehtava-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+    }
+    
+    .tehtava-oikea {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .assign-buttons {
+        flex-wrap: wrap;
+    }
+    
+    button {
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-content {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+    
+    #header-logo {
+        height: 40px;
+    }
+    
+    .header-content h1 {
+        font-size: 1.3rem;
+    }
+    
+    .kalenteri-ylapalkki button {
+        padding: 6px 8px;
+        font-size: 0.8em;
+    }
+    
+    .paiva {
+        min-height: 50px;
+    }
+    
+    .tulevat-tapahtumat {
+        padding: var(--spacing-sm);
+    }
+    
+    .tehtavalista {
+        padding: var(--spacing-sm);
+    }
 }

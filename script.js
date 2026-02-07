@@ -13,10 +13,10 @@ const firebaseConfig = {
 };
 
 const KAYTTAJA_VARIT = {
-    Toni: '#2e8b57',
-    Kaisa: '#9370db',
-    Oona: '#4682b4',
-    perhe: '#f08080'
+    Toni: '#4ade80',
+    Kaisa: '#c084fc',
+    Oona: '#60a5fa',
+    perhe: '#fb7185'
 };
 
 const app = initializeApp(firebaseConfig);
