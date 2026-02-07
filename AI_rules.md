@@ -28,12 +28,12 @@
 | `index.html` | Pääsivu, kaikki UI-elementit |
 | `script.js` | Päälogiikka: tapahtumat, tehtävät, kalenteri, Firebase-yhteys |
 | `style.css` | Kaikki tyylit |
-| `components.js` | UI-komponenttien luontifunktiot |
 | `auth.js` | Autentikointilogiikka |
 | `utils.js` | Apufunktiot (päivämäärät, formatointi) |
 | `vakiot.js` | Vakiot ja konfiguraatio |
 | `ohjeet.js` | Käyttöohjeet |
-| `firebase.js` | Firebase-konfiguraatio (varakopioitu) |
+| `backup.bat` | Varmuuskopiointiskripti |
+| `update_github.bat` | GitHub-päivitysskripti |
 
 ## Keskeiset ominaisuudet
 

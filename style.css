@@ -35,7 +35,7 @@ body {
     color: var(--text-main);
     margin: 0;
     padding: 10px;
-    transition: background-color: 0.3s ease;
+    transition: background-color 0.3s ease;
 }
 .container {
     max-width: 900px;
