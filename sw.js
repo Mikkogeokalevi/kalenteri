@@ -1,11 +1,15 @@
 // Service Worker - Kauppisen perhekalenteri
-const CACHE_NAME = 'kalenteri-v1';
+const CACHE_NAME = 'kalenteri-v2';
 const urlsToCache = [
   './',
   './index.html',
   './style.css',
   './script.js',
-  './logo.png'
+  './logo.png',
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap',
+  'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2',
+  'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuGKYAZ9hiA.woff2',
+  'https://fonts.gstatic.com/s/spacegrotesk/v16/V8mDoQfxVT4DdDDmH1R9-BE1x0r.woff2'
 ];
 
 // Asennus - välimuistiin tallennus
