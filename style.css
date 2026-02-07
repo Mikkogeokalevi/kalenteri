@@ -319,9 +319,11 @@ button:active {
     background: var(--bg-card);
     padding: var(--spacing-xl); border-radius: var(--radius-xl);
     width: 90%; max-width: 600px;
+    max-height: 90vh;
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-xl);
     animation: modalFadeIn var(--transition-base) ease-out;
+    overflow-y: auto;
 }
 
 @keyframes modalFadeIn {
@@ -1148,4 +1150,37 @@ input[type="checkbox"] {
 
 .notification-status.disabled p {
     color: var(--status-myohassa);
+}
+
+/* Muistutusvalintojen tyylit */
+.muistutus-valinnat {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    margin: var(--spacing-sm) 0;
+}
+
+.muistutus-valinnat .checkbox-container {
+    flex: 1;
+    min-width: 120px;
+    background: var(--bg-sidebar);
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-fast);
+}
+
+.muistutus-valinnat .checkbox-container:hover {
+    background: var(--bg-hover);
+    border-color: var(--text-accent);
+}
+
+.muistutus-valinnat .checkbox-container label {
+    font-size: 0.9em;
+    margin: 0;
+    cursor: pointer;
+}
+
+.muistutus-valinnat input[type="checkbox"] {
+    margin-right: var(--spacing-xs);
 }

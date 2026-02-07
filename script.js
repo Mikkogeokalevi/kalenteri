@@ -522,13 +522,21 @@ function lisaaTapahtuma() {
     if (koskeeValinnat.length === 0 && document.querySelector('input[name="lisaa-ketakoskee"][value="perhe"]:checked')) {
         koskeeValinnat.push('perhe');
     }
+    // Kerää muistutusasetukset
+    const muistutukset = {
+        min15: document.getElementById('muistutus-15min').checked,
+        tunti1: document.getElementById('muistutus-1h').checked,
+        paiva1: document.getElementById('muistutus-1pv').checked
+    };
+
     const uusi = {
         otsikko: document.getElementById('tapahtuma-otsikko').value,
         kuvaus: document.getElementById('tapahtuma-kuvaus').value,
         alku: alkuAika, loppu: loppuAika, kokoPaiva: kokoPaivaCheckbox.checked,
         linkki: document.getElementById('tapahtuma-linkki').value,
         luoja: nykyinenKayttaja, ketakoskee: koskeeValinnat,
-        nakyvyys: Array.from(document.querySelectorAll('input[name="nakyvyys"]:checked')).reduce((a, c) => ({ ...a, [c.value]: true }), {})
+        nakyvyys: Array.from(document.querySelectorAll('input[name="nakyvyys"]:checked')).reduce((a, c) => ({ ...a, [c.value]: true }), {}),
+        muistutukset: muistutukset
     };
     if (!uusi.otsikko || !uusi.alku || !uusi.loppu || koskeeValinnat.length === 0) return alert('Täytä vähintään otsikko, päivämäärä ja ketä tapahtuma koskee.');
     push(ref(database, 'tapahtumat'), uusi).then(() => {
@@ -765,6 +773,13 @@ function avaaTapahtumaIkkuna(key) {
     } else {
         perheBox.checked = personBoxes.every(box => box.checked);
     }
+    
+    // Täytä muistutusvalinnat
+    const muistutukset = tapahtuma.muistutukset || {};
+    document.getElementById('muokkaa-muistutus-15min').checked = muistutukset.min15 || false;
+    document.getElementById('muokkaa-muistutus-1h').checked = muistutukset.tunti1 || false;
+    document.getElementById('muokkaa-muistutus-1pv').checked = muistutukset.paiva1 || false;
+    
     vaihdaTila('view');
     modalOverlay.classList.remove('hidden');
 }
@@ -801,13 +816,21 @@ function tallennaMuutokset() {
     if (koskeeValinnat.length === 0 && document.querySelector('input[name="muokkaa-ketakoskee"][value="perhe"]:checked')) {
         koskeeValinnat.push('perhe');
     }
+    // Kerää muistutusasetukset
+    const muistutukset = {
+        min15: document.getElementById('muokkaa-muistutus-15min').checked,
+        tunti1: document.getElementById('muokkaa-muistutus-1h').checked,
+        paiva1: document.getElementById('muokkaa-muistutus-1pv').checked
+    };
+
     const paivitys = {
         otsikko: document.getElementById('muokkaa-tapahtuma-otsikko').value,
         kuvaus: document.getElementById('muokkaa-tapahtuma-kuvaus').value,
         alku: alkuAika, loppu: loppuAika, kokoPaiva: kokoPaivaCheckbox.checked,
         linkki: document.getElementById('muokkaa-tapahtuma-linkki').value,
         nakyvyys: Array.from(document.querySelectorAll('input[name="muokkaa-nakyvyys"]:checked')).reduce((a, c) => ({ ...a, [c.value]: true }), {}),
-        ketakoskee: koskeeValinnat, luoja: vanhaTapahtuma.luoja
+        ketakoskee: koskeeValinnat, luoja: vanhaTapahtuma.luoja,
+        muistutukset: muistutukset
     };
     update(ref(database, `tapahtumat/${key}`), paivitys).then(() => {
         const tapahtuma = window.kaikkiTapahtumat.find(t => t.key === key);
@@ -1228,15 +1251,17 @@ class NotificationManager {
         const now = new Date();
         const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
         const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60 * 1000);
+        const oneDayFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
         // Käy läpi kaikki tulevat tapahtumat
         Object.values(kaikkiTapahtumat || {}).forEach(event => {
-            if (!event.aika) return;
+            if (!event.alku) return;
 
-            const eventTime = new Date(event.aika);
+            const eventTime = new Date(event.alku);
+            const muistutukset = event.muistutukset || {};
             
             // 15 minuutin muistutus
-            if (eventTime > now && eventTime <= fifteenMinutesFromNow) {
+            if (muistutukset.min15 && eventTime > now && eventTime <= fifteenMinutesFromNow) {
                 const reminderKey = `event-15min-${event.key}`;
                 if (!this.reminders.has(reminderKey)) {
                     this.showEventReminder(event);
@@ -1245,8 +1270,17 @@ class NotificationManager {
             }
             
             // 1 tunnin muistutus
-            if (eventTime > now && eventTime <= oneHourFromNow) {
+            if (muistutukset.tunti1 && eventTime > now && eventTime <= oneHourFromNow) {
                 const reminderKey = `event-1h-${event.key}`;
+                if (!this.reminders.has(reminderKey)) {
+                    this.showEventReminder(event);
+                    this.reminders.set(reminderKey, true);
+                }
+            }
+
+            // 1 päivän muistutus
+            if (muistutukset.paiva1 && eventTime > now && eventTime <= oneDayFromNow) {
+                const reminderKey = `event-1d-${event.key}`;
                 if (!this.reminders.has(reminderKey)) {
                     this.showEventReminder(event);
                     this.reminders.set(reminderKey, true);
