@@ -1,27 +1,12 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getDatabase, ref, push, onValue, update, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+// Importtaa moduulit
+import { firebaseConfig, KAYTTAJA_VARIT, app, database, auth, firebaseOperations } from './firebase-config.js';
+import { NotificationManager, NotificationSettings } from './notifications.js';
+import { CalendarManager } from './calendar.js';
+import { TaskManager } from './tasks.js';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCZIupycr2puYrPK2KajAW7PcThW9Pjhb0",
-  authDomain: "perhekalenteri-projekti.firebaseapp.com",
-  databaseURL: "https://perhekalenteri-projekti-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "perhekalenteri-projekti",
-  storageBucket: "perhekalenteri-projekti.appspot.com",
-  messagingSenderId: "588536838615",
-  appId: "1:588536838615:web:148de0581bbd46c42c7392"
-};
-
-const KAYTTAJA_VARIT = {
-    Toni: '#4ade80',
-    Kaisa: '#c084fc',
-    Oona: '#60a5fa',
-    perhe: '#fb7185'
-};
-
-const app = initializeApp(firebaseConfig);
-const database = getDatabase(app);
-const auth = getAuth(app);
+// Tee globaalit saataville muille moduuleille
+window.KAYTTAJA_VARIT = KAYTTAJA_VARIT;
+window.firebaseOperations = firebaseOperations;
 
 // --- DOM-elementit (Määritellään muuttujat) ---
 let loginOverlay, loginForm, mainContainer, currentUserName, logoutBtn, tulevatTapahtumatLista,
@@ -96,7 +81,7 @@ function alustaElementit() {
 document.addEventListener('DOMContentLoaded', () => {
     alustaElementit();
     lisaaKuuntelijat();
-    onAuthStateChanged(auth, user => {
+    firebaseOperations.onAuthChange(user => {
         if (user) {
             let userName = user.displayName;
             if (!userName && user.email) {
@@ -349,7 +334,7 @@ function handleLogin(event) {
     const email = document.getElementById('login-email').value;
     const pass = document.getElementById('login-password').value;
     const loginError = document.getElementById('login-error');
-    signInWithEmailAndPassword(auth, email, pass)
+    firebaseOperations.signIn(email, pass)
         .then(() => {
             loginError.classList.add('hidden');
             loginForm.reset();
@@ -365,7 +350,7 @@ function handleLogout() {
     notificationManager.stopChecking();
     notificationManager.clearReminders();
     
-    signOut(auth).catch(error => console.error("Uloskirjautumisvirhe:", error));
+    firebaseOperations.signOut().catch(error => console.error("Uloskirjautumisvirhe:", error));
 }
 
 function startAppForUser(userName) {
@@ -381,6 +366,10 @@ function startAppForUser(userName) {
     kuunteleTapahtumia();
     kuunteleTehtavia();
     
+    // Alusta moduulit
+    taskManager.setNykyinenKayttaja(nykyinenKayttaja);
+    taskManager.initializeEventListeners();
+    
     // Käynnistä ilmoitukset
     initializeNotifications();
 }
@@ -390,7 +379,7 @@ async function initializeNotifications() {
     try {
         const hasPermission = await notificationManager.requestPermission();
         if (hasPermission) {
-            notificationManager.startChecking(5); // Tarkista 5 minuutin välein
+            notificationManager.startChecking(5, window.kaikkiTapahtumat, taskManager.getKaikkiTehtavat());
             console.log('Ilmoitukset käynnistetty');
         } else {
             console.log('Ilmoituslupa evätty');
@@ -402,13 +391,12 @@ async function initializeNotifications() {
 
 function kuunteleTapahtumia() {
     if (unsubscribeFromEvents) unsubscribeFromEvents();
-    const tapahtumatRef = ref(database, 'tapahtumat');
-    unsubscribeFromEvents = onValue(tapahtumatRef, (snapshot) => {
+    unsubscribeFromEvents = firebaseOperations.listenToEvents((snapshot) => {
         window.kaikkiTapahtumat = [];
         snapshot.forEach((child) => {
             window.kaikkiTapahtumat.push({ key: child.key, ...child.val() });
         });
-        piirraKalenteri();
+        calendarManager.piirraKalenteri(window.kaikkiTapahtumat, nykyinenKayttaja);
         naytaTulevatTapahtumat();
     });
 }
@@ -873,13 +861,12 @@ function kopioiTapahtuma() {
 
 function kuunteleTehtavia() {
     if (unsubscribeFromTasks) unsubscribeFromTasks();
-    const tehtavatRef = ref(database, 'tehtavalista');
-    unsubscribeFromTasks = onValue(tehtavatRef, (snapshot) => {
+    unsubscribeFromTasks = firebaseOperations.listenToTasks((snapshot) => {
         kaikkiTehtavat = [];
         snapshot.forEach(child => {
             kaikkiTehtavat.push({ key: child.key, ...child.val() });
         });
-        piirraTehtavalista();
+        taskManager.setNykyinenKayttaja(nykyinenKayttaja);
         if (!tehtavaArkistoModal.classList.contains('hidden')) {
             avaaArkisto();
         }
@@ -1331,12 +1318,20 @@ class NotificationManager {
     }
 }
 
-// Luo globaali ilmoitusmanageri
+// Luo globaalit managerit
 const notificationManager = new NotificationManager();
+const notificationSettings = new NotificationSettings(notificationManager);
+const calendarManager = new CalendarManager();
+const taskManager = new TaskManager();
+
+// Tee globaalit saataville
+window.notificationManager = notificationManager;
+window.calendarManager = calendarManager;
+window.taskManager = taskManager;
 
 // Ilmoitusasetusten hallinta
 class NotificationSettings {
-    constructor() {
+    constructor(notificationManager) {
         this.modal = document.getElementById('notification-settings-modal');
         this.settingsBtn = document.getElementById('notification-settings-btn');
         this.closeBtn = document.getElementById('sulje-notification-modal-btn');
@@ -1449,6 +1444,3 @@ class NotificationSettings {
         }
     }
 }
-
-// Luo ilmoitusasetusten hallitsija
-const notificationSettings = new NotificationSettings();
