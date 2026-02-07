@@ -1,14 +1,10 @@
 // Service Worker - Kauppisen perhekalenteri
-const CACHE_NAME = 'kalenteri-v5';
+const CACHE_NAME = 'kalenteri-v6';
 const urlsToCache = [
   './',
   './index.html',
   './style.css',
   './script.js',
-  './firebase-config.js',
-  './notifications.js',
-  './calendar.js',
-  './tasks.js',
   './logo.png',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap',
   'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2',
