@@ -153,6 +153,7 @@
             <div id="user-info">
                 Kirjautunut: <strong id="current-user-name"></strong>
                 <button id="logout-btn">Kirjaudu ulos</button>
+                <button id="notification-settings-btn" class="footer-btn" title="Ilmoitusasetukset">🔔</button>
             </div>
         </footer>
     </div>
@@ -252,6 +253,42 @@
                 <button id="sulje-arkisto-modal-btn" class="close-btn">&times;</button>
             </div>
             <div id="arkistoidut-tehtavat-lista"></div>
+        </div>
+    </div>
+
+    <!-- Ilmoitusasetusten modal -->
+    <div id="notification-settings-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Ilmoitusasetukset</h2>
+                <button id="sulje-notification-modal-btn" class="close-btn">&times;</button>
+            </div>
+            <div class="notification-settings-content">
+                <div class="checkbox-container">
+                    <label for="enable-notifications">Ota ilmoitukset käyttöön</label>
+                    <input type="checkbox" id="enable-notifications">
+                </div>
+                
+                <div class="notification-status" id="notification-status">
+                    <p>Tarkistetaan ilmoitustilaa...</p>
+                </div>
+                
+                <div class="notification-options">
+                    <h4>Muistutukset:</h4>
+                    <div class="checkbox-container">
+                        <label for="event-reminders">Tapahtumamuistutukset</label>
+                        <input type="checkbox" id="event-reminders" checked>
+                    </div>
+                    <div class="checkbox-container">
+                        <label for="task-reminders">Tehtävämuistutukset</label>
+                        <input type="checkbox" id="task-reminders" checked>
+                    </div>
+                </div>
+                
+                <div class="notification-test">
+                    <button id="test-notification-btn" class="footer-btn">Testaa ilmoitus</button>
+                </div>
+            </div>
         </div>
     </div>
 

@@ -1081,3 +1081,71 @@ input[type="checkbox"] {
         padding: var(--spacing-sm);
     }
 }
+
+/* Ilmoitusasetusten tyylit */
+.notification-settings-content {
+    padding: var(--spacing-md);
+}
+
+.notification-status {
+    background: var(--bg-sidebar);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    margin: var(--spacing-md) 0;
+    border: 1px solid var(--border-color);
+}
+
+.notification-status p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.notification-options {
+    margin: var(--spacing-lg) 0;
+}
+
+.notification-options h4 {
+    color: var(--text-accent);
+    margin-bottom: var(--spacing-md);
+    font-size: 1.1em;
+}
+
+.notification-test {
+    margin-top: var(--spacing-lg);
+    text-align: center;
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--border-color);
+}
+
+#notification-settings-btn {
+    padding: var(--spacing-sm);
+    font-size: 1.2em;
+    min-width: 40px;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border-color);
+}
+
+#notification-settings-btn:hover {
+    background: var(--bg-hover);
+    border-color: var(--text-accent);
+    transform: scale(1.1);
+}
+
+/* Ilmoitustilan indikaattorit */
+.notification-status.enabled {
+    border-color: var(--status-ok);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.notification-status.disabled {
+    border-color: var(--status-myohassa);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.notification-status.enabled p {
+    color: var(--status-ok);
+}
+
+.notification-status.disabled p {
+    color: var(--status-myohassa);
+}
