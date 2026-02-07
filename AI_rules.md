@@ -105,7 +105,62 @@
 
 ---
 
-## 🚀 Kehityssuunnitelma ja parannusehdotukset
+## � NYKYINEN TILANNE (päivitetty 7.2.2026)
+
+### ✅ VALMIIT OMINAISUUDET
+
+**Vaihe 1.1: CSS-modernisointi** ✅
+- Moderni tumma väripaletti CSS-muuttujilla
+- Google Fonts (Inter, Space Grotesk)
+- Korttipohjainen layout
+- Responsiivinen mobiililayout
+- Animaatiot ja siirtymät
+- Päivitetyt käyttäjävärit:
+  - Toni: `#4ade80` (vihreä)
+  - Kaisa: `#c084fc` (violetti)
+  - Oona: `#60a5fa` (sininen)
+  - Perhe: `#fb7185` (punainen)
+
+**Vaihe 1.2: Perusilmoitukset** ✅
+- NotificationManager-luokka (script.js:ssä)
+- Browser Notification API -tuki
+- Tapahtumamuistutukset (15min, 1h, 1pv ennen)
+- Tehtävämuistutukset (1pv ennen määräpäivää)
+- Ilmoitusasetukset-modal (🔔-nappi footerissa)
+- Muistutusvalinnat tapahtuman luonnissa ja muokkauksessa
+- Tallennus Firebaseen (muistutukset-kenttä)
+
+**PWA-tuki** ✅
+- manifest.json
+- sw.js (Service Worker, versio v6)
+- Offline-välimuisti fonteille ja tiedostoille
+
+### 🔧 TIEDOSTORAKENNE
+
+| Tiedosto | Rivejä | Kuvaus |
+|----------|--------|--------|
+| `script.js` | ~1455 | Päälogiikka, kaikki toiminnot |
+| `style.css` | ~1190 | Kaikki tyylit |
+| `index.html` | ~325 | UI-rakenne |
+| `sw.js` | ~50 | Service Worker |
+| `manifest.json` | ~20 | PWA-manifesti |
+
+### ⚠️ TÄRKEÄÄ MUISTAA
+
+1. **ÄLÄ REFAKTOROI script.js:ää moduuleihin** - yritettiin, meni rikki
+2. **Testaa AINA kirjautuminen** ennen pushia
+3. **Päivitä sw.js CACHE_NAME** kun teet muutoksia (nyt v6)
+4. **Sovellus on tuotantokäytössä** - oikea perhe käyttää
+
+### 🎯 SEURAAVAKSI (Vaihe 2)
+
+1. **Toistuvat tapahtumat** - viikoittaiset/kuukausittaiset
+2. **Push-ilmoitukset 2.0** - PWA:n kautta
+3. **Raporttinäkymä** - viikkoyhteenveto
+
+---
+
+## �🚀 Kehityssuunnitelma ja parannusehdotukset
 
 ### Analyysi nykytilanteesta
 **Vahvuudet:**
