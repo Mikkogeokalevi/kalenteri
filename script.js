@@ -696,10 +696,27 @@ function naytaTulevatTapahtumat() {
         } else {
             item.style.background = tiedot.value;
         }
-        item.innerHTML = `<div class="tapahtuma-item-luoja">${tiedot.initialit}</div><div class="tapahtuma-item-tiedot"><div class="tapahtuma-item-aika">${aikaTeksti}</div><div class="tapahtuma-item-otsikko">${tapahtuma.otsikko}</div></div>`;
+        // Lisää muistutusindikaattori
+        const muistutusIndikaattori = luoMuistutusIndikaattori(tapahtuma);
+        
+        item.innerHTML = `<div class="tapahtuma-item-luoja">${tiedot.initialit}</div><div class="tapahtuma-item-tiedot"><div class="tapahtuma-item-aika">${aikaTeksti}</div><div class="tapahtuma-item-otsikko">${tapahtuma.otsikko}</div></div>${muistutusIndikaattori}`;
         item.addEventListener('click', () => avaaTapahtumaIkkuna(tapahtuma.key));
         tulevatTapahtumatLista.appendChild(item);
     });
+}
+
+// Luo muistutusindikaattori tapahtumalle
+function luoMuistutusIndikaattori(tapahtuma) {
+    const muistutukset = tapahtuma.muistutukset || {};
+    const indikaattorit = [];
+    
+    if (muistutukset.min15) indikaattorit.push('🔔');
+    if (muistutukset.tunti1) indikaattorit.push('🔕');
+    if (muistutukset.paiva1) indikaattorit.push('📅');
+    
+    if (indikaattorit.length === 0) return '';
+    
+    return `<div class="muistutus-indikaattorit" title="Muistutukset: ${indikaattorit.join(', ')}">${indikaattorit.join('')}</div>`;
 }
 
 function korostaHakuOsumatKalenterissa() {

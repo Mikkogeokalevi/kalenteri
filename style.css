@@ -1184,3 +1184,25 @@ input[type="checkbox"] {
 .muistutus-valinnat input[type="checkbox"] {
     margin-right: var(--spacing-xs);
 }
+
+/* Muistutusindikaattorit tulevissa tapahtumissa */
+.muistutus-indikaattorit {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+    font-size: 0.9em;
+    opacity: 0.8;
+    transition: opacity var(--transition-fast);
+}
+
+.muistutus-indikaattorit:hover {
+    opacity: 1;
+}
+
+.tuleva-tapahtuma-item {
+    position: relative;
+}
+
+.tuleva-tapahtuma-item:hover .muistutus-indikaattorit {
+    opacity: 1;
+}
