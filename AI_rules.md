@@ -103,4 +103,201 @@
 
 *Tähän lisätään uudet säännöt sitä mukaa kun niitä tulee:*
 
+---
+
+## 🚀 Kehityssuunnitelma ja parannusehdotukset
+
+### Analyysi nykytilanteesta
+**Vahvuudet:**
+- Toimiva peruskalenteri – kuukausinäkymä, tapahtumien hallinta
+- Hyvä tehtäväjärjestelmä – kohdistus henkilöille, määräpäivät, arkisto
+- Perhekeskeinen – värikoodit, näkyvyysasetukset
+- Teknisesti siisti – Vanilla JS, Firebase, PWA-tuki
+- Suomenkielinen – täysin lokalisoitu
+
+**Kehityskohteet:**
+- Käyttöliittymä on hieman vanhanaikainen
+- Puuttuvat modernit ominaisuudet (ilmoitukset, synkronointi)
+- Mobiilikokemus voisi olla parempi
+- Ei raportointia tai tilastoja
+
+---
+
+### 🎯 Parannusehdotukset (prioriteettijärjestyksessä)
+
+#### 1. **Käyttöliittymän modernisointi** (Korkea prioriteetti)
+- **Visuaalinen päivitys** – moderni CSS, paremmat värit, animaatiot
+- **Mobiiliresponsiivisuus** – parempi puhelinkäyttö
+- **Paremmat ikonit** – moderni ikonijärjestelmä
+- **Tumma/vaalea teema** – käyttäjän valittavissa
+
+#### 2. **Ilmoitukset ja muistutukset** (Korkea prioriteetti)
+- **Push-ilmoitukset** – tapahtumamuistutukset
+- **Selaimeen perustuvat ilmoitukset** – PWA:n kautta
+- **Muistutusasetukset** – milloin ilmoittaa
+- **Tehtävämuistutukset** – määräpäivien lähestyessä
+
+#### 3. **Tapahtumien laajennukset** (Keskipitkä prioriteetti)
+- **Toistuvat tapahtumat** – viikoittaiset, kuukausittaiset
+- **Tapahtumakategoriat** – työ, vapaa-aika, juhlat jne.
+- **Tiedostoliitteet** – kuvat, dokumentit
+- **Kutsut ja RSVP** – kutsu muita perheenjäseniä
+
+#### 4. **Raportointi ja tilastot** (Keskipitkä prioriteetti)
+- **Viikko/kuukausiraportit** – perheen yhteenveto
+- **Tehtävätilastot** – kuka tekee mitä
+- **Kiireellisyysnäkymä** – tänään/tämän viikon tapahtumat
+- **Tulostettava versio** – paperille tulostus
+
+#### 5. **Käyttökokemuksen parannukset** (Matala prioriteetti)
+- **Pikatoiminnot** – drag&drop, näppäinoikotiet
+- **Hakutoiminnon parannus** – tarkempi haku, suodattimet
+- **Offline-tuen parannus** – enemmän toiminnallisuus offline
+- **Tuo/vie** – kalenteritiedostojen tuonti/exportti
+
+---
+
+### 🛠️ Toteutussuunnitelma
+
+#### Vaihe 1 (1-2 viikkoa) – Perusmodernisointi
+**Tavoitteet:**
+- Käyttöliittymän modernisointi (CSS, värit, layout)
+- Mobiiliresponsiivisuuden parannus
+- Perusilmoitusten lisääminen
+
+**Konkreettiset tehtävät:**
+1. **CSS-uudistus**:
+   - Moderni väripaletti ja kontrastit
+   - Korttipohjainen layout
+   - Parempi animaatiot ja siirtymät
+   - Responsiivinen grid/flexbox
+
+2. **Mobiilioptimointi**:
+   - Touch-ystävälliset napit
+   - Parempi puhelinnäkymä
+   - Swipe-temput kalenterissa
+
+3. **Perusilmoitukset**:
+   - Browser Notification API
+   - Tapahtumamuistutukset (15min, 1h ennen)
+   - Tehtävämuistutukset määräpäiville
+
+#### Vaihe 2 (2-3 viikkoa) – Laajennukset
+**Tavoitteet:**
+- Toistuvat tapahtumat
+- Push-ilmoitusten täysversio
+- Raporttinäkymän perusversio
+
+**Konkreettiset tehtävät:**
+1. **Toistuvat tapahtumat**:
+   - Viikoittaiset/kuukausittaiset toistot
+   - Poikkeuspäivien hallinta
+   - Toistojen muokkaus/poisto
+
+2. **Ilmoitukset 2.0**:
+   - Push-ilmoitukset PWA:n kautta
+   - Muistutusasetukset käyttäjälle
+   - Ilmoitushistoria
+
+3. **Raportointi**:
+   - Viikkonäkymä tapahtumista
+   - Tehtävätilastot perheenjäsenittäin
+   - Tulostettava versio
+
+#### Vaihe 3 (jatkokehitys) – Edistyneet ominaisuudet
+**Tavoitteet:**
+- Kategoriat ja liitteet
+- Tilastot ja analytiikka
+- Kutsujärjestelmä
+
+**Konkreettiset tehtävät:**
+1. **Kategoriat**:
+   - Tapahtumaluokat (työ, vapaa-aika, juhlat)
+   - Omat värit kategorioille
+   - Suodatus kategorioilla
+
+2. **Liitteet**:
+   - Kuvien lisäys tapahtumiin
+   - Dokumenttiliitteet
+   - Tiedostojen hallinta Firebase Storage
+
+3. **Kutsut**:
+   - Kutsu muita perheenjäseniä
+   - RSVP-vastaukset
+   - Kutsuhistoria
+
+---
+
+### 💡 Teknisiä parannuksia
+
+#### Suorituskyky
+- **Lazy loading** – suurten datamäärien käsittely
+- **Optimoitu välimuisti** – parempi SW-strategia
+- **Kuvien optimointi** – logo ja mahdolliset liitteet
+
+#### Tietoturva
+- **Parempi autentikointi** – 2FA, salasanan vaihto
+- **Tietojen varmuuskopiointi** – automaattiset varmuuskopiot
+- **Lokitietojen hallinta** – kuka teki mitä ja milloin
+
+---
+
+### 📱 Mobiiliparannukset
+
+#### Touch-optimointi
+- **Suuremmat napit** – helpompi käyttö puhelimella
+- **Swipe-temput** – viikkojen vaihto, tapahtumien selaus
+- **Pohjateema** – mobiilinäkymä
+
+#### PWA-parannukset
+- **Täysin offline** – kaikki toiminnallisuus ilman verkkoyhteyttä
+- **Kotinäytön widget** – pikakatsaus tapahtumiin
+- **Jakotoiminnot** – jaa tapahtumia muihin sovelluksiin
+
+---
+
+### 🎨 Visuaaliset parannukset
+
+#### Väriteema
+- **Moderni paletti** – parempi kontrasti, esteettömyys
+- **Personoitavat teemat** – jokaisen perheenjäsenen oma teema
+- **Parempi kontrasti** – esteettömyysstandardien mukainen
+
+#### Layout
+- **Korttipohjainen UI** – modernimpi ulkoasu
+- **Parempi tilankäyttö** – enemmän tietoa näytöllä
+- **Animaatiot** – siirtymät ja palaute
+
+---
+
+### ⏰ Aikataulun selitys
+
+**"1-2 viikkoa"** tarkoittaa:
+- **Oikeaa kehitysaikaa** – jos työskentelet aktiivisesti
+- **Ei ole sitova** – arvio riippuu kokemuksesta ja käytettävästä ajasta
+- **Voi tehdä osissa** – ei tarvitse tehdä kaikkea kerralla
+- **Joustava** – voit tehdä yhden ominaisuuden viikossa tai useamman
+
+**Käytännössä:**
+- **Vaihe 1**: Aloita CSS-uudistuksella, tee se valmiiksi
+- **Vaihe 2**: Kun Vaihe 1 on valmis, siirry seuraavaan
+- **Voit tehdä vain osan** – esim. vain CSS-uudistuksen ja pysähtyä siihen
+
+---
+
+### 🎯 Suositus aloitukseen
+
+**Aloita Vaiheella 1**, koska:
+1. **Visuaalinen parannus** on heti näkyvissä
+2. **Perustaa muutoksille** hyvän pohjan
+3. **Antaa motivaatiota** jatkaa kehitystä
+4. **Ei riko olemassa olevaa toiminnallisuutta**
+
+**Ensimmäinen konkreettinen tehtävä:**
+- Moderni CSS-väripaletti
+- Korttipohjainen layout
+- Parempi mobiilikokemus
+
+---
+
 <!-- Lisää uudet säännöt tähän -->
