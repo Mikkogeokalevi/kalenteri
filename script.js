@@ -19,6 +19,86 @@ const KAYTTAJA_VARIT = {
     perhe: '#fb7185'
 };
 
+// Suomalaiset pyhäpäivät (kiinteät päivämäärät)
+const SUOMALAISET_PYHAPAIVAT = {
+    // Uudenvuodenpäivä
+    '1-1': 'Uudenvuodenpäivä',
+    // Loppiainen
+    '1-6': 'Loppiainen',
+    // Joulupäivä ja itsenäisyyspäivä siirtyvät
+    // Helatorstai
+    // Vappu
+    '5-1': 'Vappu',
+    // Juhannus (lasketaan dynaamisesti)
+    // Itsenäisyyspäivä
+    '12-6': 'Itsenäisyyspäivä',
+    // Jouluaika
+    '12-24': 'Jouluaatto',
+    '12-25': 'Joulupäivä',
+    '12-26': 'Tapaninpäivä'
+};
+
+// Liikkuvat pyhäpäivät (lasketaan vuosittain)
+function getLiikkuvatPyhat(vuosi) {
+    const pyhat = [];
+    
+    // Helatorstai (helatorstai on 40 päivää ennen pääsiäistä)
+    const paasiainen = getPaasiainen(vuosi);
+    const helatorstai = new Date(paasiainen);
+    helatorstai.setDate(helatorstai.getDate() - 39);
+    pyhat.push({
+        pvm: `${helatorstai.getMonth() + 1}-${helatorstai.getDate()}`,
+        nimi: 'Helatorstai'
+    });
+    
+    // Juhannus (kesäkuun 20.-26. päivä lauantaina)
+    const juhannus = getJuhannus(vuosi);
+    pyhat.push({
+        pvm: `${juhannus.getMonth() + 1}-${juhannus.getDate()}`,
+        nimi: 'Juhannus'
+    });
+    
+    // Pääsiäinen (liikkuva)
+    pyhat.push({
+        pvm: `${paasiainen.getMonth() + 1}-${paasiainen.getDate()}`,
+        nimi: 'Pääsiäinen'
+    });
+    
+    return pyhat;
+}
+
+function getPaasiainen(vuosi) {
+    // Pääsiäisen laskenta (simplified)
+    const a = vuosi % 19;
+    const b = Math.floor(vuosi / 100);
+    const c = vuosi % 100;
+    const d = Math.floor(b / 4);
+    const e = b % 4;
+    const f = Math.floor((b + 8) / 25);
+    const g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4);
+    const k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7;
+    const m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const paiva = h + l - 7 * m + 114;
+    const kuukausi = Math.floor(paiva / 31);
+    const paivaPaasiaista = (paiva % 31) + 1;
+    
+    return new Date(vuosi, kuukausi - 1, paivaPaasiaista);
+}
+
+function getJuhannus(vuosi) {
+    // Kesäkuun 20.-26. päivä lauantaina
+    for (let paiva = 20; paiva <= 26; paiva++) {
+        const date = new Date(vuosi, 5, paiva);
+        if (date.getDay() === 6) { // Lauantai
+            return date;
+        }
+    }
+    return new Date(vuosi, 5, 20); // Fallback
+}
+
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
@@ -507,6 +587,24 @@ function piirraPaivanakyma() {
     kalenteriGrid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">Päivänäkymä tulossa...</div>';
 }
 
+function onkoPyhapäiva(pvm) {
+    const kuukausi = pvm.getMonth() + 1;
+    const paiva = pvm.getDate();
+    const avain = `${kuukausi}-${paiva}`;
+    
+    // Tarkista kiinteät pyhäpäivät
+    if (SUOMALAISET_PYHAPAIVAT[avain]) {
+        return SUOMALAISET_PYHAPAIVAT[avain];
+    }
+    
+    // Tarkista liikkuvat pyhäpäivät
+    const vuosi = pvm.getFullYear();
+    const liikkuvat = getLiikkuvatPyhat(vuosi);
+    const liikuva = liikkuvat.find(p => p.pvm === avain);
+    
+    return liikuva ? liikuva.nimi : null;
+}
+
 function piirraKalenteri() {
     kalenteriGrid.innerHTML = '';
     kalenteriPaivatOtsikot.innerHTML = '';
@@ -529,7 +627,15 @@ function piirraKalenteri() {
             let paivaLuokat = "paiva";
             if (paivaIt.getMonth() !== kuukausi) paivaLuokat += " tyhja";
             if (pvmString === tanaanString) paivaLuokat += " tanaan";
-            kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="${paivaLuokat}" data-paivamaara="${pvmString}"><div class="paiva-numero">${paivaIt.getDate()}</div><div class="tapahtumat-container"></div></div>`);
+            
+            // Tarkista onko pyhäpäivä
+            const pyhanNimi = onkoPyhapäiva(paivaIt);
+            if (pyhanNimi) {
+                paivaLuokat += " pyhapaiva";
+                kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="${paivaLuokat}" data-paivamaara="${pvmString}" title="${pyhanNimi}"><div class="paiva-numero">${paivaIt.getDate()}</div><div class="pyha-merkki">🎅</div><div class="tapahtumat-container"></div></div>`);
+            } else {
+                kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="${paivaLuokat}" data-paivamaara="${pvmString}"><div class="paiva-numero">${paivaIt.getDate()}</div><div class="tapahtumat-container"></div></div>`);
+            }
             paivaIt.setDate(paivaIt.getDate() + 1);
         }
         if (paivaIt.getMonth() !== kuukausi && paivaIt.getDay() === 1) break;

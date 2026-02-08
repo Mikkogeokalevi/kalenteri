@@ -531,15 +531,29 @@ footer {
     color: var(--text-accent);
 }
 .paiva.tanaan .paiva-numero {
-    background-color: var(--text-accent);
+    background: var(--text-accent);
     color: var(--bg-main);
     border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: -2px auto 0 auto;
+    font-weight: bold;
+}
+
+/* Pyhäpäivien tyylit */
+.paiva.pyhapaiva {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.paiva.pyhapaiva .paiva-numero {
+    color: var(--status-myohassa);
+    font-weight: 600;
+}
+
+.pyha-merkki {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 0.7em;
+    opacity: 0.8;
 }
 .tapahtuma-kuvake {
     width: 20px;
