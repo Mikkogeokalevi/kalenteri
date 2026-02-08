@@ -162,45 +162,11 @@ main:hover, .sivupalkki:hover, footer:hover {
     border-color: var(--border-hover);
 }
 .kalenteri-ylapalkki {
-    margin-top: 20px;
-    gap: 10px;
-}
-
-.kalenteri-navigointi {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--spacing-sm);
-}
-
-.nakyman-valitsimet {
-    display: flex;
-    gap: var(--spacing-xs);
-    justify-content: center;
-}
-
-.nakyman-nappi {
-    padding: var(--spacing-xs) var(--spacing-sm);
-    background: var(--bg-container);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    color: var(--text-secondary);
-    font-size: 0.9em;
-    cursor: pointer;
-    transition: all var(--transition-fast);
-}
-
-.nakyman-nappi:hover {
-    background: var(--bg-hover);
-    border-color: var(--text-accent);
-    color: var(--text-primary);
-}
-
-.nakyman-nappi.active {
-    background: var(--text-accent);
-    color: var(--bg-main);
-    border-color: var(--text-accent);
-    font-weight: 500;
+    margin-top: 20px;
+    gap: 10px;
 }
 .kalenteri-ylapalkki button {
     width: auto;
@@ -531,277 +497,15 @@ footer {
     color: var(--text-accent);
 }
 .paiva.tanaan .paiva-numero {
-    background: var(--text-accent);
+    background-color: var(--text-accent);
     color: var(--bg-main);
     border-radius: 50%;
-    font-weight: bold;
-}
-
-/* Pyhäpäivien tyylit */
-.paiva.pyhapaiva {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-.paiva.pyhapaiva .paiva-numero {
-    color: var(--status-myohassa);
-    font-weight: 600;
-}
-
-.pyha-merkki {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    font-size: 0.7em;
-    opacity: 0.8;
-}
-
-/* Viikkonäkymän tyylit (yksinkertainen) */
-.viikko-paiva-simple {
-    min-height: 150px;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-}
-
-.viikko-paiva-otsikko {
-    padding: var(--spacing-sm);
-    text-align: center;
-    border-bottom: 1px solid var(--border-color);
-    background: var(--bg-sidebar);
-}
-
-.viikko-paiva-otsikko .paiva-numero {
-    font-weight: bold;
-    font-size: 1.2rem;
-}
-
-.viikko-paiva-otsikko.tanaan .paiva-numero {
-    color: var(--text-accent);
-    background: rgba(74, 222, 128, 0.2);
-    border-radius: 50%;
-    padding: var(--spacing-xs);
-    width: 30px;
-    height: 30px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto;
-}
-
-.viikko-paiva-otsikko .pyha-merkki {
-    font-size: 0.8em;
-    margin-top: 2px;
-}
-
-.viikko-tapahtumat-container {
-    flex: 1;
-    padding: var(--spacing-xs);
-    overflow-y: auto;
-}
-
-.viikko-tapahtuma-simple {
-    padding: var(--spacing-xs) var(--spacing-sm);
-    margin: var(--spacing-xs) 0;
-    border-radius: var(--border-radius);
-    color: white;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: transform 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-}
-
-.viikko-tapahtuma-simple:hover {
-    transform: scale(1.02);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.tapahtuma-aika {
-    font-weight: bold;
-    font-size: 0.7rem;
-    opacity: 0.9;
-}
-
-.tapahtuma-otsikko {
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-@media (max-width: 768px) {
-    .viikko-paiva-simple {
-        min-height: 120px;
-    }
-    
-    .viikko-paiva-otsikko .paiva-numero {
-        font-size: 1rem;
-    }
-    
-    .viikko-tapahtuma-simple {
-        font-size: 0.7rem;
-        padding: var(--spacing-xs);
-    }
-    
-    .tapahtuma-aika {
-        font-size: 0.6rem;
-    }
-}
-
-/* Päivänäkymän tyylit (yksinkertainen) */
-.paiva-nakyma {
-    min-height: 400px;
-    padding: var(--spacing-md);
-}
-
-.paiva-otsikko {
-    text-align: center;
-    margin-bottom: var(--spacing-lg);
-    padding: var(--spacing-md);
-    background: var(--bg-sidebar);
-    border-radius: var(--border-radius);
-}
-
-.paiva-nakyma .paiva-numero {
-    font-size: 3rem;
-    font-weight: bold;
-    color: var(--text-accent);
-    margin-bottom: var(--spacing-sm);
-}
-
-.paiva-kuukausi {
-    font-size: 1.2rem;
-    color: var(--text-secondary);
-    margin-bottom: var(--spacing-sm);
-}
-
-.pyha-nimi {
-    font-size: 1.1rem;
-    color: var(--status-myohassa);
-    font-weight: 600;
-    margin-top: var(--spacing-sm);
-}
-
-/* Päivän tapahtumalista */
-.paiva-tapahtuma-lista {
-    max-height: 400px;
-    overflow-y: auto;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    background: var(--bg-main);
-}
-
-.ei-tapahtumia {
-    text-align: center;
-    padding: var(--spacing-lg);
-    color: var(--text-secondary);
-    font-style: italic;
-}
-
-.paiva-tapahtuma-item {
-    padding: var(--spacing-md);
-    margin: var(--spacing-sm);
-    border-radius: var(--border-radius);
-    color: white;
-    cursor: pointer;
-    transition: transform 0.2s ease;
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
-}
-
-.paiva-tapahtuma-item:hover {
-    transform: scale(1.02);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.paiva-tapahtuma-aika {
-    font-weight: bold;
-    font-size: 0.9rem;
-    opacity: 0.9;
-}
-
-.paiva-tapahtuma-otsikko {
-    font-size: 1rem;
-    font-weight: 500;
-}
-
-.paiva-tapahtuma-henkilo {
-    font-size: 0.8rem;
-    opacity: 0.8;
-}
-
-@media (max-width: 768px) {
-    .paiva-nakyma {
-        min-height: 300px;
-        padding: var(--spacing-sm);
-    }
-    
-    .paiva-otsikko {
-        padding: var(--spacing-sm);
-        margin-bottom: var(--spacing-md);
-    }
-    
-    .paiva-nakyma .paiva-numero {
-        font-size: 2.5rem;
-    }
-    
-    .paiva-kuukausi {
-        font-size: 1rem;
-    }
-    
-    .paiva-tapahtuma-lista {
-        max-height: 300px;
-    }
-    
-    .paiva-tapahtuma-item {
-        padding: var(--spacing-sm);
-        margin: var(--spacing-xs);
-    }
-    
-    .paiva-tapahtuma-aika {
-        font-size: 0.8rem;
-    }
-    
-    .paiva-tapahtuma-otsikko {
-        font-size: 0.9rem;
-    }
-    
-    .paiva-tapahtuma-henkilo {
-        font-size: 0.7rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .paiva-nakyma {
-        min-height: 250px;
-    }
-    
-    .paiva-nakyma .paiva-numero {
-        font-size: 2rem;
-    }
-    
-    .paiva-tapahtuma-lista {
-        max-height: 250px;
-    }
-    
-    .paiva-tapahtuma-item {
-        padding: var(--spacing-xs);
-    }
-    
-    .paiva-tapahtuma-aika {
-        font-size: 0.7rem;
-    }
-    
-    .paiva-tapahtuma-otsikko {
-        font-size: 0.8rem;
-    }
-    
-    .paiva-tapahtuma-henkilo {
-        font-size: 0.6rem;
-    }
+    margin: -2px auto 0 auto;
 }
 .tapahtuma-kuvake {
     width: 20px;
@@ -1378,6 +1082,107 @@ input[type="checkbox"] {
     .tehtavalista {
         padding: var(--spacing-sm);
     }
+}
+
+/* Ilmoitusasetusten tyylit */
+.notification-settings-content {
+    padding: var(--spacing-md);
+}
+
+.notification-status {
+    background: var(--bg-sidebar);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    margin: var(--spacing-md) 0;
+    border: 1px solid var(--border-color);
+}
+
+.notification-status p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.notification-options {
+    margin: var(--spacing-lg) 0;
+}
+
+.notification-options h4 {
+    color: var(--text-accent);
+    margin-bottom: var(--spacing-md);
+    font-size: 1.1em;
+}
+
+.notification-test {
+    margin-top: var(--spacing-lg);
+    text-align: center;
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--border-color);
+}
+
+#notification-settings-btn {
+    padding: var(--spacing-sm);
+    font-size: 1.2em;
+    min-width: 40px;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border-color);
+}
+
+#notification-settings-btn:hover {
+    background: var(--bg-hover);
+    border-color: var(--text-accent);
+    transform: scale(1.1);
+}
+
+/* Ilmoitustilan indikaattorit */
+.notification-status.enabled {
+    border-color: var(--status-ok);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.notification-status.disabled {
+    border-color: var(--status-myohassa);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.notification-status.enabled p {
+    color: var(--status-ok);
+}
+
+.notification-status.disabled p {
+    color: var(--status-myohassa);
+}
+
+/* Muistutusvalintojen tyylit */
+.muistutus-valinnat {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    margin: var(--spacing-sm) 0;
+}
+
+.muistutus-valinnat .checkbox-container {
+    flex: 1;
+    min-width: 120px;
+    background: var(--bg-sidebar);
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-fast);
+}
+
+.muistutus-valinnat .checkbox-container:hover {
+    background: var(--bg-hover);
+    border-color: var(--text-accent);
+}
+
+.muistutus-valinnat .checkbox-container label {
+    font-size: 0.9em;
+    margin: 0;
+    cursor: pointer;
+}
+
+.muistutus-valinnat input[type="checkbox"] {
+    margin-right: var(--spacing-xs);
 }
 
 /* Toistumisasetusten tyylit */

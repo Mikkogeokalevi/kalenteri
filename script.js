@@ -19,108 +19,6 @@ const KAYTTAJA_VARIT = {
     perhe: '#fb7185'
 };
 
-// Suomalaiset pyhäpäivät (kiinteät päivämäärät)
-const SUOMALAISET_PYHAPAIVAT = {
-    // Uudenvuodenpäivä
-    '1-1': 'Uudenvuodenpäivä',
-    // Loppiainen
-    '1-6': 'Loppiainen',
-    // Joulupäivä ja itsenäisyyspäivä siirtyvät
-    // Helatorstai
-    // Vappu
-    '5-1': 'Vappu',
-    // Juhannus (lasketaan dynaamisesti)
-    // Itsenäisyyspäivä
-    '12-6': 'Itsenäisyyspäivä',
-    // Jouluaika
-    '12-24': 'Jouluaatto',
-    '12-25': 'Joulupäivä',
-    '12-26': 'Tapaninpäivä'
-};
-
-// Liikkuvat pyhäpäivät (lasketaan vuosittain)
-function getLiikkuvatPyhat(vuosi) {
-    const pyhat = [];
-    
-    // Pääsiäinen (liikkuva)
-    const paasiainen = getPaasiainen(vuosi);
-    pyhat.push({
-        pvm: `${paasiainen.getMonth() + 1}-${paasiainen.getDate()}`,
-        nimi: 'Pääsiäinen'
-    });
-    
-    // Pitkäperjantai (pääsiäistä edeltävä perjantai)
-    const pitkaperjantai = new Date(paasiainen);
-    pitkaperjantai.setDate(pitkaperjantai.getDate() - 2);
-    pyhat.push({
-        pvm: `${pitkaperjantai.getMonth() + 1}-${pitkaperjantai.getDate()}`,
-        nimi: 'Pitkäperjantai'
-    });
-    
-    // 2. pääsiäispäivä (pääsiäistä seuraava maanantai)
-    const toinenPaasiainen = new Date(paasiainen);
-    toinenPaasiainen.setDate(toinenPaasiainen.getDate() + 1);
-    while (toinenPaasiainen.getDay() !== 1) { // Etsi seuraava maanantai
-        toinenPaasiainen.setDate(toinenPaasiainen.getDate() + 1);
-    }
-    pyhat.push({
-        pvm: `${toinenPaasiainen.getMonth() + 1}-${toinenPaasiainen.getDate()}`,
-        nimi: '2. pääsiäispäivä'
-    });
-    
-    // Helatorstai (helatorstai on 39 päivää pääsiäisen jälkeen)
-    const helatorstai = new Date(paasiainen);
-    helatorstai.setDate(helatorstai.getDate() + 39);
-    pyhat.push({
-        pvm: `${helatorstai.getMonth() + 1}-${helatorstai.getDate()}`,
-        nimi: 'Helatorstai'
-    });
-    
-    // Juhannus (kesäkuun 20.-26. päivä lauantaina)
-    const juhannus = getJuhannus(vuosi);
-    pyhat.push({
-        pvm: `${juhannus.getMonth() + 1}-${juhannus.getDate()}`,
-        nimi: 'Juhannus'
-    });
-    
-    return pyhat;
-}
-
-function getPaasiainen(vuosi) {
-    // Oikea pääsiäisen laskenta (Gaussin algoritmi)
-    const a = vuosi % 19;
-    const b = Math.floor(vuosi / 100);
-    const c = vuosi % 100;
-    const d = Math.floor(b / 4);
-    const e = b % 4;
-    const f = Math.floor((b + 8) / 25);
-    const g = Math.floor((b - f + 1) / 3);
-    const h = (19 * a + b - d - g + 15) % 30;
-    const i = Math.floor(c / 4);
-    const k = c % 4;
-    const l = (32 + 2 * e + 2 * i - h - k) % 7;
-    const m = Math.floor((a + 11 * h + 22 * l) / 451);
-    const n = (h + l - 7 * m + 114) % 31;
-    const p = Math.floor((h + l - 7 * m + 114) / 31);
-    
-    // Pääsiäissunnuntai
-    const paiva = n + 1;
-    const kuukausi = p;
-    
-    return new Date(vuosi, kuukausi - 1, paiva);
-}
-
-function getJuhannus(vuosi) {
-    // Kesäkuun 20.-26. päivä lauantaina
-    for (let paiva = 20; paiva <= 26; paiva++) {
-        const date = new Date(vuosi, 5, paiva);
-        if (date.getDay() === 6) { // Lauantai
-            return date;
-        }
-    }
-    return new Date(vuosi, 5, 20); // Fallback
-}
-
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
@@ -140,7 +38,6 @@ let loginOverlay, loginForm, mainContainer, currentUserName, logoutBtn, tulevatT
 // --- Sovelluksen tila ---
 let nykyinenKayttaja = null;
 let nykyinenPaiva = new Date();
-let nykyinenNakyma = 'kuukausi'; // kuukausi, viikko, paiva
 let unsubscribeFromEvents = null;
 let unsubscribeFromTasks = null;
 let menneetSivu = 0;
@@ -238,38 +135,16 @@ function lisaaKuuntelijat() {
     loginForm.addEventListener('submit', handleLogin);
     logoutBtn.addEventListener('click', handleLogout);
     edellinenBtn.addEventListener('click', () => {
-        if (nykyinenNakyma === 'paiva') {
-            nykyinenPaiva.setDate(nykyinenPaiva.getDate() - 1);
-            piirraPaivanakyma();
-        } else if (nykyinenNakyma === 'viikko') {
-            nykyinenPaiva.setDate(nykyinenPaiva.getDate() - 7);
-            piirraViikkonakyma();
-        } else {
-            nykyinenPaiva.setMonth(nykyinenPaiva.getMonth() - 1);
-            piirraKalenteri();
-        }
+        nykyinenPaiva.setMonth(nykyinenPaiva.getMonth() - 1);
+        piirraKalenteri();
     });
     seuraavaBtn.addEventListener('click', () => {
-        if (nykyinenNakyma === 'paiva') {
-            nykyinenPaiva.setDate(nykyinenPaiva.getDate() + 1);
-            piirraPaivanakyma();
-        } else if (nykyinenNakyma === 'viikko') {
-            nykyinenPaiva.setDate(nykyinenPaiva.getDate() + 7);
-            piirraViikkonakyma();
-        } else {
-            nykyinenPaiva.setMonth(nykyinenPaiva.getMonth() + 1);
-            piirraKalenteri();
-        }
+        nykyinenPaiva.setMonth(nykyinenPaiva.getMonth() + 1);
+        piirraKalenteri();
     });
     tanaanBtn.addEventListener('click', () => {
         nykyinenPaiva = new Date();
-        if (nykyinenNakyma === 'paiva') {
-            piirraPaivanakyma();
-        } else if (nykyinenNakyma === 'viikko') {
-            piirraViikkonakyma();
-        } else {
-            piirraKalenteri();
-        }
+        piirraKalenteri();
     });
     lisaaLomake.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -400,13 +275,6 @@ function lisaaKuuntelijat() {
         if (e.target.id === 'poista-toistuva-modal') {
             suljePoistaToistuvaDialogi();
         }
-    });
-    
-    // Näkymänvaihtopainikkeet
-    document.querySelectorAll('.nakyman-nappi').forEach(btn => {
-        btn.addEventListener('click', () => {
-            vaihdaNakyma(btn.dataset.nakyma);
-        });
     });
 }
 
@@ -594,231 +462,6 @@ function naytaIlmoitus(viesti) {
     }, 3000);
 }
 
-function vaihdaNakyma(uusiNakyma) {
-    if (nykyinenNakyma === uusiNakyma) return;
-    
-    // Päivitä active-tila painikkeissa
-    document.querySelectorAll('.nakyman-nappi').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.dataset.nakyma === uusiNakyma) {
-            btn.classList.add('active');
-        }
-    });
-    
-    nykyinenNakyma = uusiNakyma;
-    
-    // Piirrä uusi näkymä
-    switch (uusiNakyma) {
-        case 'kuukausi':
-            piirraKalenteri();
-            break;
-        case 'viikko':
-            piirraViikkonakyma();
-            break;
-        case 'paiva':
-            piirraPaivanakyma();
-            break;
-    }
-}
-
-function piirraViikkonakyma() {
-    kalenteriGrid.innerHTML = '';
-    kalenteriPaivatOtsikot.innerHTML = '';
-    
-    // Näytä viikonpäivät
-    ['Ma', 'Ti', 'Ke', 'To', 'Pe', 'La', 'Su'].forEach(p => {
-        kalenteriPaivatOtsikot.insertAdjacentHTML('beforeend', `<div class="viikonpaiva">${p}</div>`);
-    });
-    
-    // Laske viikon alku (maanantai)
-    const viikonAlku = new Date(nykyinenPaiva);
-    const paivaViikossa = viikonAlku.getDay() || 7; // Sunnuntai = 7
-    viikonAlku.setDate(viikonAlku.getDate() - (paivaViikossa - 1));
-    
-    // Päivitä otsikko
-    const viikonLoppu = new Date(viikonAlku);
-    viikonLoppu.setDate(viikonLoppu.getDate() + 6);
-    kuukausiOtsikko.textContent = `Viikko ${getWeekNumber(viikonAlku)}: ${viikonAlku.toLocaleDateString('fi-FI', {day: 'numeric', month: 'short'})} - ${viikonLoppu.toLocaleDateString('fi-FI', {day: 'numeric', month: 'short'})}`;
-    
-    // Luo viikon päivät (yksinkertainen versio)
-    for (let i = 0; i < 7; i++) {
-        const paiva = new Date(viikonAlku);
-        paiva.setDate(viikonAlku.getDate() + i);
-        
-        const pvmString = `${paiva.getFullYear()}-${String(paiva.getMonth() + 1).padStart(2, '0')}-${String(paiva.getDate()).padStart(2, '0')}`;
-        const tanaanString = new Date().toISOString().split('T')[0];
-        
-        let paivaLuokat = "paiva viikko-paiva-simple";
-        if (pvmString === tanaanString) paivaLuokat += " tanaan";
-        
-        // Tarkista pyhäpäivä
-        const pyhanNimi = onkoPyhapäiva(paiva);
-        
-        let paivaSisalto = `
-            <div class="viikko-paiva-otsikko">
-                <div class="paiva-numero">${paiva.getDate()}</div>
-                ${pyhanNimi ? `<div class="pyha-merkki">🎅</div>` : ''}
-            </div>
-            <div class="viikko-tapahtumat-container"></div>
-        `;
-        
-        kalenteriGrid.insertAdjacentHTML('beforeend', 
-            `<div class="${paivaLuokat}" data-paivamaara="${pvmString}" title="${pyhanNimi || ''}">${paivaSisalto}</div>`
-        );
-    }
-    
-    naytaTapahtumatViikkonakymassaSimple();
-}
-
-function piirraPaivanakyma() {
-    kalenteriGrid.innerHTML = '';
-    kalenteriPaivatOtsikot.innerHTML = '';
-    
-    // Päivitä otsikko
-    kuukausiOtsikko.textContent = nykyinenPaiva.toLocaleDateString('fi-FI', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-    });
-    
-    const pvmString = `${nykyinenPaiva.getFullYear()}-${String(nykyinenPaiva.getMonth() + 1).padStart(2, '0')}-${String(nykyinenPaiva.getDate()).padStart(2, '0')}`;
-    
-    // Tarkista pyhäpäivä
-    const pyhanNimi = onkoPyhapäiva(nykyinenPaiva);
-    
-    // Luo päivän otsikko
-    const paivaOtsikko = document.createElement('div');
-    paivaOtsikko.className = 'paiva-otsikko';
-    paivaOtsikko.innerHTML = `
-        <div class="paiva-numero">${nykyinenPaiva.getDate()}</div>
-        <div class="paiva-kuukausi">${nykyinenPaiva.toLocaleDateString('fi-FI', { month: 'long', year: 'numeric' })}</div>
-        ${pyhanNimi ? `<div class="pyha-nimi">${pyhanNimi}</div>` : ''}
-    `;
-    kalenteriGrid.appendChild(paivaOtsikko);
-    
-    // Luo tapahtumien lista (yksinkertainen)
-    const tapahtumaLista = document.createElement('div');
-    tapahtumaLista.className = 'paiva-tapahtuma-lista';
-    
-    // Lisää "Ei tapahtumia" viesti
-    const eiTapahtumia = document.createElement('div');
-    eiTapahtumia.className = 'ei-tapahtumia';
-    eiTapahtumia.textContent = 'Ei tapahtumia tälle päivälle';
-    tapahtumaLista.appendChild(eiTapahtumia);
-    
-    kalenteriGrid.appendChild(tapahtumaLista);
-    
-    // Näytä tapahtumat
-    naytaTapahtumatPaivanakymassaSimple();
-}
-
-function naytaTapahtumatViikkonakymassaSimple() {
-    if (!tapahtumat) return;
-    
-    Object.entries(tapahtumat).forEach(([id, tapahtuma]) => {
-        const pvmString = tapahtuma.pvm;
-        
-        const paivaElementti = document.querySelector(`.viikko-paiva-simple[data-paivamaara="${pvmString}"]`);
-        if (paivaElementti) {
-            const tapahtumaContainer = paivaElementti.querySelector('.viikko-tapahtumat-container');
-            if (tapahtumaContainer) {
-                const tapahtumaElementti = document.createElement('div');
-                tapahtumaElementti.className = 'viikko-tapahtuma-simple';
-                tapahtumaElementti.style.backgroundColor = KAYTTAJA_VARIT[tapahtuma.koskee[0]] || '#888';
-                
-                const aika = tapahtuma.alku.substring(11, 16);
-                tapahtumaElementti.innerHTML = `
-                    <div class="tapahtuma-aika">${aika}</div>
-                    <div class="tapahtuma-otsikko">${tapahtuma.otsikko}</div>
-                `;
-                tapahtumaElementti.title = `${tapahtuma.otsikko} (${aika} - ${tapahtuma.loppu.substring(11, 16)})`;
-                
-                // Lisää klikkaustoiminto
-                tapahtumaElementti.addEventListener('click', () => {
-                    avaaMuokkausIkkuna(id);
-                });
-                
-                tapahtumaContainer.appendChild(tapahtumaElementti);
-            }
-        }
-    });
-}
-
-function naytaTapahtumatPaivanakymassaSimple() {
-    const pvmString = `${nykyinenPaiva.getFullYear()}-${String(nykyinenPaiva.getMonth() + 1).padStart(2, '0')}-${String(nykyinenPaiva.getDate()).padStart(2, '0')}`;
-    
-    const tapahtumaLista = document.querySelector('.paiva-tapahtuma-lista');
-    if (!tapahtumaLista) return;
-    
-    // Tyhjennä lista
-    tapahtumaLista.innerHTML = '';
-    
-    if (!tapahtumat) {
-        const eiTapahtumia = document.createElement('div');
-        eiTapahtumia.className = 'ei-tapahtumia';
-        eiTapahtumia.textContent = 'Ei tapahtumia tälle päivälle';
-        tapahtumaLista.appendChild(eiTapahtumia);
-        return;
-    }
-    
-    // Suodata ja järjestä tapahtumat
-    const paivanTapahtumat = Object.entries(tapahtumat)
-        .filter(([id, tapahtuma]) => tapahtuma.pvm === pvmString)
-        .sort(([idA, tapahtumaA], [idB, tapahtumaB]) => {
-            return new Date(tapahtumaA.alku) - new Date(tapahtumaB.alku);
-        });
-    
-    if (paivanTapahtumat.length === 0) {
-        const eiTapahtumia = document.createElement('div');
-        eiTapahtumia.className = 'ei-tapahtumia';
-        eiTapahtumia.textContent = 'Ei tapahtumia tälle päivälle';
-        tapahtumaLista.appendChild(eiTapahtumia);
-        return;
-    }
-    
-    // Lisää tapahtumat listaan
-    paivanTapahtumat.forEach(([id, tapahtuma]) => {
-        const tapahtumaElementti = document.createElement('div');
-        tapahtumaElementti.className = 'paiva-tapahtuma-item';
-        tapahtumaElementti.style.backgroundColor = KAYTTAJA_VARIT[tapahtuma.koskee[0]] || '#888';
-        
-        const alkuAika = tapahtuma.alku.substring(11, 16);
-        const loppuAika = tapahtuma.loppu.substring(11, 16);
-        
-        tapahtumaElementti.innerHTML = `
-            <div class="paiva-tapahtuma-aika">${alkuAika} - ${loppuAika}</div>
-            <div class="paiva-tapahtuma-otsikko">${tapahtuma.otsikko}</div>
-            <div class="paiva-tapahtuma-henkilo">${tapahtuma.koskee.join(', ')}</div>
-        `;
-        
-        // Lisää klikkaustoiminto
-        tapahtumaElementti.addEventListener('click', () => {
-            avaaMuokkausIkkuna(id);
-        });
-        
-        tapahtumaLista.appendChild(tapahtumaElementti);
-    });
-}
-
-function onkoPyhapäiva(pvm) {
-    const kuukausi = pvm.getMonth() + 1;
-    const paiva = pvm.getDate();
-    const avain = `${kuukausi}-${paiva}`;
-    
-    // Tarkista kiinteät pyhäpäivät
-    if (SUOMALAISET_PYHAPAIVAT[avain]) {
-        return SUOMALAISET_PYHAPAIVAT[avain];
-    }
-    
-    // Tarkista liikkuvat pyhäpäivät
-    const vuosi = pvm.getFullYear();
-    const liikkuvat = getLiikkuvatPyhat(vuosi);
-    const liikuva = liikkuvat.find(p => p.pvm === avain);
-    
-    return liikuva ? liikuva.nimi : null;
-}
-
 function piirraKalenteri() {
     kalenteriGrid.innerHTML = '';
     kalenteriPaivatOtsikot.innerHTML = '';
@@ -841,15 +484,7 @@ function piirraKalenteri() {
             let paivaLuokat = "paiva";
             if (paivaIt.getMonth() !== kuukausi) paivaLuokat += " tyhja";
             if (pvmString === tanaanString) paivaLuokat += " tanaan";
-            
-            // Tarkista onko pyhäpäivä
-            const pyhanNimi = onkoPyhapäiva(paivaIt);
-            if (pyhanNimi) {
-                paivaLuokat += " pyhapaiva";
-                kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="${paivaLuokat}" data-paivamaara="${pvmString}" title="${pyhanNimi}"><div class="paiva-numero">${paivaIt.getDate()}</div><div class="pyha-merkki">🎅</div><div class="tapahtumat-container"></div></div>`);
-            } else {
-                kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="${paivaLuokat}" data-paivamaara="${pvmString}"><div class="paiva-numero">${paivaIt.getDate()}</div><div class="tapahtumat-container"></div></div>`);
-            }
+            kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="${paivaLuokat}" data-paivamaara="${pvmString}"><div class="paiva-numero">${paivaIt.getDate()}</div><div class="tapahtumat-container"></div></div>`);
             paivaIt.setDate(paivaIt.getDate() + 1);
         }
         if (paivaIt.getMonth() !== kuukausi && paivaIt.getDay() === 1) break;
@@ -880,6 +515,7 @@ function lisaaTapahtuma() {
         tyyppi: document.getElementById('toistuminen-tyyppi').value,
         paattyy: document.getElementById('toistuminen-paattyy').value || null
     };
+    
     const uusi = {
         otsikko: document.getElementById('tapahtuma-otsikko').value,
         kuvaus: document.getElementById('tapahtuma-kuvaus').value,
@@ -890,6 +526,7 @@ function lisaaTapahtuma() {
         toistuminen: toistuminen
     };
     if (!uusi.otsikko || !uusi.alku || !uusi.loppu || koskeeValinnat.length === 0) return alert('Täytä vähintään otsikko, päivämäärä ja ketä tapahtuma koskee.');
+    
     // Luo toistuvat tapahtumat
     if (toistuminen.tyyppi !== 'ei') {
         luoToistuvatTapahtumat(uusi);
