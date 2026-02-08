@@ -162,11 +162,45 @@ main:hover, .sivupalkki:hover, footer:hover {
     border-color: var(--border-hover);
 }
 .kalenteri-ylapalkki {
+    margin-top: 20px;
+    gap: 10px;
+}
+
+.kalenteri-navigointi {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 20px;
-    gap: 10px;
+    margin-bottom: var(--spacing-sm);
+}
+
+.nakyman-valitsimet {
+    display: flex;
+    gap: var(--spacing-xs);
+    justify-content: center;
+}
+
+.nakyman-nappi {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--bg-container);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.nakyman-nappi:hover {
+    background: var(--bg-hover);
+    border-color: var(--text-accent);
+    color: var(--text-primary);
+}
+
+.nakyman-nappi.active {
+    background: var(--text-accent);
+    color: var(--bg-main);
+    border-color: var(--text-accent);
+    font-weight: 500;
 }
 .kalenteri-ylapalkki button {
     width: auto;

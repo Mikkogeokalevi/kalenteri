@@ -38,6 +38,7 @@ let loginOverlay, loginForm, mainContainer, currentUserName, logoutBtn, tulevatT
 // --- Sovelluksen tila ---
 let nykyinenKayttaja = null;
 let nykyinenPaiva = new Date();
+let nykyinenNakyma = 'kuukausi'; // kuukausi, viikko, paiva
 let unsubscribeFromEvents = null;
 let unsubscribeFromTasks = null;
 let menneetSivu = 0;
@@ -276,6 +277,13 @@ function lisaaKuuntelijat() {
             suljePoistaToistuvaDialogi();
         }
     });
+    
+    // Näkymänvaihtopainikkeet
+    document.querySelectorAll('.nakyman-nappi').forEach(btn => {
+        btn.addEventListener('click', () => {
+            vaihdaNakyma(btn.dataset.nakyma);
+        });
+    });
 }
 
 function avaaMenneetModal() {
@@ -460,6 +468,43 @@ function naytaIlmoitus(viesti) {
     setTimeout(() => {
         ilmoitus.classList.remove('nayta');
     }, 3000);
+}
+
+function vaihdaNakyma(uusiNakyma) {
+    if (nykyinenNakyma === uusiNakyma) return;
+    
+    // Päivitä active-tila painikkeissa
+    document.querySelectorAll('.nakyman-nappi').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.nakyma === uusiNakyma) {
+            btn.classList.add('active');
+        }
+    });
+    
+    nykyinenNakyma = uusiNakyma;
+    
+    // Piirrä uusi näkymä
+    switch (uusiNakyma) {
+        case 'kuukausi':
+            piirraKalenteri();
+            break;
+        case 'viikko':
+            piirraViikkonakyma();
+            break;
+        case 'paiva':
+            piirraPaivanakyma();
+            break;
+    }
+}
+
+function piirraViikkonakyma() {
+    // TODO: Implement viikkonäkymä
+    kalenteriGrid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">Viikkonäkymä tulossa...</div>';
+}
+
+function piirraPaivanakyma() {
+    // TODO: Implement päivänäkymä
+    kalenteriGrid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">Päivänäkymä tulossa...</div>';
 }
 
 function piirraKalenteri() {
