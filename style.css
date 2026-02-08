@@ -555,6 +555,64 @@ footer {
     font-size: 0.7em;
     opacity: 0.8;
 }
+
+/* Viikkonäkymän tyylit */
+.viikko-paiva {
+    min-height: 120px;
+    position: relative;
+}
+
+@media (max-width: 768px) {
+    .viikko-paiva {
+        min-height: 80px;
+    }
+}
+
+/* Päivänäkymän tyylit */
+.paiva-nakyma {
+    min-height: 400px;
+    text-align: center;
+    padding: var(--spacing-lg);
+}
+
+.paiva-otsikko {
+    margin-bottom: var(--spacing-lg);
+}
+
+.paiva-nakyma .paiva-numero {
+    font-size: 4rem;
+    font-weight: bold;
+    color: var(--text-accent);
+    margin-bottom: var(--spacing-sm);
+}
+
+.paiva-kuukausi {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.pyha-nimi {
+    font-size: 1.1rem;
+    color: var(--status-myohassa);
+    font-weight: 600;
+    margin-top: var(--spacing-sm);
+}
+
+@media (max-width: 768px) {
+    .paiva-nakyma {
+        min-height: 300px;
+        padding: var(--spacing-md);
+    }
+    
+    .paiva-nakyma .paiva-numero {
+        font-size: 3rem;
+    }
+    
+    .paiva-kuukausi {
+        font-size: 1rem;
+    }
+}
 .tapahtuma-kuvake {
     width: 20px;
     height: 20px;
