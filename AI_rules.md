@@ -129,30 +129,37 @@
 
 **PWA-tuki** ✅
 - manifest.json
-- sw.js (Service Worker, versio v6)
+- sw.js (Service Worker, versio v9)
 - Offline-välimuisti fonteille ja tiedostoille
+
+**Vaihe 2.1: Toistuvat tapahtumat** ✅
+- Toistumisasetukset (päivittäin, viikoittain, kuukausittain)
+- Päättymispäivän asetus (valinnainen)
+- Automaattinen toistuvien tapahtumien luonti
+- Rajoitus 100 tapahtumaan kerralla
+- CSS-tyylit toistumisasetuksille
 
 ### 🔧 TIEDOSTORAKENNE
 
 | Tiedosto | Rivejä | Kuvaus |
 |----------|--------|--------|
-| `script.js` | ~1089 | Päälogiikka, ilman muistutuksia |
-| `style.css` | ~1186 | Kaikki tyylit |
-| `index.html` | ~325 | UI-rakenne |
-| `sw.js` | ~50 | Service Worker (v8) |
+| `script.js` | ~1170 | Päälogiikka, toistuvat tapahtumat |
+| `style.css` | ~1234 | Kaikki tyylit, toistumisasetukset |
+| `index.html` | ~340 | UI-rakenne, toistumislomakkeet |
+| `sw.js` | ~50 | Service Worker (v9) |
 | `manifest.json` | ~20 | PWA-manifesti |
 
 ### ⚠️ TÄRKEÄÄ MUISTAA
 
 1. **ÄLÄ REFAKTOROI script.js:ää moduuleihin** - yritettiin, meni rikki
 2. **Testaa AINA kirjautuminen** ennen pushia
-3. **Päivitä sw.js CACHE_NAME** kun teet muutoksia (nyt v8)
+3. **Päivitä sw.js CACHE_NAME** kun teet muutoksia (nyt v9)
 4. **Sovellus on tuotantokäytössä** - oikea perhe käyttää
 
 ### 🎯 SEURAAVAKSI (Vaihe 2)
 
-1. **Toistuvat tapahtumat** - viikoittaiset/kuukausittaiset
-2. **Push-ilmoitukset 2.0** - PWA:n kautta
+1. **Toistuvat tapahtumat** ✅ - viikoittaiset/kuukausittaiset
+2. **Push-ilmoitukset 2.0** - PWA:n kautta (ei toteuteta)
 3. **Raporttinäkymä** - viikkoyhteenveto
 
 ---
