@@ -650,9 +650,9 @@ footer {
     }
 }
 
-/* Päivänäkymän tyylit */
+/* Päivänäkymän tyylit (yksinkertainen) */
 .paiva-nakyma {
-    min-height: 600px;
+    min-height: 400px;
     padding: var(--spacing-md);
 }
 
@@ -684,66 +684,59 @@ footer {
     margin-top: var(--spacing-sm);
 }
 
-/* Aikajanan tyylit */
-.aikajana-container {
-    max-height: 500px;
+/* Päivän tapahtumalista */
+.paiva-tapahtuma-lista {
+    max-height: 400px;
     overflow-y: auto;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     background: var(--bg-main);
 }
 
-.aikajana-tunti {
-    display: flex;
-    border-bottom: 1px solid var(--border-color);
-    min-height: 60px;
-    position: relative;
-}
-
-.aikajana-tunti:last-child {
-    border-bottom: none;
-}
-
-.aika-label {
-    width: 60px;
-    padding: var(--spacing-sm);
+.ei-tapahtumia {
     text-align: center;
-    font-weight: 500;
+    padding: var(--spacing-lg);
     color: var(--text-secondary);
-    border-right: 1px solid var(--border-color);
-    background: var(--bg-sidebar);
+    font-style: italic;
 }
 
-.tunti-tapahtumat {
-    flex: 1;
-    padding: var(--spacing-xs);
-    position: relative;
-}
-
-.aikajana-tapahtuma {
-    padding: var(--spacing-xs) var(--spacing-sm);
-    margin: var(--spacing-xs);
+.paiva-tapahtuma-item {
+    padding: var(--spacing-md);
+    margin: var(--spacing-sm);
     border-radius: var(--border-radius);
     color: white;
-    font-size: 0.9rem;
     cursor: pointer;
     transition: transform 0.2s ease;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
 }
 
-.aikajana-tapahtuma:hover {
+.paiva-tapahtuma-item:hover {
     transform: scale(1.02);
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
+.paiva-tapahtuma-aika {
+    font-weight: bold;
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.paiva-tapahtuma-otsikko {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.paiva-tapahtuma-henkilo {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
 @media (max-width: 768px) {
     .paiva-nakyma {
-        min-height: 400px;
+        min-height: 300px;
         padding: var(--spacing-sm);
-        max-height: 60vh;
-        overflow-y: auto;
     }
     
     .paiva-otsikko {
@@ -752,62 +745,62 @@ footer {
     }
     
     .paiva-nakyma .paiva-numero {
-        font-size: 2rem;
+        font-size: 2.5rem;
     }
     
     .paiva-kuukausi {
         font-size: 1rem;
     }
     
-    .aikajana-container {
+    .paiva-tapahtuma-lista {
         max-height: 300px;
-        overflow-y: auto;
     }
     
-    .aika-label {
-        width: 50px;
+    .paiva-tapahtuma-item {
+        padding: var(--spacing-sm);
+        margin: var(--spacing-xs);
+    }
+    
+    .paiva-tapahtuma-aika {
         font-size: 0.8rem;
-        padding: var(--spacing-xs);
     }
     
-    .aikajana-tunti {
-        min-height: 40px;
+    .paiva-tapahtuma-otsikko {
+        font-size: 0.9rem;
     }
     
-    .aikajana-tapahtuma {
-        font-size: 0.8rem;
-        padding: 2px var(--spacing-xs);
-        margin: 1px;
+    .paiva-tapahtuma-henkilo {
+        font-size: 0.7rem;
     }
 }
 
 @media (max-width: 480px) {
     .paiva-nakyma {
-        min-height: 350px;
-        max-height: 50vh;
+        min-height: 250px;
     }
     
     .paiva-nakyma .paiva-numero {
-        font-size: 1.8rem;
+        font-size: 2rem;
     }
     
-    .aikajana-container {
+    .paiva-tapahtuma-lista {
         max-height: 250px;
     }
     
-    .aikajana-tunti {
-        min-height: 35px;
+    .paiva-tapahtuma-item {
+        padding: var(--spacing-xs);
     }
     
-    .aika-label {
-        width: 45px;
+    .paiva-tapahtuma-aika {
         font-size: 0.7rem;
-        padding: 2px;
     }
     
-    .aikajana-tapahtuma {
-        font-size: 0.7rem;
-        padding: 1px 2px;
+    .paiva-tapahtuma-otsikko {
+        font-size: 0.8rem;
+    }
+    
+    .paiva-tapahtuma-henkilo {
+        font-size: 0.6rem;
     }
 }
 .tapahtuma-kuvake {
