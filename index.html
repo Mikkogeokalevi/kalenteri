@@ -366,13 +366,14 @@
         </div>
     </div>
 
-    <script type="module" src="script.js"></script>
-<script>
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js')
-            .then(() => console.log('Service Worker rekisteröity'))
-            .catch((err) => console.log('Service Worker virhe:', err));
-    }
-</script>
+    <script src="firebase.js"></script>
+    <script src="script.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then(() => console.log('Service Worker rekisteröity'))
+                .catch((err) => console.log('Service Worker virhe:', err));
+        }
+    </script>
 </body>
 </html>
