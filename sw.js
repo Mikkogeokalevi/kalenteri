@@ -1,5 +1,5 @@
 // Service Worker - Kauppisen perhekalenteri
-const CACHE_NAME = 'kalenteri-v15';
+const CACHE_NAME = 'kalenteri-v16';
 const urlsToCache = [
   './',
   './index.html',
