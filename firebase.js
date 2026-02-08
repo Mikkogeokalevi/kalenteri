@@ -1,43 +1,17 @@
-// Firebase-konfiguraatio ja alustus
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+import { getDatabase, ref, push, onValue, update, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+
 const firebaseConfig = {
-    apiKey: "AIzaSyD5XW5VYhKX8x9L8x3x2x1x1x1x1x1x1x1",
-    authDomain: "kalenteri-12345.firebaseapp.com",
-    databaseURL: "https://kalenteri-12345-default-rtdb.firebaseio.com",
-    projectId: "kalenteri-12345",
-    storageBucket: "kalenteri-12345.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:abcdef123456"
+  apiKey: "AIzaSyCZIupycr2puYrPK2KajAW7PcThW9Pjhb0",
+  authDomain: "perhekalenteri-projekti.firebaseapp.com",
+  databaseURL: "https://perhekalenteri-projekti-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "perhekalenteri-projekti",
+  storageBucket: "perhekalenteri-projekti.appspot.com",
+  messagingSenderId: "1079218749403",
+  appId: "1:1079218749403:web:8d8b5a5b5b5b5b5b5b5b5b"
 };
 
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
-
-// Firebase-funktiot
-function handleLogin(e) {
-    e.preventDefault();
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-    signInWithEmailAndPassword(auth, email, password)
-        .then(userCredential => {
-            nykyinenKayttaja = userCredential.user;
-            document.getElementById('login-section').style.display = 'none';
-            document.getElementById('app-section').style.display = 'block';
-            document.getElementById('user-info').textContent = nykyinenKayttaja.email;
-            haeTapahtumat();
-            haeTehtavat();
-        })
-        .catch(error => {
-            alert('Kirjautuminen epäonnistui: ' + error.message);
-        });
-}
-
-function handleLogout() {
-    signOut(auth).then(() => {
-        nykyinenKayttaja = null;
-        document.getElementById('login-section').style.display = 'block';
-        document.getElementById('app-section').style.display = 'none';
-        if (unsubscribeFromEvents) unsubscribeFromEvents();
-        if (unsubscribeFromTasks) unsubscribeFromTasks();
-    });
-}
