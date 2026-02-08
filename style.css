@@ -1233,3 +1233,77 @@ input[type="checkbox"] {
     box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.2);
 }
 
+/* Poistodialogin tyylit */
+.poista-toistuva-content {
+    padding: var(--spacing-md);
+}
+
+.poista-vaihtoehdot {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin: var(--spacing-md) 0;
+}
+
+.poista-vaihtoehto {
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-md);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.poista-vaihtoehto:hover {
+    border-color: var(--text-accent);
+    background: var(--bg-hover);
+}
+
+.poista-vaihtoehto input[type="radio"] {
+    margin-bottom: var(--spacing-xs);
+}
+
+.poista-vaihtoehto span {
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.poista-vaihtoehto small {
+    color: var(--text-secondary);
+    font-size: 0.85em;
+}
+
+.poista-vaihtoehto input[type="radio"]:checked + span {
+    color: var(--text-accent);
+}
+
+.modal-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: flex-end;
+    margin-top: var(--spacing-lg);
+}
+
+.btn-secondary {
+    background: var(--bg-sidebar);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-hover);
+}
+
+.btn-danger {
+    background: var(--status-myohassa);
+    color: white;
+    border: 1px solid var(--status-myohassa);
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+    opacity: 0.9;
+}
+

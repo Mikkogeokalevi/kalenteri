@@ -332,6 +332,40 @@
 
     <div id="ilmoitus" class="hidden"></div>
     
+    <!-- Toistuvan tapahtuman poistodialogi -->
+    <div id="poista-toistuva-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Poista toistuva tapahtuma</h2>
+                <button id="sulje-poista-toistuva-btn" class="close-btn">&times;</button>
+            </div>
+            <div class="poista-toistuva-content">
+                <p>Valitse poistamisen tapa:</p>
+                <div class="poista-vaihtoehdot">
+                    <label class="poista-vaihtoehto">
+                        <input type="radio" name="poista-tapa" value="yksittainen" checked>
+                        <span>Poista vain tämä tapahtuma</span>
+                        <small>Poistaa vain tämän yhden kerran</small>
+                    </label>
+                    <label class="poista-vaihtoehto">
+                        <input type="radio" name="poista-tapa" value="tulevat">
+                        <span>Poista tämä ja kaikki tulevat</span>
+                        <small>Poistaa tämän ja kaikki myöhemmät tapahtumat sarjasta</small>
+                    </label>
+                    <label class="poista-vaihtoehto">
+                        <input type="radio" name="poista-tapa" value="koko-sarja">
+                        <span>Poista koko sarja</span>
+                        <small>Poistaa kaikki menneet ja tulevat tapahtumat sarjasta</small>
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button id="peruuta-poista-toistuva-btn" class="btn-secondary">Peruuta</button>
+                    <button id="vahvista-poista-toistuva-btn" class="btn-danger">Poista</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="script.js"></script>
 <script>
     if ('serviceWorker' in navigator) {

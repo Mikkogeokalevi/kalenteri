@@ -266,6 +266,16 @@ function lisaaKuuntelijat() {
     lisaaMaarapaivaToggle.addEventListener('change', (e) => {
         uusiTehtavaMaarapaiva.classList.toggle('hidden', !e.target.checked);
     });
+    
+    // Poistodialogin event listenerit
+    document.getElementById('sulje-poista-toistuva-btn').addEventListener('click', suljePoistaToistuvaDialogi);
+    document.getElementById('peruuta-poista-toistuva-btn').addEventListener('click', suljePoistaToistuvaDialogi);
+    document.getElementById('vahvista-poista-toistuva-btn').addEventListener('click', vahvistaPoistaToistuva);
+    document.getElementById('poista-toistuva-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'poista-toistuva-modal') {
+            suljePoistaToistuvaDialogi();
+        }
+    });
 }
 
 function avaaMenneetModal() {
@@ -537,8 +547,12 @@ function luoToistuvatTapahtumat(perusTapahtuma) {
     const loppuPvm = new Date(perusTapahtuma.loppu);
     const paattyyPvm = toistuminen.paattyy ? new Date(toistuminen.paattyy) : null;
     
+    // Luo uniikki sarja-ID
+    const sarjaId = 'sarja_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    
     const tapahtumat = [];
     let nykyinenPvm = new Date(alkuPvm);
+    let sarjaIndeksi = 0;
     
     while ((!paattyyPvm || nykyinenPvm <= paattyyPvm) && tapahtumat.length < 100) { // Rajoitus 100 tapahtumaan
         const tapahtuma = { ...perusTapahtuma };
@@ -548,10 +562,16 @@ function luoToistuvatTapahtumat(perusTapahtuma) {
         tapahtuma.alku = nykyinenPvm.toISOString();
         tapahtuma.loppu = new Date(nykyinenPvm.getTime() + kestoMs).toISOString();
         
+        // Lisää sarjatunnisteet
+        tapahtuma.sarjaId = sarjaId;
+        tapahtuma.sarjaIndeksi = sarjaIndeksi;
+        tapahtuma.onToistuva = true;
+        
         // Poista toistumistiedot (ei tarvita yksittäisissä tapahtumissa)
         delete tapahtuma.toistuminen;
         
         tapahtumat.push(tapahtuma);
+        sarjaIndeksi++;
         
         // Siirry seuraavaan toistumiseen
         switch (toistuminen.tyyppi) {
@@ -876,12 +896,106 @@ function tallennaMuutokset() {
 
 function poistaTapahtuma() {
     const key = modalOverlay.dataset.tapahtumaId;
-    if (confirm('Haluatko varmasti poistaa tämän tapahtuman?')) {
-        remove(ref(database, `tapahtumat/${key}`)).then(() => {
-            suljeTapahtumaIkkuna();
-            naytaIlmoitus("Tapahtuma poistettu.");
-        });
+    const tapahtuma = window.kaikkiTapahtumat.find(t => t.key === key);
+    
+    if (!tapahtuma) return;
+    
+    // Jos tapahtuma on osa toistuvaa sarjaa, näytä poistodialogi
+    if (tapahtuma.onToistuva && tapahtuma.sarjaId) {
+        avaaPoistaToistuvaDialogi(tapahtuma);
+    } else {
+        // Normaali poisto
+        if (confirm('Haluatko varmasti poistaa tämän tapahtuman?')) {
+            remove(ref(database, `tapahtumat/${key}`)).then(() => {
+                suljeTapahtumaIkkuna();
+                naytaIlmoitus("Tapahtuma poistettu.");
+            });
+        }
     }
+}
+
+// Toistuvan tapahtuman poistodialogi
+function avaaPoistaToistuvaDialogi(tapahtuma) {
+    const modal = document.getElementById('poista-toistuva-modal');
+    modal.dataset.tapahtumaId = tapahtuma.key;
+    modal.dataset.sarjaId = tapahtuma.sarjaId;
+    modal.dataset.sarjaIndeksi = tapahtuma.sarjaIndeksi;
+    
+    // Sulje tapahtumanäkymä
+    suljeTapahtumaIkkuna();
+    
+    // Näytä poistodialogi
+    modal.classList.remove('hidden');
+}
+
+function suljePoistaToistuvaDialogi() {
+    const modal = document.getElementById('poista-toistuva-modal');
+    modal.classList.add('hidden');
+    
+    // Tyhjennä dataset
+    delete modal.dataset.tapahtumaId;
+    delete modal.dataset.sarjaId;
+    delete modal.dataset.sarjaIndeksi;
+}
+
+function vahvistaPoistaToistuva() {
+    const modal = document.getElementById('poista-toistuva-modal');
+    const tapahtumaId = modal.dataset.tapahtumaId;
+    const sarjaId = modal.dataset.sarjaId;
+    const sarjaIndeksi = parseInt(modal.dataset.sarjaIndeksi);
+    
+    const valittuTapa = document.querySelector('input[name="poista-tapa"]:checked').value;
+    
+    switch (valittuTapa) {
+        case 'yksittainen':
+            poistaYksittainenTapahtuma(tapahtumaId);
+            break;
+        case 'tulevat':
+            poistaTulevatSarjasta(sarjaId, sarjaIndeksi);
+            break;
+        case 'koko-sarja':
+            poistaKokoSarja(sarjaId);
+            break;
+    }
+    
+    suljePoistaToistuvaDialogi();
+}
+
+function poistaYksittainenTapahtuma(tapahtumaId) {
+    remove(ref(database, `tapahtumat/${tapahtumaId}`)).then(() => {
+        naytaIlmoitus("Tapahtuma poistettu.");
+    });
+}
+
+function poistaTulevatSarjasta(sarjaId, indeksi) {
+    // Hae kaikki saman sarjan tapahtumat
+    const sarjanTapahtumat = window.kaikkiTapahtumat.filter(t => t.sarjaId === sarjaId);
+    
+    // Suodata tapahtumat joiden indeksi on >= nykyinen indeksi
+    const poistettavat = sarjanTapahtumat.filter(t => t.sarjaIndeksi >= indeksi);
+    
+    // Poista kaikki tapahtumat
+    const poistoPromises = poistettavat.map(tapahtuma => 
+        remove(ref(database, `tapahtumat/${tapahtuma.key}`))
+    );
+    
+    Promise.all(poistoPromises).then(() => {
+        naytaIlmoitus(`Poistettu ${poistettavat.length} tapahtumaa sarjasta.`);
+    });
+}
+
+function poistaKokoSarja(sarjaId) {
+    // Hae kaikki saman sarjan tapahtumat
+    const sarjanTapahtumat = window.kaikkiTapahtumat.filter(t => t.sarjaId === sarjaId);
+    
+    // Poista kaikki tapahtumat
+    const poistoPromises = sarjanTapahtumat.map(tapahtuma => 
+        remove(ref(database, `tapahtumat/${tapahtuma.key}`))
+    );
+    
+    Promise.all(poistoPromises).then(() => {
+        naytaIlmoitus(`Poistettu koko sarja (${sarjanTapahtumat.length} tapahtumaa).`);
+    });
 }
 
 function kopioiTapahtuma() {
