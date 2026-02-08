@@ -121,14 +121,11 @@
   - Oona: `#60a5fa` (sininen)
   - Perhe: `#fb7185` (punainen)
 
-**Vaihe 1.2: Perusilmoitukset** ✅
-- NotificationManager-luokka (script.js:ssä)
-- Browser Notification API -tuki
-- Tapahtumamuistutukset (15min, 1h, 1pv ennen)
-- Tehtävämuistutukset (1pv ennen määräpäivää)
-- Ilmoitusasetukset-modal (🔔-nappi footerissa)
-- Muistutusvalinnat tapahtuman luonnissa ja muokkauksessa
-- Tallennus Firebaseen (muistutukset-kenttä)
+**Vaihe 1.2: Perusilmoitukset** ❌ POISTETTU
+- Ei toiminut mobiilissa (Android Firefox/Samsung)
+- Kaikki muistutustoiminnallisuus poistettu kokonaan
+- NotificationManager ja NotificationSettings luokat poistettu
+- Muistutusindikaattorit poistettu listauksista
 
 **PWA-tuki** ✅
 - manifest.json
@@ -139,17 +136,17 @@
 
 | Tiedosto | Rivejä | Kuvaus |
 |----------|--------|--------|
-| `script.js` | ~1455 | Päälogiikka, kaikki toiminnot |
-| `style.css` | ~1190 | Kaikki tyylit |
+| `script.js` | ~1089 | Päälogiikka, ilman muistutuksia |
+| `style.css` | ~1186 | Kaikki tyylit |
 | `index.html` | ~325 | UI-rakenne |
-| `sw.js` | ~50 | Service Worker |
+| `sw.js` | ~50 | Service Worker (v8) |
 | `manifest.json` | ~20 | PWA-manifesti |
 
 ### ⚠️ TÄRKEÄÄ MUISTAA
 
 1. **ÄLÄ REFAKTOROI script.js:ää moduuleihin** - yritettiin, meni rikki
 2. **Testaa AINA kirjautuminen** ennen pushia
-3. **Päivitä sw.js CACHE_NAME** kun teet muutoksia (nyt v6)
+3. **Päivitä sw.js CACHE_NAME** kun teet muutoksia (nyt v8)
 4. **Sovellus on tuotantokäytössä** - oikea perhe käyttää
 
 ### 🎯 SEURAAVAKSI (Vaihe 2)
@@ -160,7 +157,7 @@
 
 ---
 
-## �🚀 Kehityssuunnitelma ja parannusehdotukset
+## �� Kehityssuunnitelma ja parannusehdotukset
 
 ### Analyysi nykytilanteesta
 **Vahvuudet:**
