@@ -1,5 +1,16 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import { getDatabase, ref, push, onValue, update, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCZIupycr2puYrPK2KajAW7PcThW9Pjhb0",
+  authDomain: "perhekalenteri-projekti.firebaseapp.com",
+  databaseURL: "https://perhekalenteri-projekti-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "perhekalenteri-projekti",
+  storageBucket: "perhekalenteri-projekti.appspot.com",
+  messagingSenderId: "588536838615",
+  appId: "1:588536838615:web:148de0581bbd46c42c7392"
+};
 
 const KAYTTAJA_VARIT = {
     Toni: '#4ade80',
@@ -7,6 +18,10 @@ const KAYTTAJA_VARIT = {
     Oona: '#60a5fa',
     perhe: '#fb7185'
 };
+
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
+const auth = getAuth(app);
 
 // --- DOM-elementit (Määritellään muuttujat) ---
 let loginOverlay, loginForm, mainContainer, currentUserName, logoutBtn, tulevatTapahtumatLista,
