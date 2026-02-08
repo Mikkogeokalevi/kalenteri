@@ -515,7 +515,6 @@ function lisaaTapahtuma() {
         tyyppi: document.getElementById('toistuminen-tyyppi').value,
         paattyy: document.getElementById('toistuminen-paattyy').value || null
     };
-    
     const uusi = {
         otsikko: document.getElementById('tapahtuma-otsikko').value,
         kuvaus: document.getElementById('tapahtuma-kuvaus').value,
@@ -526,7 +525,6 @@ function lisaaTapahtuma() {
         toistuminen: toistuminen
     };
     if (!uusi.otsikko || !uusi.alku || !uusi.loppu || koskeeValinnat.length === 0) return alert('Täytä vähintään otsikko, päivämäärä ja ketä tapahtuma koskee.');
-    
     // Luo toistuvat tapahtumat
     if (toistuminen.tyyppi !== 'ei') {
         luoToistuvatTapahtumat(uusi);
