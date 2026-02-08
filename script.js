@@ -500,20 +500,86 @@ function lisaaTapahtuma() {
     if (koskeeValinnat.length === 0 && document.querySelector('input[name="lisaa-ketakoskee"][value="perhe"]:checked')) {
         koskeeValinnat.push('perhe');
     }
+    // Kerää toistumisasetukset
+    const toistuminen = {
+        tyyppi: document.getElementById('toistuminen-tyyppi').value,
+        paattyy: document.getElementById('toistuminen-paattyy').value || null
+    };
+    
     const uusi = {
         otsikko: document.getElementById('tapahtuma-otsikko').value,
         kuvaus: document.getElementById('tapahtuma-kuvaus').value,
         alku: alkuAika, loppu: loppuAika, kokoPaiva: kokoPaivaCheckbox.checked,
         linkki: document.getElementById('tapahtuma-linkki').value,
         luoja: nykyinenKayttaja, ketakoskee: koskeeValinnat,
-        nakyvyys: Array.from(document.querySelectorAll('input[name="nakyvyys"]:checked')).reduce((a, c) => ({ ...a, [c.value]: true }), {})
+        nakyvyys: Array.from(document.querySelectorAll('input[name="nakyvyys"]:checked')).reduce((a, c) => ({ ...a, [c.value]: true }), {}),
+        toistuminen: toistuminen
     };
     if (!uusi.otsikko || !uusi.alku || !uusi.loppu || koskeeValinnat.length === 0) return alert('Täytä vähintään otsikko, päivämäärä ja ketä tapahtuma koskee.');
-    push(ref(database, 'tapahtumat'), uusi).then(() => {
+    
+    // Luo toistuvat tapahtumat
+    if (toistuminen.tyyppi !== 'ei') {
+        luoToistuvatTapahtumat(uusi);
+    } else {
+        push(ref(database, 'tapahtumat'), uusi).then(() => {
+            lisaaLomake.reset();
+            sivupalkki.classList.add('hidden');
+            toggleLoppuAika(false, 'loppu-aika-lisaa-container');
+            naytaIlmoitus('Tapahtuma lisätty onnistuneesti!');
+        });
+    }
+}
+
+// Luo toistuvat tapahtumat
+function luoToistuvatTapahtumat(perusTapahtuma) {
+    const toistuminen = perusTapahtuma.toistuminen;
+    const alkuPvm = new Date(perusTapahtuma.alku);
+    const loppuPvm = new Date(perusTapahtuma.loppu);
+    const paattyyPvm = toistuminen.paattyy ? new Date(toistuminen.paattyy) : null;
+    
+    const tapahtumat = [];
+    let nykyinenPvm = new Date(alkuPvm);
+    
+    while ((!paattyyPvm || nykyinenPvm <= paattyyPvm) && tapahtumat.length < 100) { // Rajoitus 100 tapahtumaan
+        const tapahtuma = { ...perusTapahtuma };
+        
+        // Laske uudet aikaleimat
+        const kestoMs = loppuPvm.getTime() - alkuPvm.getTime();
+        tapahtuma.alku = nykyinenPvm.toISOString();
+        tapahtuma.loppu = new Date(nykyinenPvm.getTime() + kestoMs).toISOString();
+        
+        // Poista toistumistiedot (ei tarvita yksittäisissä tapahtumissa)
+        delete tapahtuma.toistuminen;
+        
+        tapahtumat.push(tapahtuma);
+        
+        // Siirry seuraavaan toistumiseen
+        switch (toistuminen.tyyppi) {
+            case 'paivittain':
+                nykyinenPvm.setDate(nykyinenPvm.getDate() + 1);
+                break;
+            case 'viikoittain':
+                nykyinenPvm.setDate(nykyinenPvm.getDate() + 7);
+                break;
+            case 'kuukausittain':
+                nykyinenPvm.setMonth(nykyinenPvm.getMonth() + 1);
+                break;
+        }
+    }
+    
+    // Tallenna kaikki tapahtumat kerralla
+    const tallennusPromises = tapahtumat.map(tapahtuma => 
+        push(ref(database, 'tapahtumat'), tapahtuma)
+    );
+    
+    Promise.all(tallennusPromises).then(() => {
         lisaaLomake.reset();
         sivupalkki.classList.add('hidden');
         toggleLoppuAika(false, 'loppu-aika-lisaa-container');
-        naytaIlmoitus('Tapahtuma lisätty onnistuneesti!');
+        naytaIlmoitus(`Luotu ${tapahtumat.length} toistuvaa tapahtumaa!`);
+    }).catch(error => {
+        console.error('Toistuvien tapahtumien luonti epäonnistui:', error);
+        naytaIlmoitus('Virhe toistuvien tapahtumien luonnissa!');
     });
 }
 
@@ -744,6 +810,11 @@ function avaaTapahtumaIkkuna(key) {
         perheBox.checked = personBoxes.every(box => box.checked);
     }
     
+    // Täytä toistumisasetukset
+    const toistuminen = tapahtuma.toistuminen || {};
+    document.getElementById('muokkaa-toistuminen-tyyppi').value = toistuminen.tyyppi || 'ei';
+    document.getElementById('muokkaa-toistuminen-paattyy').value = toistuminen.paattyy || '';
+    
     vaihdaTila('view');
     modalOverlay.classList.remove('hidden');
 }
@@ -780,13 +851,20 @@ function tallennaMuutokset() {
     if (koskeeValinnat.length === 0 && document.querySelector('input[name="muokkaa-ketakoskee"][value="perhe"]:checked')) {
         koskeeValinnat.push('perhe');
     }
+    // Kerää toistumisasetukset
+    const toistuminen = {
+        tyyppi: document.getElementById('muokkaa-toistuminen-tyyppi').value,
+        paattyy: document.getElementById('muokkaa-toistuminen-paattyy').value || null
+    };
+    
     const paivitys = {
         otsikko: document.getElementById('muokkaa-tapahtuma-otsikko').value,
         kuvaus: document.getElementById('muokkaa-tapahtuma-kuvaus').value,
         alku: alkuAika, loppu: loppuAika, kokoPaiva: kokoPaivaCheckbox.checked,
         linkki: document.getElementById('muokkaa-tapahtuma-linkki').value,
         nakyvyys: Array.from(document.querySelectorAll('input[name="muokkaa-nakyvyys"]:checked')).reduce((a, c) => ({ ...a, [c.value]: true }), {}),
-        ketakoskee: koskeeValinnat, luoja: vanhaTapahtuma.luoja
+        ketakoskee: koskeeValinnat, luoja: vanhaTapahtuma.luoja,
+        toistuminen: toistuminen
     };
     update(ref(database, `tapahtumat/${key}`), paivitys).then(() => {
         const tapahtuma = window.kaikkiTapahtumat.find(t => t.key === key);

@@ -1185,3 +1185,51 @@ input[type="checkbox"] {
     margin-right: var(--spacing-xs);
 }
 
+/* Toistumisasetusten tyylit */
+.toistuminen-valinnat {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    margin: var(--spacing-sm) 0;
+}
+
+.toistuminen-container {
+    flex: 1;
+    min-width: 150px;
+    background: var(--bg-sidebar);
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-fast);
+}
+
+.toistuminen-container:hover {
+    background: var(--bg-hover);
+    border-color: var(--text-accent);
+}
+
+.toistuminen-container label {
+    font-size: 0.9em;
+    margin-bottom: var(--spacing-xs);
+    display: block;
+    color: var(--text-secondary);
+}
+
+.toistuminen-container select,
+.toistuminen-container input[type="date"] {
+    width: 100%;
+    padding: var(--spacing-xs);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xs);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.9em;
+}
+
+.toistuminen-container select:focus,
+.toistuminen-container input[type="date"]:focus {
+    outline: none;
+    border-color: var(--text-accent);
+    box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.2);
+}
+

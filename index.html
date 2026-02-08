@@ -117,19 +117,20 @@
                     <input type="url" id="tapahtuma-linkki" placeholder="https://...">
 
                     <fieldset>
-                        <legend>Muistutukset:</legend>
-                        <div class="muistutus-valinnat">
-                            <div class="checkbox-container">
-                                <label for="muistutus-15min">15 min ennen</label>
-                                <input type="checkbox" id="muistutus-15min" checked>
+                        <legend>Toistuminen:</legend>
+                        <div class="toistuminen-valinnat">
+                            <div class="toistuminen-container">
+                                <label for="toistuminen-tyyppi">Toistuu:</label>
+                                <select id="toistuminen-tyyppi">
+                                    <option value="ei">Ei toistu</option>
+                                    <option value="paivittain">Päivittäin</option>
+                                    <option value="viikoittain">Viikoittain</option>
+                                    <option value="kuukausittain">Kuukausittain</option>
+                                </select>
                             </div>
-                            <div class="checkbox-container">
-                                <label for="muistutus-1h">1 tunti ennen</label>
-                                <input type="checkbox" id="muistutus-1h" checked>
-                            </div>
-                            <div class="checkbox-container">
-                                <label for="muistutus-1pv">1 päivä ennen</label>
-                                <input type="checkbox" id="muistutus-1pv">
+                            <div class="toistuminen-container">
+                                <label for="toistuminen-paattyy">Päättyy:</label>
+                                <input type="date" id="toistuminen-paattyy" placeholder="Valinnainen">
                             </div>
                         </div>
                     </fieldset>
@@ -221,19 +222,20 @@
                     <input type="url" id="muokkaa-tapahtuma-linkki" placeholder="https://...">
 
                     <fieldset>
-                        <legend>Muistutukset:</legend>
-                        <div class="muistutus-valinnat">
-                            <div class="checkbox-container">
-                                <label for="muokkaa-muistutus-15min">15 min ennen</label>
-                                <input type="checkbox" id="muokkaa-muistutus-15min">
+                        <legend>Toistuminen:</legend>
+                        <div class="toistuminen-valinnat">
+                            <div class="toistuminen-container">
+                                <label for="muokkaa-toistuminen-tyyppi">Toistuu:</label>
+                                <select id="muokkaa-toistuminen-tyyppi">
+                                    <option value="ei">Ei toistu</option>
+                                    <option value="paivittain">Päivittäin</option>
+                                    <option value="viikoittain">Viikoittain</option>
+                                    <option value="kuukausittain">Kuukausittain</option>
+                                </select>
                             </div>
-                            <div class="checkbox-container">
-                                <label for="muokkaa-muistutus-1h">1 tunti ennen</label>
-                                <input type="checkbox" id="muokkaa-muistutus-1h">
-                            </div>
-                            <div class="checkbox-container">
-                                <label for="muokkaa-muistutus-1pv">1 päivä ennen</label>
-                                <input type="checkbox" id="muokkaa-muistutus-1pv">
+                            <div class="toistuminen-container">
+                                <label for="muokkaa-toistuminen-paattyy">Päättyy:</label>
+                                <input type="date" id="muokkaa-toistuminen-paattyy" placeholder="Valinnainen">
                             </div>
                         </div>
                     </fieldset>
