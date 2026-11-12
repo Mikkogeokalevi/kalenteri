@@ -1,25 +1,20 @@
-// Service Worker - Kauppisen perhekalenteri
-const CACHE_NAME = 'kalenteri-v10';
+// Service Worker - Kauppisen perhekalenteri v11
+const CACHE_NAME = 'kalenteri-v11';
 const urlsToCache = [
   './',
   './index.html',
   './style.css',
   './script.js',
   './logo.png',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap',
-  'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2',
-  'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuGKYAZ9hiA.woff2',
-  'https://fonts.gstatic.com/s/spacegrotesk/v16/V8mDoQfxVT4DdDDmH1R9-BE1x0r.woff2'
+  './manifest.json',
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap'
 ];
 
 // Asennus - välimuistiin tallennus
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('Välimuisti avattu');
-        return cache.addAll(urlsToCache);
-      })
+      .then((cache) => cache.addAll(urlsToCache))
       .then(() => self.skipWaiting())
   );
 });
@@ -40,30 +35,43 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch - verkko ensin, sitten välimuisti (Network First)
+// Fetch - strategiat:
+// - Firebase/auth-pyynnöt: ohitetaan aina (reaaliaikainen data ei saa välimuistittua)
+// - Fontit (gstatic/googleapis): cache-first (muuttumattomat fonttitiedostot)
+// - Muut (omat tiedostot): network-first, välimuisti varalla
 self.addEventListener('fetch', (event) => {
-  // Ohita Firebase-pyynnöt ja muut API-kutsut
-  if (event.request.url.includes('firebasedatabase.app') ||
-      event.request.url.includes('googleapis.com') ||
-      event.request.url.includes('gstatic.com')) {
+  const url = event.request.url;
+
+  if (url.includes('firebasedatabase.app') ||
+      url.includes('identitytoolkit.googleapis.com') ||
+      url.includes('securetoken.googleapis.com')) {
+    return;
+  }
+
+  if (url.includes('fonts.gstatic.com')) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        return cached || fetch(event.request).then((response) => {
+          if (response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        });
+      })
+    );
     return;
   }
 
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Tallenna kopio välimuistiin
         if (response.status === 200) {
           const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
         }
         return response;
       })
-      .catch(() => {
-        // Jos verkko ei toimi, käytä välimuistia
-        return caches.match(event.request);
-      })
+      .catch(() => caches.match(event.request))
   );
 });

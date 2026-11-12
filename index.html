@@ -2,377 +2,412 @@
 <html lang="fi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Kauppisen perhekalenteri</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="logo.png" type="image/png">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#3D4F2B">
+    <meta name="theme-color" content="#f2f4f7" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#10141c" media="(prefers-color-scheme: dark)">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Kalenteri">
     <link rel="apple-touch-icon" href="logo.png">
 </head>
 <body>
+    <!-- ============ KIRJAUTUMINEN ============ -->
     <div id="login-overlay" class="login-overlay">
         <div class="login-box">
+            <img src="logo.png" alt="" class="login-logo">
             <h2>Kauppisen perhekalenteri</h2>
+            <p class="login-alaotsikko">Kirjaudu jatkaaksesi</p>
             <form id="login-form">
-                <label for="login-email">Sähköposti:</label>
-                <input type="email" id="login-email" required autocomplete="email">
-                <label for="login-password">Salasana:</label>
-                <input type="password" id="login-password" required autocomplete="current-password">
-                <button type="submit">Kirjaudu sisään</button>
+                <label for="login-email">Sähköposti</label>
+                <input type="email" id="login-email" required autocomplete="email" placeholder="nimi@sahkoposti.fi">
+                <label for="login-password">Salasana</label>
+                <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••">
+                <button type="submit" class="btn-primary">Kirjaudu sisään</button>
                 <p id="login-error" class="hidden">Väärä sähköposti tai salasana.</p>
             </form>
         </div>
     </div>
-    
-    <div id="main-container" class="container hidden">
-        <header>
-            <div class="header-content">
-                <img src="logo.png" alt="Perhe Kauppinen Logo" id="header-logo">
-                <h1>Kauppisen perhekalenteri</h1>
+
+    <!-- ============ SOVELLUS ============ -->
+    <div id="app-shell" class="hidden">
+
+        <!-- Yläpalkki -->
+        <header id="appbar">
+            <div class="appbar-vasen">
+                <img src="logo.png" alt="Logo" id="header-logo">
+                <div class="appbar-tekstit">
+                    <h1>Perhekalenteri</h1>
+                    <span id="tanaan-banneri"></span>
+                </div>
+            </div>
+            <div class="appbar-oikea">
+                <button id="asetukset-btn" class="icon-btn" title="Asetukset" aria-label="Asetukset">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </button>
+                <div id="kayttaja-pallo" class="kayttaja-pallo" title="Kirjautunut käyttäjä"></div>
             </div>
         </header>
 
-        <main>
-            <div id="tanaan-banneri"></div>
-            <div class="tulevat-tapahtumat">
-                <h3>Tulevat Tapahtumat</h3>
-                <input type="search" id="haku-kentta" placeholder="Hae tapahtumista...">
-                <div id="tulevat-suodatin" class="filter-buttons">
-                    <button class="filter-btn active" data-filter="kaikki">Kaikki</button>
-                    <button class="filter-btn" data-filter="perhe">Perhe</button>
-                    <button class="filter-btn" data-filter="Toni">Toni</button>
-                    <button class="filter-btn" data-filter="Kaisa">Kaisa</button>
-                    <button class="filter-btn" data-filter="Oona">Oona</button>
-                </div>
-                <div id="tulevat-tapahtumat-lista"></div>
-                <div id="tulevat-pagination-controls" class="pagination-controls hidden">
-                    <button id="tulevat-edellinen-sivu-btn">&lt; Edellinen</button>
-                    <span id="tulevat-sivu-info"></span>
-                    <button id="tulevat-seuraava-sivu-btn">Seuraava &gt;</button>
-                </div>
+        <!-- Näkymävalitsin + jaksonavigointi -->
+        <div class="toolbar">
+            <div id="nakyma-valitsin" class="segmented">
+                <button data-nakyma="agenda" class="seg-btn">Agenda</button>
+                <button data-nakyma="paiva" class="seg-btn">Päivä</button>
+                <button data-nakyma="viikko" class="seg-btn">Viikko</button>
+                <button data-nakyma="kk" class="seg-btn">Kuukausi</button>
             </div>
-
-            <div class="tehtavalista">
-                <div class="tehtavalista-otsikko" id="tehtavalista-toggle">
-                    <h3>Yhteinen muistilista</h3>
-                    <div class="tehtavalista-otsikko-oikea">
-                        <span class="tehtava-laskuri" id="avoimet-tehtavat-laskuri"></span>
-                        <button id="avaa-arkisto-btn" class="pieni-nappi">Arkisto</button>
-                    </div>
-                </div>
-                <div id="tehtavalista-sisalto" class="hidden">
-                    <div id="tehtavat-container">
-                    </div>
-                    <div class="lisaa-tehtava-container">
-                        <div class="maarapaiva-container">
-                            <label>
-                                <input type="checkbox" id="lisaa-maarapaiva-toggle"> Aseta määräpäivä
-                            </label>
-                            <input type="datetime-local" id="uusi-tehtava-maarapaiva" class="hidden">
-                        </div>
-                        <div id="lisaa-tehtava-henkilot" class="assign-buttons">
-                            <small>Kohdista:</small>
-                            <button class="assign-btn" data-assignee="Toni">T</button>
-                            <button class="assign-btn" data-assignee="Kaisa">K</button>
-                            <button class="assign-btn" data-assignee="Oona">O</button>
-                        </div>
-                        <div class="lisaa-tehtava-lomake">
-                            <input type="text" id="uusi-tehtava-teksti" placeholder="Kirjoita uusi tehtävä...">
-                            <button id="lisaa-tehtava-nappi">Lisää</button>
-                        </div>
-                    </div>
-                </div>
+            <div class="jaksonav">
+                <button id="nav-edellinen" class="icon-btn" aria-label="Edellinen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+                <button id="nav-tanaan" class="tanaan-btn">Tänään</button>
+                <button id="nav-seuraava" class="icon-btn" aria-label="Seuraava"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+                <h2 id="nav-otsikko"></h2>
             </div>
+        </div>
 
-            <button id="avaa-lisays-lomake-btn" class="lisaa-nappi">Lisää uusi tapahtuma +</button>
+        <!-- Pääsisältö -->
+        <main class="main-grid">
 
-            <aside class="sivupalkki hidden">
-                <h3>Lisää uusi tapahtuma</h3>
-                <form id="lisaa-tapahtuma-lomake">
-                    <label for="tapahtuma-otsikko">Tapahtuma:</label>
-                    <input type="text" id="tapahtuma-otsikko" required>
-                    <label for="tapahtuma-kuvaus">Lisätiedot:</label>
-                    <textarea id="tapahtuma-kuvaus" rows="3"></textarea>
-                    
-                    <div class="checkbox-container">
-                        <label for="tapahtuma-koko-paiva">Koko päivän tapahtuma</label>
-                        <input type="checkbox" id="tapahtuma-koko-paiva">
-                    </div>
+            <!-- Kalenteripaneeli -->
+            <section id="panel-kalenteri" class="paneli">
+                <div id="ptr-indikaattori"><div class="ptr-spinner"></div></div>
+                <div id="nakymat">
 
-                    <div id="aika-valinnat">
-                        <div>
-                            <label for="tapahtuma-alku">Alkaa / Päivämäärä:</label>
-                            <input type="datetime-local" id="tapahtuma-alku" required>
-                        </div>
-                        <div id="loppu-aika-lisaa-container">
-                            <label for="tapahtuma-loppu">Loppuu:</label>
-                            <input type="datetime-local" id="tapahtuma-loppu" required>
-                        </div>
-                    </div>
-
-                    <label for="tapahtuma-linkki">Linkki (esim. Google Maps, Teams):</label>
-                    <input type="url" id="tapahtuma-linkki" placeholder="https://...">
-
-                    <fieldset>
-                        <legend>Toistuminen:</legend>
-                        <div class="toistuminen-valinnat">
-                            <div class="toistuminen-container">
-                                <label for="toistuminen-tyyppi">Toistuu:</label>
-                                <select id="toistuminen-tyyppi">
-                                    <option value="ei">Ei toistu</option>
-                                    <option value="paivittain">Päivittäin</option>
-                                    <option value="viikoittain">Viikoittain</option>
-                                    <option value="kuukausittain">Kuukausittain</option>
+                    <!-- Agenda -->
+                    <div id="agenda-view" class="nakyma">
+                        <div class="agenda-tyokalut">
+                            <input type="search" id="haku-kentta" placeholder="Hae tapahtumista...">
+                            <div class="suodatin-rivi">
+                                <div id="tulevat-suodatin" class="filter-buttons">
+                                    <button class="filter-btn active" data-filter="kaikki">Kaikki</button>
+                                    <button class="filter-btn" data-filter="perhe">Perhe</button>
+                                    <button class="filter-btn" data-filter="Toni">Toni</button>
+                                    <button class="filter-btn" data-filter="Kaisa">Kaisa</button>
+                                    <button class="filter-btn" data-filter="Oona">Oona</button>
+                                </div>
+                                <select id="kategoria-suodatin" aria-label="Kategoriasuodatin">
+                                    <option value="kaikki">Kaikki kategoriat</option>
                                 </select>
                             </div>
-                            <div class="toistuminen-container">
-                                <label for="toistuminen-paattyy">Päättyy:</label>
-                                <input type="date" id="toistuminen-paattyy" placeholder="Valinnainen">
+                        </div>
+                        <div id="agenda-lista"></div>
+                        <button id="agenda-lisaa-btn" class="btn-secondary hidden">Näytä lisää</button>
+                    </div>
+
+                    <!-- Päivä -->
+                    <div id="paiva-view" class="nakyma hidden">
+                        <div id="paiva-aikahila" class="aikahila"></div>
+                    </div>
+
+                    <!-- Viikko -->
+                    <div id="viikko-view" class="nakyma hidden">
+                        <div id="viikko-aikahila" class="aikahila"></div>
+                    </div>
+
+                    <!-- Kuukausi -->
+                    <div id="kk-view" class="nakyma hidden">
+                        <div id="kalenteri-paivat-otsikot"></div>
+                        <div id="kalenteri-grid"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sivuraita (desktop: näkyy aina | mobiili: tehtävät-paneeli) -->
+            <aside id="sivuraita" class="paneli">
+                <div class="tulevat-tapahtumat tulevat-box">
+                    <h3>Tulevat tapahtumat</h3>
+                    <div id="tulevat-tapahtumat-lista"></div>
+                </div>
+
+                <div class="tehtavalista tehtavat-box">
+                    <div class="tehtavalista-otsikko" id="tehtavalista-toggle">
+                        <h3>Muistilista</h3>
+                        <div class="tehtavalista-otsikko-oikea">
+                            <span class="tehtava-laskuri" id="avoimet-tehtavat-laskuri"></span>
+                            <button id="avaa-arkisto-btn" class="pieni-nappi">Arkisto</button>
+                        </div>
+                    </div>
+                    <div id="tehtavalista-sisalto">
+                        <div id="tehtavat-container"></div>
+                        <div class="lisaa-tehtava-container">
+                            <div class="maarapaiva-container">
+                                <label>
+                                    <input type="checkbox" id="lisaa-maarapaiva-toggle"> Määräpäivä
+                                </label>
+                                <input type="datetime-local" id="uusi-tehtava-maarapaiva" class="hidden">
+                            </div>
+                            <div id="lisaa-tehtava-henkilot" class="assign-buttons">
+                                <small>Kenelle:</small>
+                                <button class="assign-btn" data-assignee="Toni">T</button>
+                                <button class="assign-btn" data-assignee="Kaisa">K</button>
+                                <button class="assign-btn" data-assignee="Oona">O</button>
+                            </div>
+                            <div class="lisaa-tehtava-lomake">
+                                <input type="text" id="uusi-tehtava-teksti" placeholder="Kirjoita uusi tehtävä...">
+                                <button id="lisaa-tehtava-nappi" class="btn-primary">Lisää</button>
                             </div>
                         </div>
-                    </fieldset>
-
-                    <fieldset>
-                        <legend>Ketä koskee:</legend>
-                        <div class="ketakoskee-valinnat">
-                            <label><input type="checkbox" name="lisaa-ketakoskee" value="perhe"> Koko perhe</label>
-                            <label><input type="checkbox" name="lisaa-ketakoskee" value="Toni"> Toni</label>
-                            <label><input type="checkbox" name="lisaa-ketakoskee" value="Kaisa"> Kaisa</label>
-                            <label><input type="checkbox" name="lisaa-ketakoskee" value="Oona"> Oona</label>
-                        </div>
-                    </fieldset>
-
-                    <fieldset>
-                        <legend>Näkyy kenelle:</legend>
-                        <div class="nakyvyys-valinnat">
-                            <label><input type="checkbox" name="nakyvyys" value="Toni" checked> Toni</label>
-                            <label><input type="checkbox" name="nakyvyys" value="Kaisa" checked> Kaisa</label>
-                            <label><input type="checkbox" name="nakyvyys" value="Oona" checked> Oona</label>
-                        </div>
-                    </fieldset>
-                    <button type="submit">Lisää kalenteriin</button>
-                </form>
+                    </div>
+                    <button id="avaa-menneet-modal-btn" class="btn-secondary tulevat-box">Menneet tapahtumat</button>
+                </div>
             </aside>
-
-            <div class="kalenteri-ylapalkki">
-                <button id="edellinen-kk">&lt;</button>
-                <button id="tanaan-btn">Tänään</button>
-                <h2 id="kuukausi-otsikko">Elokuu 2025</h2>
-                <button id="seuraava-kk">&gt;</button>
-            </div>
-            <div id="kalenteri-paivat-otsikot"></div>
-            <div id="kalenteri-grid"></div>
         </main>
 
-        <footer>
-            <button id="avaa-menneet-modal-btn" class="footer-btn">Näytä menneet tapahtumat</button>
-            <div id="user-info">
-                Kirjautunut: <strong id="current-user-name"></strong>
-                <button id="logout-btn">Kirjaudu ulos</button>
-                <button id="notification-settings-btn" class="footer-btn" title="Ilmoitusasetukset">🔔</button>
-            </div>
-        </footer>
+        <!-- Alavalikko (mobiili) -->
+        <nav id="tabbar">
+            <button class="tab-btn active" data-panel="kalenteri">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span>Kalenteri</span>
+            </button>
+            <button class="tab-btn" data-panel="tehtavat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                <span>Tehtävät</span>
+                <span id="tab-tehtavat-badge" class="tab-badge hidden"></span>
+            </button>
+            <button class="tab-btn" data-panel="asetukset">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <span>Asetukset</span>
+            </button>
+        </nav>
+
+        <!-- Kelluva lisäysnappi -->
+        <button id="fab-lisaa" aria-label="Lisää tapahtuma">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
     </div>
 
-    <div id="tapahtuma-modal-overlay" class="modal-overlay hidden">
-        <div class="modal-content">
-            <div id="modal-view-content">
-                <h2 id="view-otsikko"></h2>
-                <p><strong>Aika:</strong> <span id="view-aika"></span></p>
-                <p><strong>Lisätiedot:</strong> <span id="view-kuvaus"></span></p>
-                <p><strong>Koskee:</strong> <span id="view-koskee"></span></p>
-                <p id="view-linkki-container" class="hidden"><strong>Linkki:</strong> <a id="view-linkki" href="#" target="_blank" rel="noopener noreferrer">Avaa linkki</a></p>
-                <p><strong>Näkyvyys:</strong> <span id="view-nakyvyys"></span></p>
-                <p><em>Luonut: <span id="view-luoja"></span></em></p>
-                <div class="modal-buttons">
-                    <button type="button" id="kopioi-btn">Kopioi 🗓️</button>
-                    <button type="button" id="muokkaa-btn">Muokkaa ✏️</button>
-                    <button type="button" id="sulje-btn" class="cancel-btn">Sulje</button>
-                </div>
-            </div>
-            <div id="modal-edit-content" class="hidden">
-                <h2>Muokkaa tapahtumaa</h2>
-                <form id="muokkaa-tapahtuma-lomake">
-                    <input type="hidden" id="muokkaa-tapahtuma-id">
-                    <label for="muokkaa-tapahtuma-otsikko">Tapahtuma:</label>
-                    <input type="text" id="muokkaa-tapahtuma-otsikko" required>
-                    <label for="muokkaa-tapahtuma-kuvaus">Lisätiedot:</label>
-                    <textarea id="muokkaa-tapahtuma-kuvaus" rows="3"></textarea>
-
-                    <div class="checkbox-container">
-                         <label for="muokkaa-tapahtuma-koko-paiva">Koko päivän tapahtuma</label>
-                        <input type="checkbox" id="muokkaa-tapahtuma-koko-paiva">
-                    </div>
-                    
-                    <div id="muokkaa-aika-valinnat">
-                        <div>
-                            <label for="muokkaa-tapahtuma-alku">Alkaa / Päivämäärä:</label>
-                            <input type="datetime-local" id="muokkaa-tapahtuma-alku" required>
-                        </div>
-                        <div id="loppu-aika-muokkaa-container">
-                            <label for="muokkaa-tapahtuma-loppu">Loppuu:</label>
-                            <input type="datetime-local" id="muokkaa-tapahtuma-loppu" required>
-                        </div>
-                    </div>
-
-                    <label for="muokkaa-tapahtuma-linkki">Linkki:</label>
-                    <input type="url" id="muokkaa-tapahtuma-linkki" placeholder="https://...">
-
-                    <fieldset>
-                        <legend>Toistuminen:</legend>
-                        <div class="toistuminen-valinnat">
-                            <div class="toistuminen-container">
-                                <label for="muokkaa-toistuminen-tyyppi">Toistuu:</label>
-                                <select id="muokkaa-toistuminen-tyyppi">
-                                    <option value="ei">Ei toistu</option>
-                                    <option value="paivittain">Päivittäin</option>
-                                    <option value="viikoittain">Viikoittain</option>
-                                    <option value="kuukausittain">Kuukausittain</option>
-                                </select>
-                            </div>
-                            <div class="toistuminen-container">
-                                <label for="muokkaa-toistuminen-paattyy">Päättyy:</label>
-                                <input type="date" id="muokkaa-toistuminen-paattyy" placeholder="Valinnainen">
-                            </div>
-                        </div>
-                    </fieldset>
-
-                    <fieldset>
-                        <legend>Ketä koskee:</legend>
-                        <div class="ketakoskee-valinnat" id="muokkaa-ketakoskee">
-                            <label><input type="checkbox" name="muokkaa-ketakoskee" value="perhe"> Koko perhe</label>
-                            <label><input type="checkbox" name="muokkaa-ketakoskee" value="Toni"> Toni</label>
-                            <label><input type="checkbox" name="muokkaa-ketakoskee" value="Kaisa"> Kaisa</label>
-                            <label><input type="checkbox" name="muokkaa-ketakoskee" value="Oona"> Oona</label>
-                        </div>
-                    </fieldset>
-
-                    <fieldset>
-                        <legend>Näkyy kenelle:</legend>
-                        <div class="nakyvyys-valinnat" id="muokkaa-nakyvyys">
-                            <label><input type="checkbox" name="muokkaa-nakyvyys" value="Toni"> Toni</label>
-                            <label><input type="checkbox" name="muokkaa-nakyvyys" value="Kaisa"> Kaisa</label>
-                            <label><input type="checkbox" name="muokkaa-nakyvyys" value="Oona"> Oona</label>
-                        </div>
-                    </fieldset>
-                    <div class="modal-buttons">
-                        <button type="button" id="tallenna-muutokset-btn">Tallenna</button>
-                        <button type="button" id="poista-tapahtuma-btn" class="delete-btn">Poista</button>
-                        <button type="button" id="peruuta-muokkaus-btn" class="cancel-btn">Peruuta</button>
-                    </div>
-                </form>
+    <!-- ============ SHEET: TAPAHTUMAN TIEDOT ============ -->
+    <div id="sheet-tapahtuma" class="sheet-overlay hidden">
+        <div class="sheet">
+            <div class="sheet-kahva"></div>
+            <div id="view-kategoria-rivi" class="kategoria-rivi"></div>
+            <h2 id="view-otsikko"></h2>
+            <div class="view-rivi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="view-aika"></span></div>
+            <div class="view-rivi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span id="view-koskee"></span></div>
+            <div class="view-rivi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span id="view-nakyvyys"></span></div>
+            <p id="view-kuvaus" class="view-kuvaus"></p>
+            <p id="view-linkki-container" class="hidden"><a id="view-linkki" href="#" target="_blank" rel="noopener noreferrer" class="btn-secondary btn-link">Avaa linkki ↗</a></p>
+            <p class="view-luoja"><em>Luonut: <span id="view-luoja"></span></em></p>
+            <div class="sheet-napit">
+                <button type="button" id="kopioi-btn" class="btn-secondary">Kopioi</button>
+                <button type="button" id="muokkaa-btn" class="btn-primary">Muokkaa</button>
+                <button type="button" id="sulje-btn" class="btn-ghost">Sulje</button>
             </div>
         </div>
     </div>
 
-    <div id="menneet-tapahtumat-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Menneet Tapahtumat</h2>
-                <button id="sulje-menneet-modal-btn" class="close-btn">&times;</button>
+    <!-- ============ SHEET: TAPAHTUMALOMAKE (lisäys + muokkaus) ============ -->
+    <div id="sheet-lomake" class="sheet-overlay hidden">
+        <div class="sheet sheet-levea">
+            <div class="sheet-kahva"></div>
+            <h2 id="lomake-otsikko">Uusi tapahtuma</h2>
+            <form id="tapahtuma-lomake">
+                <input type="hidden" id="f-id">
+                <div class="kentta-ryhma">
+                    <label for="f-otsikko">Tapahtuma</label>
+                    <input type="text" id="f-otsikko" required placeholder="Esim. Hammastarkastus">
+                </div>
+                <div class="kentta-rivi">
+                    <div class="kentta-ryhma">
+                        <label for="f-kategoria">Kategoria</label>
+                        <select id="f-kategoria"></select>
+                    </div>
+                    <div class="kentta-ryhma">
+                        <label for="f-linkki">Linkki (valinnainen)</label>
+                        <input type="url" id="f-linkki" placeholder="https://...">
+                    </div>
+                </div>
+                <div class="kentta-ryhma">
+                    <label for="f-kuvaus">Lisätiedot</label>
+                    <textarea id="f-kuvaus" rows="2" placeholder="Valinnaiset lisätiedot, linkit näkyvät klikattavina"></textarea>
+                </div>
+                <label class="kytkin-rivi">
+                    <span>Koko päivän tapahtuma</span>
+                    <input type="checkbox" id="f-koko-paiva" class="kytkin">
+                </label>
+                <div class="kentta-rivi">
+                    <div class="kentta-ryhma">
+                        <label for="f-alku">Alkaa</label>
+                        <input type="datetime-local" id="f-alku" required>
+                    </div>
+                    <div class="kentta-ryhma" id="loppu-wrap">
+                        <label for="f-loppu">Loppuu</label>
+                        <input type="datetime-local" id="f-loppu" required>
+                    </div>
+                </div>
+                <div class="kentta-rivi">
+                    <div class="kentta-ryhma">
+                        <label for="f-toistuminen-tyyppi">Toistuu</label>
+                        <select id="f-toistuminen-tyyppi">
+                            <option value="ei">Ei toistu</option>
+                            <option value="paivittain">Päivittäin</option>
+                            <option value="viikoittain">Viikoittain</option>
+                            <option value="kuukausittain">Kuukausittain</option>
+                        </select>
+                    </div>
+                    <div class="kentta-ryhma">
+                        <label for="f-toistuminen-paattyy">Toisto päättyy</label>
+                        <input type="date" id="f-toistuminen-paattyy">
+                    </div>
+                </div>
+                <fieldset class="kentta-fieldset">
+                    <legend>Ketä koskee</legend>
+                    <div class="check-rivi">
+                        <label class="check-pallo perhe"><input type="checkbox" name="f-ketakoskee" value="perhe"><span>Koko perhe</span></label>
+                        <label class="check-pallo t-toni"><input type="checkbox" name="f-ketakoskee" value="Toni"><span>Toni</span></label>
+                        <label class="check-pallo t-kaisa"><input type="checkbox" name="f-ketakoskee" value="Kaisa"><span>Kaisa</span></label>
+                        <label class="check-pallo t-oona"><input type="checkbox" name="f-ketakoskee" value="Oona"><span>Oona</span></label>
+                    </div>
+                </fieldset>
+                <fieldset class="kentta-fieldset">
+                    <legend>Näkyy kenelle</legend>
+                    <div class="check-rivi">
+                        <label class="check-pallo t-toni"><input type="checkbox" name="f-nakyvyys" value="Toni" checked><span>Toni</span></label>
+                        <label class="check-pallo t-kaisa"><input type="checkbox" name="f-nakyvyys" value="Kaisa" checked><span>Kaisa</span></label>
+                        <label class="check-pallo t-oona"><input type="checkbox" name="f-nakyvyys" value="Oona" checked><span>Oona</span></label>
+                    </div>
+                </fieldset>
+                <div class="sheet-napit">
+                    <button type="button" id="poista-tapahtuma-btn" class="btn-danger hidden">Poista</button>
+                    <button type="submit" class="btn-primary" id="f-tallenna">Tallenna</button>
+                    <button type="button" id="peruuta-lomake-btn" class="btn-ghost">Peruuta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============ SHEET: SARJAN LAAJUUS (muokkaus/poisto) ============ -->
+    <div id="sheet-laajuus" class="sheet-overlay hidden">
+        <div class="sheet">
+            <div class="sheet-kahva"></div>
+            <h2 id="laajuus-otsikko">Toistuva tapahtuma</h2>
+            <p id="laajuus-kuvaus" class="laajuus-kuvaus"></p>
+            <div class="poista-vaihtoehdot">
+                <label class="poista-vaihtoehto">
+                    <input type="radio" name="laajuus" value="yksittainen" checked>
+                    <span>Vain tämä tapahtuma</span>
+                    <small id="laajuus-v1">Koskee vain tätä yhtä kertaa</small>
+                </label>
+                <label class="poista-vaihtoehto">
+                    <input type="radio" name="laajuus" value="tulevat">
+                    <span>Tämä ja tulevat</span>
+                    <small>Koskee tätä ja kaikkia myöhempiä sarjan tapahtumia</small>
+                </label>
+                <label class="poista-vaihtoehto">
+                    <input type="radio" name="laajuus" value="koko-sarja">
+                    <span>Koko sarja</span>
+                    <small>Koskee kaikkia sarjan tapahtumia (myös menneitä)</small>
+                </label>
+            </div>
+            <p id="laajuus-huomautus" class="laajuus-huomautus hidden">Aika- ja päivämäärämuutokset tallentuvat vain tähän tapahtumaan.</p>
+            <div class="sheet-napit">
+                <button id="vahvista-laajuus-btn" class="btn-danger">Vahvista</button>
+                <button id="peruuta-laajuus-btn" class="btn-ghost">Peruuta</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ SHEET: MENNEET TAPAHTUMAT ============ -->
+    <div id="sheet-menneet" class="sheet-overlay hidden">
+        <div class="sheet">
+            <div class="sheet-kahva"></div>
+            <div class="sheet-header">
+                <h2>Menneet tapahtumat</h2>
+                <button id="sulje-menneet-modal-btn" class="icon-btn">&times;</button>
             </div>
             <input type="search" id="menneet-haku-kentta" placeholder="Hae menneistä tapahtumista...">
-            <div id="menneet-tapahtumat-lista"></div>
+            <div id="menneet-tapahtumat-lista" class="sheet-lista"></div>
             <div class="pagination-controls">
-                <button id="edellinen-sivu-btn">&lt; Edellinen</button>
+                <button id="edellinen-sivu-btn" class="btn-secondary">&lt; Edellinen</button>
                 <span id="sivu-info"></span>
-                <button id="seuraava-sivu-btn">Seuraava &gt;</button>
+                <button id="seuraava-sivu-btn" class="btn-secondary">Seuraava &gt;</button>
             </div>
         </div>
     </div>
 
-    <div id="tehtava-arkisto-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <div class="modal-header">
+    <!-- ============ SHEET: TEHTÄVÄARKISTO ============ -->
+    <div id="sheet-arkisto" class="sheet-overlay hidden">
+        <div class="sheet">
+            <div class="sheet-kahva"></div>
+            <div class="sheet-header">
                 <h2>Arkistoidut tehtävät</h2>
-                <button id="sulje-arkisto-modal-btn" class="close-btn">&times;</button>
+                <button id="sulje-arkisto-modal-btn" class="icon-btn">&times;</button>
             </div>
-            <div id="arkistoidut-tehtavat-lista"></div>
+            <div id="arkistoidut-tehtavat-lista" class="sheet-lista"></div>
         </div>
     </div>
 
-    <!-- Ilmoitusasetusten modal -->
-    <div id="notification-settings-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Ilmoitusasetukset</h2>
-                <button id="sulje-notification-modal-btn" class="close-btn">&times;</button>
+    <!-- ============ SHEET: ASETUKSET ============ -->
+    <div id="sheet-asetukset" class="sheet-overlay hidden">
+        <div class="sheet">
+            <div class="sheet-kahva"></div>
+            <div class="sheet-header">
+                <h2>Asetukset</h2>
+                <button id="sulje-asetukset-btn" class="icon-btn">&times;</button>
             </div>
-            <div class="notification-settings-content">
-                <div class="checkbox-container">
-                    <label for="enable-notifications">Ota ilmoitukset käyttöön</label>
-                    <input type="checkbox" id="enable-notifications">
+            <div class="asetus-osio">
+                <h4>Käyttäjä</h4>
+                <div class="asetus-rivi">
+                    <span>Kirjautunut: <strong id="current-user-name"></strong></span>
+                    <button id="logout-btn" class="btn-secondary">Kirjaudu ulos</button>
                 </div>
-                
-                <div class="notification-status" id="notification-status">
-                    <p>Tarkistetaan ilmoitustilaa...</p>
+            </div>
+            <div class="asetus-osio">
+                <h4>Teema</h4>
+                <div class="segmented segmented-taysi" id="teema-valitsin">
+                    <button data-teema="auto" class="seg-btn">Auto</button>
+                    <button data-teema="vaalea" class="seg-btn">Vaalea</button>
+                    <button data-teema="tumma" class="seg-btn">Tumma</button>
                 </div>
-                
-                <div class="notification-options">
-                    <h4>Muistutukset:</h4>
-                    <div class="checkbox-container">
-                        <label for="event-reminders">Tapahtumamuistutukset</label>
-                        <input type="checkbox" id="event-reminders" checked>
-                    </div>
-                    <div class="checkbox-container">
-                        <label for="task-reminders">Tehtävämuistutukset</label>
-                        <input type="checkbox" id="task-reminders" checked>
-                    </div>
+            </div>
+            <div class="asetus-osio">
+                <h4>Muistutukset</h4>
+                <label class="kytkin-rivi">
+                    <span>Muistutukset käytössä</span>
+                    <input type="checkbox" id="muistutukset-toggle" class="kytkin">
+                </label>
+                <div class="asetus-rivi">
+                    <span>Muistuta tapahtumasta</span>
+                    <select id="muistutus-ajoitus">
+                        <option value="15">15 min ennen</option>
+                        <option value="30">30 min ennen</option>
+                        <option value="60" selected>1 h ennen</option>
+                        <option value="1440">Edellisenä päivänä</option>
+                    </select>
                 </div>
-                
-                <div class="notification-test">
-                    <button id="test-notification-btn" class="footer-btn">Testaa ilmoitus</button>
+                <label class="kytkin-rivi">
+                    <span>Muistuta päivän tehtävistä</span>
+                    <input type="checkbox" id="tehtava-muistutukset-toggle" class="kytkin">
+                </label>
+                <div class="asetus-rivi">
+                    <button id="testaa-muistutus-btn" class="btn-secondary">Testaa muistutus</button>
                 </div>
+                <p id="muistutus-status" class="muistutus-status"></p>
+            </div>
+            <div class="asetus-osio">
+                <h4>Muut</h4>
+                <div class="asetus-rivi">
+                    <button id="asetukset-menneet-btn" class="btn-secondary">Menneet tapahtumat</button>
+                </div>
+                <p class="versio-teksti">Kauppisen perhekalenteri · v2.0</p>
             </div>
         </div>
     </div>
 
+    <!-- Toast-ilmoitus -->
     <div id="ilmoitus" class="hidden"></div>
-    
-    <!-- Toistuvan tapahtuman poistodialogi -->
-    <div id="poista-toistuva-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Poista toistuva tapahtuma</h2>
-                <button id="sulje-poista-toistuva-btn" class="close-btn">&times;</button>
-            </div>
-            <div class="poista-toistuva-content">
-                <p>Valitse poistamisen tapa:</p>
-                <div class="poista-vaihtoehdot">
-                    <label class="poista-vaihtoehto">
-                        <input type="radio" name="poista-tapa" value="yksittainen" checked>
-                        <span>Poista vain tämä tapahtuma</span>
-                        <small>Poistaa vain tämän yhden kerran</small>
-                    </label>
-                    <label class="poista-vaihtoehto">
-                        <input type="radio" name="poista-tapa" value="tulevat">
-                        <span>Poista tämä ja kaikki tulevat</span>
-                        <small>Poistaa tämän ja kaikki myöhemmät tapahtumat sarjasta</small>
-                    </label>
-                    <label class="poista-vaihtoehto">
-                        <input type="radio" name="poista-tapa" value="koko-sarja">
-                        <span>Poista koko sarja</span>
-                        <small>Poistaa kaikki menneet ja tulevat tapahtumat sarjasta</small>
-                    </label>
-                </div>
-                <div class="modal-actions">
-                    <button id="peruuta-poista-toistuva-btn" class="btn-secondary">Peruuta</button>
-                    <button id="vahvista-poista-toistuva-btn" class="btn-danger">Poista</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <script type="module" src="script.js"></script>
-<script>
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js')
-            .then(() => console.log('Service Worker rekisteröity'))
-            .catch((err) => console.log('Service Worker virhe:', err));
-    }
-</script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then(() => console.log('Service Worker rekisteröity'))
+                .catch((err) => console.log('Service Worker virhe:', err));
+        }
+    </script>
 </body>
 </html>

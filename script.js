@@ -12,89 +12,158 @@ const firebaseConfig = {
   appId: "1:588536838615:web:148de0581bbd46c42c7392"
 };
 
-const KAYTTAJA_VARIT = {
-    Toni: '#4ade80',
-    Kaisa: '#c084fc',
-    Oona: '#60a5fa',
-    perhe: '#fb7185'
-};
-
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
 
-// --- DOM-elementit (Määritellään muuttujat) ---
-let loginOverlay, loginForm, mainContainer, currentUserName, logoutBtn, tulevatTapahtumatLista,
-    kalenteriPaivatOtsikot, kalenteriGrid, kuukausiOtsikko, edellinenBtn, seuraavaBtn, tanaanBtn,
-    lisaaLomake, modalOverlay, modalViewContent, modalEditContent, avaaLisaysLomakeBtn,
-    sivupalkki, hakuKentta, tehtavatContainer, uusiTehtavaTeksti, lisaaTehtavaNappi,
-    tehtavalistaToggle, tehtavalistaSisalto, avoimetTehtavatLaskuri, avaaMenneetModalBtn,
-    menneetTapahtumatModal, suljeMenneetModalBtn, menneetHakuKentta, menneetTapahtumatLista,
-    edellinenSivuBtn, seuraavaSivuBtn, sivuInfo, tulevatSuodatin, tulevatPaginationControls,
-    tulevatEdellinenSivuBtn, tulevatSeuraavaSivuBtn, tulevatSivuInfo, lisaaTehtavaHenkilot,
-    avaaArkistoBtn, tehtavaArkistoModal, suljeArkistoModalBtn, arkistoidutTehtavatLista,
-    lisaaMaarapaivaToggle, uusiTehtavaMaarapaiva;
+// --- Vakiot ---
+const KAYTTAJA_VARIT = { Toni: 'var(--c-toni)', Kaisa: 'var(--c-kaisa)', Oona: 'var(--c-oona)', perhe: 'var(--c-perhe)' };
+const HENKILOT = ['Toni', 'Kaisa', 'Oona'];
+const KATEGORIAT = {
+    tyo:      { nimi: 'Työ',       ikoni: '💼' },
+    harrastus:{ nimi: 'Harrastus', ikoni: '🏃' },
+    juhlat:   { nimi: 'Juhlat',    ikoni: '🎉' },
+    terveys:  { nimi: 'Terveys',   ikoni: '🩺' },
+    koulu:    { nimi: 'Koulu',     ikoni: '🏫' },
+    ostokset: { nimi: 'Ostokset',  ikoni: '🛒' },
+    matka:    { nimi: 'Matka',     ikoni: '✈️' },
+    muu:      { nimi: 'Muu',       ikoni: '📌' }
+};
+const TAPAHTUMIA_PER_SIVU = 10;
+const AGENDA_PAIVIA_PER_ERÄ = 14;
+const AH_ALKU = 6, AH_LOPPU = 24, AH_TPX = 56; // aikahila: tunnit ja pikselikorkeus/tunti
+const SARJA_META_KENTAT = ['otsikko', 'kuvaus', 'linkki', 'kategoria', 'ketakoskee', 'nakyvyys', 'kokoPaiva'];
+
+// --- DOM-viittaukset ---
+let loginOverlay, loginForm, appShell, appbar, tanaanBanneri, asetuksetBtn, kayttajaPallo,
+    nakymaValitsin, navEdellinen, navTanaan, navSeuraava, navOtsikko, nakymat,
+    agendaView, agendaLista, agendaLisaaBtn, hakuKentta, tulevatSuodatin, kategoriaSuodatin,
+    paivaHila, viikkoHila, kalenteriPaivatOtsikot, kalenteriGrid,
+    tulevatTapahtumatLista, tehtavatContainer, uusiTehtavaTeksti, lisaaTehtavaNappi,
+    tehtavalistaToggle, tehtavalistaSisalto, avoimetTehtavatLaskuri,
+    avaaArkistoBtn, avaaMenneetBtn,
+    tabbar, tabTehtavatBadge, fabLisaa, ptrIndikaattori,
+    sheetTapahtuma, sheetLomake, sheetLaajuus, sheetMenneet, sheetArkisto, sheetAsetukset,
+    menneetHakuKentta, menneetTapahtumatLista, edellinenSivuBtn, seuraavaSivuBtn, sivuInfo,
+    arkistoidutTehtavatLista, ilmoitusEl;
 
 // --- Sovelluksen tila ---
 let nykyinenKayttaja = null;
 let nykyinenPaiva = new Date();
+let nakymanTyyppi = localStorage.getItem('kalenteri-nakyma') || 'agenda';
+let agendaAlkuPvm = paivaNolla(new Date());
+let agendaNaytetyt = AGENDA_PAIVIA_PER_ERÄ;
 let unsubscribeFromEvents = null;
 let unsubscribeFromTasks = null;
 let menneetSivu = 0;
-let tulevatSivu = 0;
 let kaikkiTehtavat = [];
-const TAPAHTUMIA_PER_SIVU = 10;
+let muistutusAsetukset = { kaytossa: false, ajoitus: 60, tehtavat: false };
+let muistutusIntervalli = null;
+let banneriIntervalli = null;
+let laajuusCallback = null;
 
 function alustaElementit() {
     loginOverlay = document.getElementById('login-overlay');
     loginForm = document.getElementById('login-form');
-    mainContainer = document.getElementById('main-container');
-    currentUserName = document.getElementById('current-user-name');
-    logoutBtn = document.getElementById('logout-btn');
-    tulevatTapahtumatLista = document.getElementById('tulevat-tapahtumat-lista');
+    appShell = document.getElementById('app-shell');
+    tanaanBanneri = document.getElementById('tanaan-banneri');
+    asetuksetBtn = document.getElementById('asetukset-btn');
+    kayttajaPallo = document.getElementById('kayttaja-pallo');
+    nakymaValitsin = document.getElementById('nakyma-valitsin');
+    navEdellinen = document.getElementById('nav-edellinen');
+    navTanaan = document.getElementById('nav-tanaan');
+    navSeuraava = document.getElementById('nav-seuraava');
+    navOtsikko = document.getElementById('nav-otsikko');
+    nakymat = document.getElementById('nakymat');
+    agendaView = document.getElementById('agenda-view');
+    agendaLista = document.getElementById('agenda-lista');
+    agendaLisaaBtn = document.getElementById('agenda-lisaa-btn');
+    hakuKentta = document.getElementById('haku-kentta');
+    tulevatSuodatin = document.getElementById('tulevat-suodatin');
+    kategoriaSuodatin = document.getElementById('kategoria-suodatin');
+    paivaHila = document.getElementById('paiva-aikahila');
+    viikkoHila = document.getElementById('viikko-aikahila');
     kalenteriPaivatOtsikot = document.getElementById('kalenteri-paivat-otsikot');
     kalenteriGrid = document.getElementById('kalenteri-grid');
-    kuukausiOtsikko = document.getElementById('kuukausi-otsikko');
-    edellinenBtn = document.getElementById('edellinen-kk');
-    seuraavaBtn = document.getElementById('seuraava-kk');
-    tanaanBtn = document.getElementById('tanaan-btn');
-    lisaaLomake = document.getElementById('lisaa-tapahtuma-lomake');
-    modalOverlay = document.getElementById('tapahtuma-modal-overlay');
-    modalViewContent = document.getElementById('modal-view-content');
-    modalEditContent = document.getElementById('modal-edit-content');
-    avaaLisaysLomakeBtn = document.getElementById('avaa-lisays-lomake-btn');
-    sivupalkki = document.querySelector('.sivupalkki');
-    hakuKentta = document.getElementById('haku-kentta');
+    tulevatTapahtumatLista = document.getElementById('tulevat-tapahtumat-lista');
     tehtavatContainer = document.getElementById('tehtavat-container');
     uusiTehtavaTeksti = document.getElementById('uusi-tehtava-teksti');
     lisaaTehtavaNappi = document.getElementById('lisaa-tehtava-nappi');
     tehtavalistaToggle = document.getElementById('tehtavalista-toggle');
     tehtavalistaSisalto = document.getElementById('tehtavalista-sisalto');
     avoimetTehtavatLaskuri = document.getElementById('avoimet-tehtavat-laskuri');
-    avaaMenneetModalBtn = document.getElementById('avaa-menneet-modal-btn');
-    menneetTapahtumatModal = document.getElementById('menneet-tapahtumat-modal');
-    suljeMenneetModalBtn = document.getElementById('sulje-menneet-modal-btn');
+    avaaArkistoBtn = document.getElementById('avaa-arkisto-btn');
+    avaaMenneetBtn = document.getElementById('avaa-menneet-modal-btn');
+    tabbar = document.getElementById('tabbar');
+    tabTehtavatBadge = document.getElementById('tab-tehtavat-badge');
+    fabLisaa = document.getElementById('fab-lisaa');
+    ptrIndikaattori = document.getElementById('ptr-indikaattori');
+    sheetTapahtuma = document.getElementById('sheet-tapahtuma');
+    sheetLomake = document.getElementById('sheet-lomake');
+    sheetLaajuus = document.getElementById('sheet-laajuus');
+    sheetMenneet = document.getElementById('sheet-menneet');
+    sheetArkisto = document.getElementById('sheet-arkisto');
+    sheetAsetukset = document.getElementById('sheet-asetukset');
     menneetHakuKentta = document.getElementById('menneet-haku-kentta');
     menneetTapahtumatLista = document.getElementById('menneet-tapahtumat-lista');
     edellinenSivuBtn = document.getElementById('edellinen-sivu-btn');
     seuraavaSivuBtn = document.getElementById('seuraava-sivu-btn');
     sivuInfo = document.getElementById('sivu-info');
-    tulevatSuodatin = document.getElementById('tulevat-suodatin');
-    tulevatPaginationControls = document.getElementById('tulevat-pagination-controls');
-    tulevatEdellinenSivuBtn = document.getElementById('tulevat-edellinen-sivu-btn');
-    tulevatSeuraavaSivuBtn = document.getElementById('tulevat-seuraava-sivu-btn');
-    tulevatSivuInfo = document.getElementById('tulevat-sivu-info');
-    lisaaTehtavaHenkilot = document.getElementById('lisaa-tehtava-henkilot');
-    avaaArkistoBtn = document.getElementById('avaa-arkisto-btn');
-    tehtavaArkistoModal = document.getElementById('tehtava-arkisto-modal');
-    suljeArkistoModalBtn = document.getElementById('sulje-arkisto-modal-btn');
     arkistoidutTehtavatLista = document.getElementById('arkistoidut-tehtavat-lista');
-    lisaaMaarapaivaToggle = document.getElementById('lisaa-maarapaiva-toggle');
-    uusiTehtavaMaarapaiva = document.getElementById('uusi-tehtava-maarapaiva');
+    ilmoitusEl = document.getElementById('ilmoitus');
 }
 
+// --- Apufunktiot ---
+function paivaNolla(d) { const p = new Date(d); p.setHours(0, 0, 0, 0); return p; }
+function pvmMerkkijono(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+function kloMerkkijono(d) { return d.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' }); }
+function cssVari(nimi) { return getComputedStyle(document.body).getPropertyValue(nimi).trim() || '#666'; }
+function henkiloVari(nimi) { return cssVari(KAYTTAJA_VARIT[nimi] || '--c-perhe'); }
+function kategoriaInfo(kat) { return KATEGORIAT[kat] || KATEGORIAT.muu; }
+
+function esc(s) {
+    return String(s || '').replace(/[&<>"']/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function linkify(text) {
+    if (!text) return '';
+    const urlRegex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%?=~_|])|(\bwww\.[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%?=~_|])/ig;
+    return esc(text).replace(urlRegex, function (url) {
+        let fullUrl = url;
+        if (!fullUrl.startsWith('http')) fullUrl = 'https://' + fullUrl;
+        return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+    });
+}
+
+function getWeekNumber(d) {
+    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+function viikonAlku(d) {
+    const p = paivaNolla(d);
+    const pv = p.getDay() === 0 ? 7 : p.getDay();
+    p.setDate(p.getDate() - (pv - 1));
+    return p;
+}
+
+function naytaIlmoitus(viesti, kesto = 3000) {
+    ilmoitusEl.textContent = viesti;
+    ilmoitusEl.classList.add('nayta');
+    clearTimeout(naytaIlmoitus._t);
+    naytaIlmoitus._t = setTimeout(() => ilmoitusEl.classList.remove('nayta'), kesto);
+}
+
+function haptic() { if (navigator.vibrate) navigator.vibrate(8); }
+
+// ============ KÄYNNISTYS ============
 document.addEventListener('DOMContentLoaded', () => {
     alustaElementit();
+    lataaTeema();
+    taytaKategoriavalinnat();
     lisaaKuuntelijat();
     onAuthStateChanged(auth, user => {
         if (user) {
@@ -103,80 +172,127 @@ document.addEventListener('DOMContentLoaded', () => {
                 const emailName = user.email.split('@')[0];
                 userName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
             }
-            if (userName) {
-                startAppForUser(userName);
-            } else {
-                handleLogout();
-            }
+            if (userName) startAppForUser(userName);
+            else handleLogout();
         } else {
             nykyinenKayttaja = null;
             if (unsubscribeFromEvents) unsubscribeFromEvents();
             if (unsubscribeFromTasks) unsubscribeFromTasks();
-            mainContainer.classList.add('hidden');
+            if (muistutusIntervalli) clearInterval(muistutusIntervalli);
+            appShell.classList.add('hidden');
             loginOverlay.classList.remove('hidden');
-            document.body.className = '';
+            document.body.className = document.body.className.replace(/theme-\w+/g, '').trim();
         }
     });
 });
 
-function linkify(text) {
-    if (!text) return '';
-    const urlRegex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%?=~_|])|(\bwww\.[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%?=~_|])/ig;
-    return text.replace(urlRegex, function(url) {
-        let fullUrl = url;
-        if (!fullUrl.startsWith('http')) {
-            fullUrl = 'https://' + fullUrl;
-        }
-        return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+function handleLogin(event) {
+    event.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-password').value;
+    const loginError = document.getElementById('login-error');
+    signInWithEmailAndPassword(auth, email, pass)
+        .then(() => { loginError.classList.add('hidden'); loginForm.reset(); })
+        .catch(() => { loginError.classList.remove('hidden'); });
+}
+
+function handleLogout() {
+    signOut(auth).catch(error => console.error("Uloskirjautumisvirhe:", error));
+}
+
+function startAppForUser(userName) {
+    if (nykyinenKayttaja === userName && !appShell.classList.contains('hidden')) return;
+    nykyinenKayttaja = userName;
+    appShell.classList.remove('hidden');
+    loginOverlay.classList.add('hidden');
+    document.getElementById('current-user-name').textContent = nykyinenKayttaja;
+    kayttajaPallo.textContent = nykyinenKayttaja.charAt(0).toUpperCase();
+    kayttajaPallo.title = `Kirjautunut: ${nykyinenKayttaja}`;
+    document.body.classList.remove('theme-toni', 'theme-kaisa', 'theme-oona');
+    if (HENKILOT.includes(userName)) document.body.classList.add(`theme-${userName.toLowerCase()}`);
+    if (!document.body.dataset.panel) document.body.dataset.panel = 'kalenteri';
+    paivitaTanaanBanneri();
+    if (banneriIntervalli) clearInterval(banneriIntervalli);
+    banneriIntervalli = setInterval(paivitaTanaanBanneri, 60000);
+    lataaMuistutusAsetukset();
+    alustaMuistutukset();
+    asetaNakyma(nakymanTyyppi, false);
+    kuunteleTapahtumia();
+    kuunteleTehtavia();
+    if (new URLSearchParams(location.search).get('uusi') === '1') {
+        avaaLomake('lisaa');
+        history.replaceState(null, '', location.pathname);
+    }
+}
+
+// ============ TEEMA ============
+function lataaTeema() {
+    const teema = localStorage.getItem('kalenteri-teema') || 'auto';
+    asetaTeema(teema);
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        if ((localStorage.getItem('kalenteri-teema') || 'auto') === 'auto') asetaTeema('auto');
     });
 }
 
+function asetaTeema(teema) {
+    const tumma = teema === 'tumma' || (teema === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.teema = tumma ? 'tumma' : 'vaalea';
+    localStorage.setItem('kalenteri-teema', teema);
+    document.querySelectorAll('#teema-valitsin .seg-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.teema === teema));
+}
+
+function taytaKategoriavalinnat() {
+    const fKat = document.getElementById('f-kategoria');
+    fKat.innerHTML = '';
+    Object.entries(KATEGORIAT).forEach(([id, k]) => {
+        const o = document.createElement('option');
+        o.value = id;
+        o.textContent = `${k.ikoni} ${k.nimi}`;
+        fKat.appendChild(o);
+    });
+    kategoriaSuodatin.innerHTML = '<option value="kaikki">Kaikki kategoriat</option>';
+    Object.entries(KATEGORIAT).forEach(([id, k]) => {
+        const o = document.createElement('option');
+        o.value = id;
+        o.textContent = `${k.ikoni} ${k.nimi}`;
+        kategoriaSuodatin.appendChild(o);
+    });
+}
+
+function paivitaTanaanBanneri() {
+    const nyt = new Date();
+    const teksti = nyt.toLocaleDateString('fi-FI', { weekday: 'short', day: 'numeric', month: 'numeric' }) +
+        ' · ' + kloMerkkijono(nyt);
+    tanaanBanneri.textContent = teksti;
+}
+
+// ============ KUUNTELIJAT ============
 function lisaaKuuntelijat() {
     loginForm.addEventListener('submit', handleLogin);
-    logoutBtn.addEventListener('click', handleLogout);
-    edellinenBtn.addEventListener('click', () => {
-        nykyinenPaiva.setMonth(nykyinenPaiva.getMonth() - 1);
-        piirraKalenteri();
+    document.getElementById('logout-btn').addEventListener('click', () => { suljeSheet(sheetAsetukset); handleLogout(); });
+    document.getElementById('sulje-asetukset-btn').addEventListener('click', () => suljeSheet(sheetAsetukset));
+    asetuksetBtn.addEventListener('click', () => avaaSheet(sheetAsetukset));
+    kayttajaPallo.addEventListener('click', () => avaaSheet(sheetAsetukset));
+
+    // Näkymävalitsin
+    nakymaValitsin.addEventListener('click', (e) => {
+        const btn = e.target.closest('.seg-btn');
+        if (btn) asetaNakyma(btn.dataset.nakyma);
     });
-    seuraavaBtn.addEventListener('click', () => {
-        nykyinenPaiva.setMonth(nykyinenPaiva.getMonth() + 1);
-        piirraKalenteri();
-    });
-    tanaanBtn.addEventListener('click', () => {
+    navEdellinen.addEventListener('click', () => siirryJaksoa(-1));
+    navSeuraava.addEventListener('click', () => siirryJaksoa(1));
+    navTanaan.addEventListener('click', () => {
         nykyinenPaiva = new Date();
-        piirraKalenteri();
+        agendaAlkuPvm = paivaNolla(new Date());
+        piirraNakyma();
     });
-    lisaaLomake.addEventListener('submit', (e) => {
-        e.preventDefault();
-        lisaaTapahtuma();
-    });
-    modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) suljeTapahtumaIkkuna(); });
-    document.getElementById('sulje-btn').addEventListener('click', suljeTapahtumaIkkuna);
-    document.getElementById('peruuta-muokkaus-btn').addEventListener('click', () => vaihdaTila('view'));
-    document.getElementById('muokkaa-btn').addEventListener('click', () => vaihdaTila('edit'));
-    document.getElementById('kopioi-btn').addEventListener('click', kopioiTapahtuma);
-    document.getElementById('tallenna-muutokset-btn').addEventListener('click', tallennaMuutokset);
-    document.getElementById('poista-tapahtuma-btn').addEventListener('click', poistaTapahtuma);
-    avaaLisaysLomakeBtn.addEventListener('click', () => {
-        sivupalkki.classList.toggle('hidden');
-    });
-    document.getElementById('tapahtuma-alku').addEventListener('input', function() {
-        const loppuInput = document.getElementById('tapahtuma-loppu');
-        if (!loppuInput.value || loppuInput.value < this.value) {
-            loppuInput.value = this.value;
-        }
-        loppuInput.min = this.value;
-    });
-    kalenteriGrid.addEventListener('click', handlePaivaClick);
-    hakuKentta.addEventListener('input', () => {
-        tulevatSivu = 0;
-        naytaTulevatTapahtumat();
-        korostaHakuOsumatKalenterissa();
-    });
+
+    // Haku ja suodattimet
+    hakuKentta.addEventListener('input', () => { piirraNakyma(); });
     tulevatSuodatin.addEventListener('click', (e) => {
         const target = e.target;
         if (!target.classList.contains('filter-btn')) return;
-        tulevatSivu = 0;
         const suodatin = target.dataset.filter;
         const kaikkiBtn = tulevatSuodatin.querySelector('[data-filter="kaikki"]');
         const perheBtn = tulevatSuodatin.querySelector('[data-filter="perhe"]');
@@ -194,48 +310,53 @@ function lisaaKuuntelijat() {
             perheBtn.classList.remove('active');
             target.classList.toggle('active');
         }
-        if (!tulevatSuodatin.querySelector('.filter-btn.active')) {
-            kaikkiBtn.classList.add('active');
-        }
-        naytaTulevatTapahtumat();
+        if (!tulevatSuodatin.querySelector('.filter-btn.active')) kaikkiBtn.classList.add('active');
+        piirraNakyma();
     });
-    tulevatEdellinenSivuBtn.addEventListener('click', () => {
-        if (tulevatSivu > 0) {
-            tulevatSivu--;
-            naytaTulevatTapahtumat();
-        }
+    kategoriaSuodatin.addEventListener('change', () => piirraNakyma());
+    agendaLisaaBtn.addEventListener('click', () => { agendaNaytetyt += AGENDA_PAIVIA_PER_ERÄ; piirraAgenda(); });
+
+    // Kuukausiruudukon päiväklikki
+    kalenteriGrid.addEventListener('click', handlePaivaClick);
+
+    // FAB
+    fabLisaa.addEventListener('click', () => avaaLomake('lisaa'));
+
+    // Tapahtumasheet
+    sheetTapahtuma.addEventListener('click', (e) => { if (e.target === sheetTapahtuma) suljeSheet(sheetTapahtuma); });
+    document.getElementById('sulje-btn').addEventListener('click', () => suljeSheet(sheetTapahtuma));
+    document.getElementById('muokkaa-btn').addEventListener('click', () => {
+        const t = haeTapahtuma(sheetTapahtuma.dataset.tapahtumaId);
+        suljeSheet(sheetTapahtuma);
+        avaaLomake('muokkaa', t);
     });
-    tulevatSeuraavaSivuBtn.addEventListener('click', () => {
-        tulevatSivu++;
-        naytaTulevatTapahtumat();
+    document.getElementById('kopioi-btn').addEventListener('click', () => {
+        const t = haeTapahtuma(sheetTapahtuma.dataset.tapahtumaId);
+        suljeSheet(sheetTapahtuma);
+        avaaLomake('lisaa', t);
     });
-    document.getElementById('tapahtuma-koko-paiva').addEventListener('change', (e) => {
-        toggleLoppuAika(e.target.checked, 'loppu-aika-lisaa-container');
+
+    // Lomakesheet
+    sheetLomake.addEventListener('click', (e) => { if (e.target === sheetLomake) suljeSheet(sheetLomake); });
+    document.getElementById('peruuta-lomake-btn').addEventListener('click', () => suljeSheet(sheetLomake));
+    document.getElementById('tapahtuma-lomake').addEventListener('submit', (e) => { e.preventDefault(); tallennaTapahtuma(); });
+    document.getElementById('poista-tapahtuma-btn').addEventListener('click', poistaTapahtuma);
+    document.getElementById('f-alku').addEventListener('input', function () {
+        const loppuInput = document.getElementById('f-loppu');
+        if (!loppuInput.value || loppuInput.value < this.value) loppuInput.value = this.value;
+        loppuInput.min = this.value;
     });
-    document.getElementById('muokkaa-tapahtuma-koko-paiva').addEventListener('change', (e) => {
-        toggleLoppuAika(e.target.checked, 'loppu-aika-muokkaa-container');
+    document.getElementById('f-koko-paiva').addEventListener('change', (e) => {
+        const wrap = document.getElementById('loppu-wrap');
+        wrap.classList.toggle('hidden', e.target.checked);
+        document.getElementById('f-loppu').required = !e.target.checked;
     });
-    lisaaTehtavaNappi.addEventListener('click', lisaaTehtava);
-    uusiTehtavaTeksti.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            lisaaTehtava();
-        }
-    });
-    tehtavalistaToggle.addEventListener('click', () => {
-        tehtavalistaSisalto.classList.toggle('hidden');
-    });
-    lisaaTehtavaHenkilot.addEventListener('click', (e) => {
-        if (e.target.classList.contains('assign-btn')) {
-            e.target.classList.toggle('active');
-        }
-    });
-    document.querySelectorAll('input[name="lisaa-ketakoskee"], input[name="muokkaa-ketakoskee"]').forEach(checkbox => {
+    // "Koko perhe" -valinta rastii kaikki
+    document.querySelectorAll('input[name="f-ketakoskee"]').forEach(checkbox => {
         checkbox.addEventListener('change', (e) => {
             const form = e.target.closest('form');
-            const name = e.target.name;
-            const perheBox = form.querySelector(`input[name="${name}"][value="perhe"]`);
-            const personBoxes = Array.from(form.querySelectorAll(`input[name="${name}"]:not([value="perhe"])`));
+            const perheBox = form.querySelector('input[name="f-ketakoskee"][value="perhe"]');
+            const personBoxes = Array.from(form.querySelectorAll('input[name="f-ketakoskee"]:not([value="perhe"])'));
             if (e.target.value === 'perhe') {
                 personBoxes.forEach(box => box.checked = e.target.checked);
             } else {
@@ -243,151 +364,67 @@ function lisaaKuuntelijat() {
             }
         });
     });
-    avaaMenneetModalBtn.addEventListener('click', avaaMenneetModal);
-    suljeMenneetModalBtn.addEventListener('click', suljeMenneetModal);
-    menneetTapahtumatModal.addEventListener('click', (e) => { if(e.target === menneetTapahtumatModal) suljeMenneetModal() });
-    menneetHakuKentta.addEventListener('input', () => {
-        menneetSivu = 0;
-        naytaMenneetTapahtumat();
+
+    // Laajuusdialogi
+    sheetLaajuus.addEventListener('click', (e) => { if (e.target === sheetLaajuus) suljeSheet(sheetLaajuus); });
+    document.getElementById('peruuta-laajuus-btn').addEventListener('click', () => suljeSheet(sheetLaajuus));
+    document.getElementById('vahvista-laajuus-btn').addEventListener('click', () => {
+        const laajuus = document.querySelector('input[name="laajuus"]:checked').value;
+        suljeSheet(sheetLaajuus);
+        if (laajuusCallback) { laajuusCallback(laajuus); laajuusCallback = null; }
     });
-    edellinenSivuBtn.addEventListener('click', () => {
-        if (menneetSivu > 0) {
-            menneetSivu--;
-            naytaMenneetTapahtumat();
-        }
+
+    // Menneet
+    avaaMenneetBtn.addEventListener('click', avaaMenneet);
+    document.getElementById('asetukset-menneet-btn').addEventListener('click', () => { suljeSheet(sheetAsetukset); avaaMenneet(); });
+    document.getElementById('sulje-menneet-modal-btn').addEventListener('click', () => suljeSheet(sheetMenneet));
+    sheetMenneet.addEventListener('click', (e) => { if (e.target === sheetMenneet) suljeSheet(sheetMenneet); });
+    menneetHakuKentta.addEventListener('input', () => { menneetSivu = 0; naytaMenneetTapahtumat(); });
+    edellinenSivuBtn.addEventListener('click', () => { if (menneetSivu > 0) { menneetSivu--; naytaMenneetTapahtumat(); } });
+    seuraavaSivuBtn.addEventListener('click', () => { menneetSivu++; naytaMenneetTapahtumat(); });
+
+    // Tehtävät
+    lisaaTehtavaNappi.addEventListener('click', lisaaTehtava);
+    uusiTehtavaTeksti.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); lisaaTehtava(); } });
+    tehtavalistaToggle.addEventListener('click', () => tehtavalistaSisalto.classList.toggle('hidden'));
+    document.getElementById('lisaa-tehtava-henkilot').addEventListener('click', (e) => {
+        if (e.target.classList.contains('assign-btn')) e.target.classList.toggle('active');
     });
-    seuraavaSivuBtn.addEventListener('click', () => {
-        menneetSivu++;
-        naytaMenneetTapahtumat();
+    document.getElementById('lisaa-maarapaiva-toggle').addEventListener('change', (e) => {
+        document.getElementById('uusi-tehtava-maarapaiva').classList.toggle('hidden', !e.target.checked);
     });
     avaaArkistoBtn.addEventListener('click', avaaArkisto);
-    suljeArkistoModalBtn.addEventListener('click', () => tehtavaArkistoModal.classList.add('hidden'));
-    tehtavaArkistoModal.addEventListener('click', (e) => { if(e.target === tehtavaArkistoModal) tehtavaArkistoModal.classList.add('hidden') });
-    lisaaMaarapaivaToggle.addEventListener('change', (e) => {
-        uusiTehtavaMaarapaiva.classList.toggle('hidden', !e.target.checked);
+    document.getElementById('sulje-arkisto-modal-btn').addEventListener('click', () => suljeSheet(sheetArkisto));
+    sheetArkisto.addEventListener('click', (e) => { if (e.target === sheetArkisto) suljeSheet(sheetArkisto); });
+
+    // Välilehdet
+    tabbar.addEventListener('click', (e) => {
+        const btn = e.target.closest('.tab-btn');
+        if (!btn) return;
+        if (btn.dataset.panel === 'asetukset') { avaaSheet(sheetAsetukset); return; }
+        vaihdaPaneli(btn.dataset.panel);
     });
-    
-    // Poistodialogin event listenerit
-    document.getElementById('sulje-poista-toistuva-btn').addEventListener('click', suljePoistaToistuvaDialogi);
-    document.getElementById('peruuta-poista-toistuva-btn').addEventListener('click', suljePoistaToistuvaDialogi);
-    document.getElementById('vahvista-poista-toistuva-btn').addEventListener('click', vahvistaPoistaToistuva);
-    document.getElementById('poista-toistuva-modal').addEventListener('click', (e) => {
-        if (e.target.id === 'poista-toistuva-modal') {
-            suljePoistaToistuvaDialogi();
-        }
+
+    // Asetukset: teema + muistutukset
+    document.getElementById('teema-valitsin').addEventListener('click', (e) => {
+        const btn = e.target.closest('.seg-btn');
+        if (btn) { asetaTeema(btn.dataset.teema); paivitaNakyma(); naytaTulevat(); piirraTehtavalista(); }
     });
-}
-
-function avaaMenneetModal() {
-    menneetSivu = 0;
-    menneetHakuKentta.value = '';
-    naytaMenneetTapahtumat();
-    menneetTapahtumatModal.classList.remove('hidden');
-}
-
-function suljeMenneetModal() {
-    menneetTapahtumatModal.classList.add('hidden');
-}
-
-function naytaMenneetTapahtumat() {
-    if (!window.kaikkiTapahtumat) return;
-    const hakutermi = menneetHakuKentta.value.toLowerCase().trim();
-    const nyt = new Date();
-    const kaikkiMenneet = window.kaikkiTapahtumat
-        .filter(t => {
-            const onMennossa = new Date(t.loppu) < nyt;
-            if (!onMennossa || !t.nakyvyys?.[nykyinenKayttaja]) return false;
-            if (hakutermi) {
-                const otsikko = (t.otsikko || '').toLowerCase();
-                const kuvaus = (t.kuvaus || '').toLowerCase();
-                return otsikko.includes(hakutermi) || kuvaus.includes(hakutermi);
-            }
-            return true;
-        })
-        .sort((a, b) => new Date(b.alku) - new Date(a.alku));
-    const sivujaYhteensa = Math.ceil(kaikkiMenneet.length / TAPAHTUMIA_PER_SIVU);
-    const alkuIndeksi = menneetSivu * TAPAHTUMIA_PER_SIVU;
-    const sivunTapahtumat = kaikkiMenneet.slice(alkuIndeksi, alkuIndeksi + TAPAHTUMIA_PER_SIVU);
-    sivuInfo.textContent = `Sivu ${menneetSivu + 1} / ${sivujaYhteensa || 1}`;
-    edellinenSivuBtn.disabled = menneetSivu === 0;
-    seuraavaSivuBtn.disabled = menneetSivu + 1 >= sivujaYhteensa;
-    menneetTapahtumatLista.innerHTML = '';
-    if (sivunTapahtumat.length === 0) {
-        menneetTapahtumatLista.innerHTML = `<p style="text-align:center; opacity:0.7;">${hakutermi ? 'Haulla ei löytynyt' : 'Ei'} menneitä tapahtumia.</p>`;
-        return;
-    }
-    sivunTapahtumat.forEach(tapahtuma => {
-        const alku = new Date(tapahtuma.alku);
-        const loppu = new Date(tapahtuma.loppu);
-        let aikaTeksti;
-        const alkuPvmStr = alku.toLocaleDateString('fi-FI', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric' });
-        if (alku.toLocaleDateString() !== loppu.toLocaleDateString()) {
-            const loppuPvmStr = loppu.toLocaleDateString('fi-FI', { day: 'numeric', month: 'numeric', year: 'numeric' });
-            aikaTeksti = `${alkuPvmStr} - ${loppuPvmStr}`;
-        } else if (tapahtuma.kokoPaiva) {
-            aikaTeksti = `${alkuPvmStr}, Koko päivän`;
-        } else {
-            const alkuAika = alku.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
-            const loppuAika = loppu.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
-            aikaTeksti = `${alkuPvmStr} ${alkuAika} - ${loppuAika}`;
-        }
-        const item = document.createElement('div');
-        item.className = 'tuleva-tapahtuma-item';
-        const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
-        if (tiedot.type === 'class') {
-            item.classList.add(tiedot.value);
-        } else {
-            item.style.background = tiedot.value;
-        }
-        item.innerHTML = `
-            <div class="tapahtuma-item-luoja">${tiedot.initialit}</div>
-            <div class="tapahtuma-item-tiedot">
-                <div class="tapahtuma-item-aika">${aikaTeksti}</div>
-                <div class="tapahtuma-item-otsikko">${tapahtuma.otsikko}</div>
-            </div>
-        `;
-        item.addEventListener('click', () => {
-            suljeMenneetModal();
-            avaaTapahtumaIkkuna(tapahtuma.key);
-        });
-        menneetTapahtumatLista.appendChild(item);
+    document.getElementById('muistutukset-toggle').addEventListener('change', tallennaMuistutusAsetuksetUI);
+    document.getElementById('muistutus-ajoitus').addEventListener('change', tallennaMuistutusAsetuksetUI);
+    document.getElementById('tehtava-muistutukset-toggle').addEventListener('change', tallennaMuistutusAsetuksetUI);
+    document.getElementById('testaa-muistutus-btn').addEventListener('click', () => {
+        lahetaMuistutus('Testimuistutus', 'Näin muistutukset näyttävät. 🔔');
     });
+
+    lisaaEleetJaSheetKahvat();
 }
 
-function handleLogin(event) {
-    event.preventDefault();
-    const email = document.getElementById('login-email').value;
-    const pass = document.getElementById('login-password').value;
-    const loginError = document.getElementById('login-error');
-    signInWithEmailAndPassword(auth, email, pass)
-        .then(() => {
-            loginError.classList.add('hidden');
-            loginForm.reset();
-        })
-        .catch((error) => {
-            console.error("Kirjautumisvirhe:", error.message);
-            loginError.classList.remove('hidden');
-        });
+function haeTapahtuma(key) {
+    return window.kaikkiTapahtumat ? window.kaikkiTapahtumat.find(t => t.key === key) : null;
 }
 
-function handleLogout() {
-    signOut(auth).catch(error => console.error("Uloskirjautumisvirhe:", error));
-}
-
-function startAppForUser(userName) {
-    if (nykyinenKayttaja === userName && !mainContainer.classList.contains('hidden')) return;
-    nykyinenKayttaja = userName;
-    mainContainer.classList.remove('hidden');
-    loginOverlay.classList.add('hidden');
-    currentUserName.textContent = nykyinenKayttaja;
-    applyTheme(nykyinenKayttaja);
-    paivitaTanaanBanneri();
-    setInterval(paivitaTanaanBanneri, 60000); 
-    sivupalkki.classList.add('hidden');
-    kuunteleTapahtumia();
-    kuunteleTehtavia();
-}
-
+// ============ FIREBASE-KUUNTELU ============
 function kuunteleTapahtumia() {
     if (unsubscribeFromEvents) unsubscribeFromEvents();
     const tapahtumatRef = ref(database, 'tapahtumat');
@@ -396,626 +433,8 @@ function kuunteleTapahtumia() {
         snapshot.forEach((child) => {
             window.kaikkiTapahtumat.push({ key: child.key, ...child.val() });
         });
-        piirraKalenteri();
-        naytaTulevatTapahtumat();
-    });
-}
-
-function toggleLoppuAika(isChecked, containerId) {
-    const container = document.getElementById(containerId);
-    const input = container.querySelector('input[type="datetime-local"]');
-    if (isChecked) {
-        container.classList.add('hidden');
-        input.required = false;
-    } else {
-        container.classList.remove('hidden');
-        input.required = true;
-    }
-}
-
-function handlePaivaClick(event) {
-    const paivaEl = event.target.closest('.paiva');
-    if (!paivaEl || paivaEl.classList.contains('tyhja') || event.target.closest('.tapahtuma-kuvake') || event.target.closest('.tapahtuma-palkki')) {
-        return;
-    }
-    const pvmString = paivaEl.dataset.paivamaara;
-    if (!pvmString) return;
-    sivupalkki.classList.remove('hidden');
-    const alkuInput = document.getElementById('tapahtuma-alku');
-    const loppuInput = document.getElementById('tapahtuma-loppu');
-    const oletusAika = "T09:00";
-    alkuInput.value = pvmString + oletusAika;
-    loppuInput.value = pvmString + oletusAika;
-    loppuInput.min = alkuInput.value;
-    document.getElementById('tapahtuma-otsikko').focus();
-}
-
-function applyTheme(user) {
-    document.body.className = '';
-    document.body.classList.add(`theme-${user.toLowerCase()}`);
-}
-
-function getWeekNumber(d) {
-    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-}
-
-function paivitaTanaanBanneri() {
-    const tanaanBanneri = document.getElementById('tanaan-banneri');
-    if (tanaanBanneri) {
-        const nyt = new Date();
-        const viikonpaiva = nyt.toLocaleDateString('fi-FI', { weekday: 'long' });
-        const paivamaara = nyt.toLocaleDateString('fi-FI', { day: 'numeric', month: 'long' });
-        const aika = nyt.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        tanaanBanneri.innerHTML = `Tänään on ${viikonpaiva} ${paivamaara}, kello on ${aika}`;
-    }
-}
-
-function naytaIlmoitus(viesti) {
-    const ilmoitus = document.getElementById('ilmoitus');
-    ilmoitus.textContent = viesti;
-    ilmoitus.classList.add('nayta');
-    setTimeout(() => {
-        ilmoitus.classList.remove('nayta');
-    }, 3000);
-}
-
-function piirraKalenteri() {
-    kalenteriGrid.innerHTML = '';
-    kalenteriPaivatOtsikot.innerHTML = '';
-    kalenteriPaivatOtsikot.insertAdjacentHTML('beforeend', '<div class="viikonpaiva"></div>');
-    ['Ma', 'Ti', 'Ke', 'To', 'Pe', 'La', 'Su'].forEach(p => kalenteriPaivatOtsikot.insertAdjacentHTML('beforeend', `<div class="viikonpaiva">${p}</div>`));
-    const vuosi = nykyinenPaiva.getFullYear();
-    const kuukausi = nykyinenPaiva.getMonth();
-    kuukausiOtsikko.textContent = `${nykyinenPaiva.toLocaleString('fi-FI', { month: 'long' })} ${vuosi}`;
-    const ekaKuunPaiva = new Date(vuosi, kuukausi, 1);
-    const nyt = new Date();
-    const tanaanString = `${nyt.getFullYear()}-${String(nyt.getMonth() + 1).padStart(2, '0')}-${String(nyt.getDate()).padStart(2, '0')}`;
-    const paivaViikossa = ekaKuunPaiva.getDay() === 0 ? 7 : ekaKuunPaiva.getDay();
-    const kalenterinAloitus = new Date(ekaKuunPaiva);
-    kalenterinAloitus.setDate(ekaKuunPaiva.getDate() - (paivaViikossa - 1));
-    let paivaIt = new Date(kalenterinAloitus);
-    for (let i = 0; i < 6; i++) {
-        kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="viikko-nro">${getWeekNumber(paivaIt)}</div>`);
-        for (let j = 0; j < 7; j++) {
-            const pvmString = `${paivaIt.getFullYear()}-${String(paivaIt.getMonth() + 1).padStart(2, '0')}-${String(paivaIt.getDate()).padStart(2, '0')}`;
-            let paivaLuokat = "paiva";
-            if (paivaIt.getMonth() !== kuukausi) paivaLuokat += " tyhja";
-            if (pvmString === tanaanString) paivaLuokat += " tanaan";
-            kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="${paivaLuokat}" data-paivamaara="${pvmString}"><div class="paiva-numero">${paivaIt.getDate()}</div><div class="tapahtumat-container"></div></div>`);
-            paivaIt.setDate(paivaIt.getDate() + 1);
-        }
-        if (paivaIt.getMonth() !== kuukausi && paivaIt.getDay() === 1) break;
-    }
-    naytaTapahtumatKalenterissa();
-    korostaHakuOsumatKalenterissa();
-}
-
-function lisaaTapahtuma() {
-    const kokoPaivaCheckbox = document.getElementById('tapahtuma-koko-paiva');
-    const alkuInput = document.getElementById('tapahtuma-alku');
-    let alkuAika, loppuAika;
-    if (kokoPaivaCheckbox.checked) {
-        const paivamaara = alkuInput.value.substring(0, 10);
-        if(!paivamaara) return alert('Valitse päivämäärä ensin, tai poista "Koko päivän" valinta.');
-        alkuAika = `${paivamaara}T00:00`;
-        loppuAika = `${document.getElementById('tapahtuma-loppu').value.substring(0,10)}T23:59`;
-    } else {
-        alkuAika = alkuInput.value;
-        loppuAika = document.getElementById('tapahtuma-loppu').value;
-    }
-    const koskeeValinnat = Array.from(document.querySelectorAll('input[name="lisaa-ketakoskee"]:checked')).map(cb => cb.value).filter(value => value !== 'perhe');
-    if (koskeeValinnat.length === 0 && document.querySelector('input[name="lisaa-ketakoskee"][value="perhe"]:checked')) {
-        koskeeValinnat.push('perhe');
-    }
-    // Kerää toistumisasetukset
-    const toistuminen = {
-        tyyppi: document.getElementById('toistuminen-tyyppi').value,
-        paattyy: document.getElementById('toistuminen-paattyy').value || null
-    };
-    
-    const uusi = {
-        otsikko: document.getElementById('tapahtuma-otsikko').value,
-        kuvaus: document.getElementById('tapahtuma-kuvaus').value,
-        alku: alkuAika, loppu: loppuAika, kokoPaiva: kokoPaivaCheckbox.checked,
-        linkki: document.getElementById('tapahtuma-linkki').value,
-        luoja: nykyinenKayttaja, ketakoskee: koskeeValinnat,
-        nakyvyys: Array.from(document.querySelectorAll('input[name="nakyvyys"]:checked')).reduce((a, c) => ({ ...a, [c.value]: true }), {}),
-        toistuminen: toistuminen
-    };
-    if (!uusi.otsikko || !uusi.alku || !uusi.loppu || koskeeValinnat.length === 0) return alert('Täytä vähintään otsikko, päivämäärä ja ketä tapahtuma koskee.');
-    
-    // Luo toistuvat tapahtumat
-    if (toistuminen.tyyppi !== 'ei') {
-        luoToistuvatTapahtumat(uusi);
-    } else {
-        push(ref(database, 'tapahtumat'), uusi).then(() => {
-            lisaaLomake.reset();
-            sivupalkki.classList.add('hidden');
-            toggleLoppuAika(false, 'loppu-aika-lisaa-container');
-            naytaIlmoitus('Tapahtuma lisätty onnistuneesti!');
-        });
-    }
-}
-
-// Luo toistuvat tapahtumat
-function luoToistuvatTapahtumat(perusTapahtuma) {
-    const toistuminen = perusTapahtuma.toistuminen;
-    const alkuPvm = new Date(perusTapahtuma.alku);
-    const loppuPvm = new Date(perusTapahtuma.loppu);
-    const paattyyPvm = toistuminen.paattyy ? new Date(toistuminen.paattyy) : null;
-    
-    // Luo uniikki sarja-ID
-    const sarjaId = 'sarja_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    
-    const tapahtumat = [];
-    let nykyinenPvm = new Date(alkuPvm);
-    let sarjaIndeksi = 0;
-    
-    while ((!paattyyPvm || nykyinenPvm <= paattyyPvm) && tapahtumat.length < 100) { // Rajoitus 100 tapahtumaan
-        const tapahtuma = { ...perusTapahtuma };
-        
-        // Laske uudet aikaleimat
-        const kestoMs = loppuPvm.getTime() - alkuPvm.getTime();
-        tapahtuma.alku = nykyinenPvm.toISOString();
-        tapahtuma.loppu = new Date(nykyinenPvm.getTime() + kestoMs).toISOString();
-        
-        // Lisää sarjatunnisteet
-        tapahtuma.sarjaId = sarjaId;
-        tapahtuma.sarjaIndeksi = sarjaIndeksi;
-        tapahtuma.onToistuva = true;
-        
-        // Poista toistumistiedot (ei tarvita yksittäisissä tapahtumissa)
-        delete tapahtuma.toistuminen;
-        
-        tapahtumat.push(tapahtuma);
-        sarjaIndeksi++;
-        
-        // Siirry seuraavaan toistumiseen
-        switch (toistuminen.tyyppi) {
-            case 'paivittain':
-                nykyinenPvm.setDate(nykyinenPvm.getDate() + 1);
-                break;
-            case 'viikoittain':
-                nykyinenPvm.setDate(nykyinenPvm.getDate() + 7);
-                break;
-            case 'kuukausittain':
-                nykyinenPvm.setMonth(nykyinenPvm.getMonth() + 1);
-                break;
-        }
-    }
-    
-    // Tallenna kaikki tapahtumat kerralla
-    const tallennusPromises = tapahtumat.map(tapahtuma => 
-        push(ref(database, 'tapahtumat'), tapahtuma)
-    );
-    
-    Promise.all(tallennusPromises).then(() => {
-        lisaaLomake.reset();
-        sivupalkki.classList.add('hidden');
-        toggleLoppuAika(false, 'loppu-aika-lisaa-container');
-        naytaIlmoitus(`Luotu ${tapahtumat.length} toistuvaa tapahtumaa!`);
-    }).catch(error => {
-        console.error('Toistuvien tapahtumien luonti epäonnistui:', error);
-        naytaIlmoitus('Virhe toistuvien tapahtumien luonnissa!');
-    });
-}
-
-function luoKoskeeTiedot(ketakoskee) {
-    if (!Array.isArray(ketakoskee) || ketakoskee.length === 0) {
-        const nimi = typeof ketakoskee === 'string' ? ketakoskee : 'perhe';
-        return { initialit: nimi.charAt(0).toUpperCase(), type: 'class', value: `koskee-${nimi.toLowerCase()}` };
-    }
-    if (ketakoskee.includes('perhe') || ketakoskee.length >= 3) {
-        return { initialit: 'P', type: 'class', value: 'koskee-perhe' };
-    }
-    if (ketakoskee.length === 1) {
-        const nimi = ketakoskee[0];
-        return { initialit: nimi.charAt(0).toUpperCase(), type: 'class', value: `koskee-${nimi.toLowerCase()}` };
-    }
-    const sortedNames = ketakoskee.sort();
-    const initialit = sortedNames.map(nimi => nimi.charAt(0).toUpperCase()).join('');
-    const varit = sortedNames.map(nimi => KAYTTAJA_VARIT[nimi] || '#333');
-    return { initialit: initialit, type: 'style', value: `linear-gradient(45deg, ${varit.join(', ')})` };
-}
-
-function naytaTapahtumatKalenterissa() {
-    document.querySelectorAll('.tapahtumat-container').forEach(c => c.innerHTML = '');
-    if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
-    const nakyvatTapahtumat = window.kaikkiTapahtumat.filter(t => t.nakyvyys?.[nykyinenKayttaja] && t.alku);
-    nakyvatTapahtumat.forEach(tapahtuma => {
-        const alkuPvm = new Date(tapahtuma.alku);
-        const loppuPvm = new Date(tapahtuma.loppu);
-        const alkuAikaNolla = new Date(alkuPvm).setHours(0,0,0,0);
-        const loppuAikaNolla = new Date(loppuPvm).setHours(0,0,0,0);
-        const onMonipaivainenTaiKokoPaiva = alkuAikaNolla !== loppuAikaNolla || tapahtuma.kokoPaiva;
-        if (onMonipaivainenTaiKokoPaiva) {
-            let currentDate = new Date(alkuAikaNolla);
-            const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
-            while (currentDate <= loppuAikaNolla) {
-                const pvmString = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
-                const paivaEl = document.querySelector(`.paiva[data-paivamaara="${pvmString}"]`);
-                if (paivaEl) {
-                    const palkki = document.createElement('div');
-                    palkki.className = 'tapahtuma-palkki';
-                    palkki.title = tapahtuma.otsikko;
-                    if (tiedot.type === 'class') {
-                        const key = tiedot.value.replace('koskee-', '');
-                        const capitalizedKey = key.charAt(0).toUpperCase() + key.slice(1);
-                        palkki.style.backgroundColor = KAYTTAJA_VARIT[capitalizedKey] || KAYTTAJA_VARIT.perhe;
-                    } else {
-                        palkki.style.background = tiedot.value;
-                    }
-                    if (currentDate.getTime() === alkuAikaNolla) {
-                         palkki.textContent = tiedot.initialit;
-                    } else {
-                        palkki.innerHTML = '&gt;';
-                    }
-                    palkki.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        avaaTapahtumaIkkuna(tapahtuma.key);
-                    });
-                    paivaEl.querySelector('.tapahtumat-container').appendChild(palkki);
-                }
-                currentDate.setDate(currentDate.getDate() + 1);
-            }
-        }
-    });
-    nakyvatTapahtumat.forEach(tapahtuma => {
-        const alkuPvm = new Date(tapahtuma.alku);
-        const loppuPvm = new Date(tapahtuma.loppu);
-        const alkuAikaNolla = new Date(alkuPvm).setHours(0,0,0,0);
-        const loppuAikaNolla = new Date(loppuPvm).setHours(0,0,0,0);
-        const onYksittainenJaAjastettu = alkuAikaNolla === loppuAikaNolla && !tapahtuma.kokoPaiva;
-        if (onYksittainenJaAjastettu) {
-            const paivaEl = document.querySelector(`.paiva[data-paivamaara="${tapahtuma.alku.substring(0, 10)}"]`);
-            if (paivaEl) {
-                const kuvake = document.createElement('div');
-                kuvake.title = tapahtuma.otsikko;
-                const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
-                kuvake.textContent = tiedot.initialit;
-                kuvake.className = 'tapahtuma-kuvake';
-                if (tiedot.type === 'class') {
-                    kuvake.classList.add(tiedot.value);
-                } else {
-                    kuvake.style.background = tiedot.value;
-                }
-                kuvake.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    avaaTapahtumaIkkuna(tapahtuma.key);
-                });
-                paivaEl.querySelector('.tapahtumat-container').appendChild(kuvake);
-            }
-        }
-    });
-}
-
-function naytaTulevatTapahtumat() {
-    tulevatTapahtumatLista.innerHTML = '';
-    if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return;
-    const hakutermi = hakuKentta.value.toLowerCase();
-    const nyt = new Date();
-    const aktiivisetSuotimet = Array.from(tulevatSuodatin.querySelectorAll('.filter-btn.active')).map(btn => btn.dataset.filter);
-    const suodatetutTulevat = window.kaikkiTapahtumat.filter(t => {
-        const nakyvyysJaAikaOk = t.nakyvyys?.[nykyinenKayttaja] && new Date(t.loppu) >= nyt;
-        if (!nakyvyysJaAikaOk) return false;
-        if (hakutermi) {
-            const otsikko = (t.otsikko || '').toLowerCase();
-            const kuvaus = (t.kuvaus || '').toLowerCase();
-            if (!otsikko.includes(hakutermi) && !kuvaus.includes(hakutermi)) {
-                return false;
-            }
-        }
-        if (aktiivisetSuotimet.includes('kaikki')) {
-            return true;
-        }
-        const ketakoskee = Array.isArray(t.ketakoskee) ? t.ketakoskee : [String(t.ketakoskee)];
-        return aktiivisetSuotimet.every(suodin => ketakoskee.includes(suodin));
-    }).sort((a, b) => new Date(a.alku) - new Date(b.alku));
-    const sivujaYhteensa = Math.ceil(suodatetutTulevat.length / TAPAHTUMIA_PER_SIVU);
-    if (sivujaYhteensa > 1) {
-        tulevatPaginationControls.classList.remove('hidden');
-        tulevatSivuInfo.textContent = `Sivu ${tulevatSivu + 1} / ${sivujaYhteensa}`;
-        tulevatEdellinenSivuBtn.disabled = tulevatSivu === 0;
-        tulevatSeuraavaSivuBtn.disabled = tulevatSivu + 1 >= sivujaYhteensa;
-    } else {
-        tulevatPaginationControls.classList.add('hidden');
-    }
-    const alkuIndeksi = tulevatSivu * TAPAHTUMIA_PER_SIVU;
-    const sivunTapahtumat = suodatetutTulevat.slice(alkuIndeksi, alkuIndeksi + TAPAHTUMIA_PER_SIVU);
-    if (sivunTapahtumat.length === 0) {
-        tulevatTapahtumatLista.innerHTML = `<p>Valinnoilla ei löytynyt tulevia tapahtumia.</p>`;
-        return;
-    }
-    sivunTapahtumat.forEach(tapahtuma => {
-        const alku = new Date(tapahtuma.alku);
-        const loppu = new Date(tapahtuma.loppu);
-        let aikaTeksti;
-        const alkuPvmStr = alku.toLocaleDateString('fi-FI', { weekday: 'short', day: 'numeric', month: 'numeric' });
-        if (alku.toLocaleDateString() !== loppu.toLocaleDateString()) {
-            const loppuPvmStr = loppu.toLocaleDateString('fi-FI', { day: 'numeric', month: 'numeric' });
-            aikaTeksti = `${alkuPvmStr} - ${loppuPvmStr}`;
-        } else if (tapahtuma.kokoPaiva) {
-            aikaTeksti = `${alkuPvmStr}, Koko päivän`;
-        } else {
-            const alkuAika = alku.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
-            const loppuAika = loppu.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
-            aikaTeksti = `${alkuPvmStr} ${alkuAika} - ${loppuAika}`;
-        }
-        const item = document.createElement('div');
-        item.className = 'tuleva-tapahtuma-item';
-        const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
-        if (tiedot.type === 'class') {
-            item.classList.add(tiedot.value);
-        } else {
-            item.style.background = tiedot.value;
-        }
-        item.innerHTML = `<div class="tapahtuma-item-luoja">${tiedot.initialit}</div><div class="tapahtuma-item-tiedot"><div class="tapahtuma-item-aika">${aikaTeksti}</div><div class="tapahtuma-item-otsikko">${tapahtuma.otsikko}</div></div>`;
-        item.addEventListener('click', () => avaaTapahtumaIkkuna(tapahtuma.key));
-        tulevatTapahtumatLista.appendChild(item);
-    });
-}
-
-function korostaHakuOsumatKalenterissa() {
-    document.querySelectorAll('.paiva.haku-osuma').forEach(el => el.classList.remove('haku-osuma'));
-    const hakutermi = hakuKentta.value.toLowerCase().trim();
-    if (hakutermi === '' || !window.kaikkiTapahtumat) return;
-    const osumat = window.kaikkiTapahtumat.filter(t => {
-        if (!t.nakyvyys?.[nykyinenKayttaja]) return false;
-        const otsikko = (t.otsikko || '').toLowerCase();
-        const kuvaus = (t.kuvaus || '').toLowerCase();
-        return otsikko.includes(hakutermi) || kuvaus.includes(hakutermi);
-    });
-    osumat.forEach(tapahtuma => {
-        const paivaEl = document.querySelector(`.paiva[data-paivamaara="${tapahtuma.alku.substring(0, 10)}"]`);
-        if (paivaEl) paivaEl.classList.add('haku-osuma');
-    });
-}
-
-function avaaTapahtumaIkkuna(key) {
-    const tapahtuma = window.kaikkiTapahtumat.find(t => t.key === key);
-    if (!tapahtuma) return;
-    modalOverlay.dataset.tapahtumaId = key;
-    document.getElementById('view-otsikko').textContent = tapahtuma.otsikko;
-    const kuvausElementti = document.getElementById('view-kuvaus');
-    const kuvausTeksti = tapahtuma.kuvaus || 'Ei lisätietoja.';
-    kuvausElementti.innerHTML = linkify(kuvausTeksti);
-    document.getElementById('view-luoja').textContent = tapahtuma.luoja;
-    document.getElementById('view-nakyvyys').textContent = Object.keys(tapahtuma.nakyvyys || {}).filter(k => tapahtuma.nakyvyys[k]).join(', ');
-    const koskeeSpan = document.getElementById('view-koskee');
-    const koskeeTieto = Array.isArray(tapahtuma.ketakoskee) ? tapahtuma.ketakoskee : [String(tapahtuma.ketakoskee)];
-    koskeeSpan.textContent = (koskeeTieto.includes('perhe') || koskeeTieto.length >= 3) ? 'Koko perhe' : koskeeTieto.join(', ');
-    const alkuPvm = new Date(tapahtuma.alku);
-    const loppuPvm = new Date(tapahtuma.loppu);
-    const onMonipaivainenTaiKokoPaiva = tapahtuma.kokoPaiva || (new Date(loppuPvm).setHours(0,0,0,0) > new Date(alkuPvm).setHours(0,0,0,0));
-    if (onMonipaivainenTaiKokoPaiva) {
-        const alkuPvmStr = new Date(tapahtuma.alku).toLocaleDateString('fi-FI', { day: 'numeric', month: 'long' });
-        const loppuPvmStr = new Date(tapahtuma.loppu).toLocaleDateString('fi-FI', { day: 'numeric', month: 'long', year: 'numeric' });
-        document.getElementById('view-aika').textContent = `${alkuPvmStr} - ${loppuPvmStr}`;
-    } else {
-        const options = { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' };
-        document.getElementById('view-aika').textContent = `${new Date(tapahtuma.alku).toLocaleString('fi-FI', options)} - ${new Date(tapahtuma.loppu).toLocaleString('fi-FI', options)}`;
-    }
-    const linkkiContainer = document.getElementById('view-linkki-container');
-    if (tapahtuma.linkki) {
-        document.getElementById('view-linkki').href = tapahtuma.linkki;
-        linkkiContainer.classList.remove('hidden');
-    } else {
-        linkkiContainer.classList.add('hidden');
-    }
-    document.getElementById('muokkaa-tapahtuma-id').value = key;
-    document.getElementById('muokkaa-tapahtuma-otsikko').value = tapahtuma.otsikko;
-    document.getElementById('muokkaa-tapahtuma-kuvaus').value = tapahtuma.kuvaus || '';
-    document.getElementById('muokkaa-tapahtuma-alku').value = tapahtuma.alku;
-    document.getElementById('muokkaa-tapahtuma-loppu').value = tapahtuma.loppu;
-    document.getElementById('muokkaa-tapahtuma-linkki').value = tapahtuma.linkki || '';
-    const muokkaaKokoPaivaCheckbox = document.getElementById('muokkaa-tapahtuma-koko-paiva');
-    muokkaaKokoPaivaCheckbox.checked = !!tapahtuma.kokoPaiva;
-    toggleLoppuAika(muokkaaKokoPaivaCheckbox.checked, 'loppu-aika-muokkaa-container');
-    document.querySelectorAll('input[name="muokkaa-nakyvyys"]').forEach(cb => {
-       cb.checked = !!tapahtuma.nakyvyys?.[cb.value];
-    });
-    const ketakoskee = Array.isArray(tapahtuma.ketakoskee) ? tapahtuma.ketakoskee : [String(tapahtuma.ketakoskee)];
-    document.querySelectorAll('input[name="muokkaa-ketakoskee"]').forEach(cb => {
-        cb.checked = ketakoskee.includes(cb.value);
-    });
-    const perheBox = document.querySelector('input[name="muokkaa-ketakoskee"][value="perhe"]');
-    const personBoxes = Array.from(document.querySelectorAll('input[name="muokkaa-ketakoskee"]:not([value="perhe"])'));
-    if (ketakoskee.includes('perhe')) {
-        perheBox.checked = true;
-        personBoxes.forEach(box => box.checked = true);
-    } else {
-        perheBox.checked = personBoxes.every(box => box.checked);
-    }
-    
-    // Täytä toistumisasetukset
-    const toistuminen = tapahtuma.toistuminen || {};
-    document.getElementById('muokkaa-toistuminen-tyyppi').value = toistuminen.tyyppi || 'ei';
-    document.getElementById('muokkaa-toistuminen-paattyy').value = toistuminen.paattyy || '';
-    
-    vaihdaTila('view');
-    modalOverlay.classList.remove('hidden');
-}
-
-function suljeTapahtumaIkkuna() {
-    modalOverlay.classList.add('hidden');
-}
-
-function vaihdaTila(tila) {
-    if (tila === 'edit') {
-        modalViewContent.classList.add('hidden');
-        modalEditContent.classList.remove('hidden');
-    } else {
-        modalEditContent.classList.add('hidden');
-        modalViewContent.classList.remove('hidden');
-    }
-}
-
-function tallennaMuutokset() {
-    const key = modalOverlay.dataset.tapahtumaId;
-    const vanhaTapahtuma = window.kaikkiTapahtumat.find(t => t.key === key);
-    const kokoPaivaCheckbox = document.getElementById('muokkaa-tapahtuma-koko-paiva');
-    const alkuInput = document.getElementById('muokkaa-tapahtuma-alku');
-    let alkuAika, loppuAika;
-    if (kokoPaivaCheckbox.checked) {
-        const paivamaara = alkuInput.value.substring(0, 10);
-        alkuAika = `${paivamaara}T00:00`;
-        loppuAika = `${document.getElementById('muokkaa-tapahtuma-loppu').value.substring(0,10)}T23:59`;
-    } else {
-        alkuAika = alkuInput.value;
-        loppuAika = document.getElementById('muokkaa-tapahtuma-loppu').value;
-    }
-    const koskeeValinnat = Array.from(document.querySelectorAll('input[name="muokkaa-ketakoskee"]:checked')).map(cb => cb.value).filter(value => value !== 'perhe');
-    if (koskeeValinnat.length === 0 && document.querySelector('input[name="muokkaa-ketakoskee"][value="perhe"]:checked')) {
-        koskeeValinnat.push('perhe');
-    }
-    // Kerää toistumisasetukset
-    const toistuminen = {
-        tyyppi: document.getElementById('muokkaa-toistuminen-tyyppi').value,
-        paattyy: document.getElementById('muokkaa-toistuminen-paattyy').value || null
-    };
-    
-    const paivitys = {
-        otsikko: document.getElementById('muokkaa-tapahtuma-otsikko').value,
-        kuvaus: document.getElementById('muokkaa-tapahtuma-kuvaus').value,
-        alku: alkuAika, loppu: loppuAika, kokoPaiva: kokoPaivaCheckbox.checked,
-        linkki: document.getElementById('muokkaa-tapahtuma-linkki').value,
-        nakyvyys: Array.from(document.querySelectorAll('input[name="muokkaa-nakyvyys"]:checked')).reduce((a, c) => ({ ...a, [c.value]: true }), {}),
-        ketakoskee: koskeeValinnat, luoja: vanhaTapahtuma.luoja,
-        toistuminen: toistuminen
-    };
-    update(ref(database, `tapahtumat/${key}`), paivitys).then(() => {
-        const tapahtuma = window.kaikkiTapahtumat.find(t => t.key === key);
-        if (tapahtuma) Object.assign(tapahtuma, paivitys);
-        avaaTapahtumaIkkuna(key);
-        vaihdaTila('view');
-    });
-}
-
-function poistaTapahtuma() {
-    const key = modalOverlay.dataset.tapahtumaId;
-    const tapahtuma = window.kaikkiTapahtumat.find(t => t.key === key);
-    
-    if (!tapahtuma) return;
-    
-    // Jos tapahtuma on osa toistuvaa sarjaa, näytä poistodialogi
-    if (tapahtuma.onToistuva && tapahtuma.sarjaId) {
-        avaaPoistaToistuvaDialogi(tapahtuma);
-    } else {
-        // Normaali poisto
-        if (confirm('Haluatko varmasti poistaa tämän tapahtuman?')) {
-            remove(ref(database, `tapahtumat/${key}`)).then(() => {
-                suljeTapahtumaIkkuna();
-                naytaIlmoitus("Tapahtuma poistettu.");
-            });
-        }
-    }
-}
-
-// Toistuvan tapahtuman poistodialogi
-function avaaPoistaToistuvaDialogi(tapahtuma) {
-    const modal = document.getElementById('poista-toistuva-modal');
-    modal.dataset.tapahtumaId = tapahtuma.key;
-    modal.dataset.sarjaId = tapahtuma.sarjaId;
-    modal.dataset.sarjaIndeksi = tapahtuma.sarjaIndeksi;
-    
-    // Sulje tapahtumanäkymä
-    suljeTapahtumaIkkuna();
-    
-    // Näytä poistodialogi
-    modal.classList.remove('hidden');
-}
-
-function suljePoistaToistuvaDialogi() {
-    const modal = document.getElementById('poista-toistuva-modal');
-    modal.classList.add('hidden');
-    
-    // Tyhjennä dataset
-    delete modal.dataset.tapahtumaId;
-    delete modal.dataset.sarjaId;
-    delete modal.dataset.sarjaIndeksi;
-}
-
-function vahvistaPoistaToistuva() {
-    const modal = document.getElementById('poista-toistuva-modal');
-    const tapahtumaId = modal.dataset.tapahtumaId;
-    const sarjaId = modal.dataset.sarjaId;
-    const sarjaIndeksi = parseInt(modal.dataset.sarjaIndeksi);
-    
-    const valittuTapa = document.querySelector('input[name="poista-tapa"]:checked').value;
-    
-    switch (valittuTapa) {
-        case 'yksittainen':
-            poistaYksittainenTapahtuma(tapahtumaId);
-            break;
-        case 'tulevat':
-            poistaTulevatSarjasta(sarjaId, sarjaIndeksi);
-            break;
-        case 'koko-sarja':
-            poistaKokoSarja(sarjaId);
-            break;
-    }
-    
-    suljePoistaToistuvaDialogi();
-}
-
-function poistaYksittainenTapahtuma(tapahtumaId) {
-    remove(ref(database, `tapahtumat/${tapahtumaId}`)).then(() => {
-        naytaIlmoitus("Tapahtuma poistettu.");
-    });
-}
-
-function poistaTulevatSarjasta(sarjaId, indeksi) {
-    // Hae kaikki saman sarjan tapahtumat
-    const sarjanTapahtumat = window.kaikkiTapahtumat.filter(t => t.sarjaId === sarjaId);
-    
-    // Suodata tapahtumat joiden indeksi on >= nykyinen indeksi
-    const poistettavat = sarjanTapahtumat.filter(t => t.sarjaIndeksi >= indeksi);
-    
-    // Poista kaikki tapahtumat
-    const poistoPromises = poistettavat.map(tapahtuma => 
-        remove(ref(database, `tapahtumat/${tapahtuma.key}`))
-    );
-    
-    Promise.all(poistoPromises).then(() => {
-        naytaIlmoitus(`Poistettu ${poistettavat.length} tapahtumaa sarjasta.`);
-    });
-}
-
-function poistaKokoSarja(sarjaId) {
-    // Hae kaikki saman sarjan tapahtumat
-    const sarjanTapahtumat = window.kaikkiTapahtumat.filter(t => t.sarjaId === sarjaId);
-    
-    // Poista kaikki tapahtumat
-    const poistoPromises = sarjanTapahtumat.map(tapahtuma => 
-        remove(ref(database, `tapahtumat/${tapahtuma.key}`))
-    );
-    
-    Promise.all(poistoPromises).then(() => {
-        naytaIlmoitus(`Poistettu koko sarja (${sarjanTapahtumat.length} tapahtumaa).`);
-    });
-}
-
-function kopioiTapahtuma() {
-    const key = modalOverlay.dataset.tapahtumaId;
-    const tapahtuma = window.kaikkiTapahtumat.find(t => t.key === key);
-    if (!tapahtuma) return;
-    const uusiPvm = prompt("Anna uusi päivämäärä muodossa VVVV-KK-PP:", tapahtuma.alku.substring(0, 10));
-    if (!uusiPvm || !/^\d{4}-\d{2}-\d{2}$/.test(uusiPvm)) {
-        if (uusiPvm !== null) alert("Päivämäärä oli virheellinen. Kopiointia ei tehty.");
-        return;
-    }
-    const uusiTapahtuma = { ...tapahtuma };
-    delete uusiTapahtuma.key; 
-    uusiTapahtuma.alku = `${uusiPvm}${tapahtuma.alku.substring(10)}`;
-    uusiTapahtuma.loppu = `${uusiPvm}${tapahtuma.loppu.substring(10)}`;
-    push(ref(database, 'tapahtumat'), uusiTapahtuma).then(() => {
-        naytaIlmoitus(`Tapahtuma kopioitu päivälle ${uusiPvm}.`);
-        suljeTapahtumaIkkuna();
-    }).catch(error => {
-        console.error("Kopiointivirhe:", error);
+        piirraNakyma();
+        naytaTulevat();
     });
 }
 
@@ -1024,37 +443,846 @@ function kuunteleTehtavia() {
     const tehtavatRef = ref(database, 'tehtavalista');
     unsubscribeFromTasks = onValue(tehtavatRef, (snapshot) => {
         kaikkiTehtavat = [];
-        snapshot.forEach(child => {
-            kaikkiTehtavat.push({ key: child.key, ...child.val() });
-        });
+        snapshot.forEach(child => kaikkiTehtavat.push({ key: child.key, ...child.val() }));
         piirraTehtavalista();
-        if (!tehtavaArkistoModal.classList.contains('hidden')) {
-            avaaArkisto();
+        if (!sheetArkisto.classList.contains('hidden')) avaaArkisto();
+    });
+}
+
+// ============ NÄKYMÄHALLINTA ============
+function asetaNakyma(tyyppi, tallenna = true) {
+    nakymanTyyppi = tyyppi;
+    if (tallenna) localStorage.setItem('kalenteri-nakyma', tyyppi);
+    document.querySelectorAll('#nakyma-valitsin .seg-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.nakyma === tyyppi));
+    piirraNakyma();
+}
+
+function siirryJaksoa(suunta) {
+    switch (nakymanTyyppi) {
+        case 'agenda':
+            agendaAlkuPvm.setDate(agendaAlkuPvm.getDate() + suunta * AGENDA_PAIVIA_PER_ERÄ);
+            break;
+        case 'paiva':
+            nykyinenPaiva.setDate(nykyinenPaiva.getDate() + suunta);
+            break;
+        case 'viikko':
+            nykyinenPaiva.setDate(nykyinenPaiva.getDate() + suunta * 7);
+            break;
+        case 'kk':
+            nykyinenPaiva.setMonth(nykyinenPaiva.getMonth() + suunta);
+            break;
+    }
+    piirraNakyma();
+}
+
+function piirraNakyma() {
+    ['agenda-view', 'paiva-view', 'viikko-view', 'kk-view'].forEach(id =>
+        document.getElementById(id).classList.add('hidden'));
+    switch (nakymanTyyppi) {
+        case 'agenda':
+            agendaView.classList.remove('hidden');
+            piirraAgenda();
+            navOtsikko.textContent = `Agenda`;
+            break;
+        case 'paiva':
+            document.getElementById('paiva-view').classList.remove('hidden');
+            piirraAikahila([nykyinenPaiva], paivaHila);
+            navOtsikko.textContent = nykyinenPaiva.toLocaleDateString('fi-FI', { weekday: 'short', day: 'numeric', month: 'numeric' });
+            break;
+        case 'viikko': {
+            document.getElementById('viikko-view').classList.remove('hidden');
+            const alku = viikonAlku(nykyinenPaiva);
+            const paivat = Array.from({ length: 7 }, (_, i) => { const d = new Date(alku); d.setDate(d.getDate() + i); return d; });
+            piirraAikahila(paivat, viikkoHila);
+            navOtsikko.textContent = `Viikko ${getWeekNumber(nykyinenPaiva)}`;
+            break;
+        }
+        case 'kk':
+            document.getElementById('kk-view').classList.remove('hidden');
+            piirraKuukausi();
+            navOtsikko.textContent = `${nykyinenPaiva.toLocaleString('fi-FI', { month: 'long' })} ${nykyinenPaiva.getFullYear()}`;
+            break;
+    }
+}
+
+// ============ SUODATUSAPU ============
+function nakyvatTapahtumat() {
+    if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return [];
+    return window.kaikkiTapahtumat.filter(t => t.nakyvyys?.[nykyinenKayttaja] && t.alku && t.loppu);
+}
+
+function suodataLista(tapahtumat) {
+    const hakutermi = hakuKentta.value.toLowerCase().trim();
+    const aktiiviset = Array.from(tulevatSuodatin.querySelectorAll('.filter-btn.active')).map(b => b.dataset.filter);
+    const katSuodin = kategoriaSuodatin.value;
+    return tapahtumat.filter(t => {
+        if (hakutermi) {
+            const teksti = ((t.otsikko || '') + ' ' + (t.kuvaus || '')).toLowerCase();
+            if (!teksti.includes(hakutermi)) return false;
+        }
+        if (katSuodin !== 'kaikki' && (t.kategoria || 'muu') !== katSuodin) return false;
+        if (aktiiviset.includes('kaikki')) return true;
+        const ketakoskee = Array.isArray(t.ketakoskee) ? t.ketakoskee : [String(t.ketakoskee || 'perhe')];
+        const personSuotimet = aktiiviset.filter(s => s !== 'kaikki' && s !== 'perhe');
+        if (aktiiviset.includes('perhe') && (ketakoskee.includes('perhe') || ketakoskee.length >= 3)) return true;
+        return personSuotimet.length > 0 && personSuotimet.every(s => ketakoskee.includes(s));
+    });
+}
+
+function tapahtumaAikaTeksti(t, lyhyt = false) {
+    const alku = new Date(t.alku);
+    const loppu = new Date(t.loppu);
+    const pvmOpt = lyhyt ? { day: 'numeric', month: 'numeric' } : { weekday: 'short', day: 'numeric', month: 'numeric' };
+    const alkuPvmStr = alku.toLocaleDateString('fi-FI', pvmOpt);
+    if (paivaNolla(alku).getTime() !== paivaNolla(loppu).getTime()) {
+        return `${alkuPvmStr} - ${loppu.toLocaleDateString('fi-FI', pvmOpt)}`;
+    }
+    if (t.kokoPaiva) return `${alkuPvmStr}, koko päivä`;
+    return `${alkuPvmStr} ${kloMerkkijono(alku)}–${kloMerkkijono(loppu)}`;
+}
+
+function luoKoskeeTiedot(ketakoskee) {
+    if (!Array.isArray(ketakoskee) || ketakoskee.length === 0) {
+        const nimi = typeof ketakoskee === 'string' ? ketakoskee : 'perhe';
+        const kapNimi = nimi.charAt(0).toUpperCase() + nimi.slice(1);
+        return { initialit: kapNimi.charAt(0), type: 'class', value: `koskee-${nimi.toLowerCase()}`, vari: henkiloVari(kapNimi) };
+    }
+    if (ketakoskee.includes('perhe') || ketakoskee.length >= 3) {
+        return { initialit: 'P', type: 'class', value: 'koskee-perhe', vari: henkiloVari('perhe') };
+    }
+    if (ketakoskee.length === 1) {
+        const nimi = ketakoskee[0];
+        return { initialit: nimi.charAt(0).toUpperCase(), type: 'class', value: `koskee-${nimi.toLowerCase()}`, vari: henkiloVari(nimi) };
+    }
+    const sortedNames = [...ketakoskee].sort();
+    const initialit = sortedNames.map(n => n.charAt(0).toUpperCase()).join('');
+    const varit = sortedNames.map(n => henkiloVari(n));
+    return { initialit, type: 'style', value: `linear-gradient(45deg, ${varit.join(', ')})`, vari: null };
+}
+
+function asetaVariTaiLuokka(el, tiedot) {
+    if (tiedot.type === 'class') el.style.backgroundColor = tiedot.vari || cssVari('--c-perhe');
+    else el.style.background = tiedot.value;
+}
+
+// ============ AGENDA ============
+function piirraAgenda() {
+    agendaLista.innerHTML = '';
+    const nyt = new Date();
+    const lista = suodataLista(nakyvatTapahtumat()
+        .filter(t => new Date(t.loppu) >= agendaAlkuPvm))
+        .sort((a, b) => new Date(a.alku) - new Date(b.alku));
+
+    // Ryhmittele päiville
+    const ryhmat = new Map();
+    lista.forEach(t => {
+        const avain = pvmMerkkijono(paivaNolla(new Date(t.alku)));
+        if (!ryhmat.has(avain)) ryhmat.set(avain, []);
+        ryhmat.get(avain).push(t);
+    });
+
+    const paivakerrat = Array.from(ryhmat.keys()).sort();
+    const naytettavat = paivakerrat.slice(0, agendaNaytetyt);
+    const tanaanStr = pvmMerkkijono(new Date());
+
+    if (naytettavat.length === 0) {
+        agendaLista.innerHTML = '<p class="tyhja-teksti" style="text-align:center;color:var(--text-3);padding:40px 0;">Valinnoilla ei löytynyt tapahtumia.</p>';
+        agendaLisaaBtn.classList.add('hidden');
+        return;
+    }
+
+    naytettavat.forEach(paivaStr => {
+        const d = new Date(paivaStr + 'T12:00');
+        const ryhmaEl = document.createElement('div');
+        ryhmaEl.className = 'agenda-paiva';
+        const otsikko = document.createElement('div');
+        otsikko.className = 'agenda-paiva-otsikko' + (paivaStr === tanaanStr ? ' tanaan-otsikko' : '');
+        const viikonpaiva = d.toLocaleDateString('fi-FI', { weekday: 'long' });
+        const pvm = d.toLocaleDateString('fi-FI', { day: 'numeric', month: 'numeric' });
+        otsikko.textContent = paivaStr === tanaanStr ? `Tänään · ${viikonpaiva} ${pvm}` : `${viikonpaiva} ${pvm}`;
+        ryhmaEl.appendChild(otsikko);
+
+        ryhmat.get(paivaStr).forEach(t => {
+            const tiedot = luoKoskeeTiedot(t.ketakoskee);
+            const kat = kategoriaInfo(t.kategoria);
+            const item = document.createElement('div');
+            item.className = 'agenda-item';
+            const aika = new Date(t.alku);
+            const loppu = new Date(t.loppu);
+            const onMonipaivainen = paivaNolla(aika).getTime() !== paivaNolla(loppu).getTime();
+            let aikaHtml;
+            if (onMonipaivainen) {
+                aikaHtml = `${aika.getDate()}.&ndash;${loppu.getDate()}.${loppu.getMonth() + 1}.`;
+            } else if (t.kokoPaiva) {
+                aikaHtml = 'Koko<br>päivä';
+            } else {
+                aikaHtml = `${kloMerkkijono(aika)}<small>${kloMerkkijono(loppu)}</small>`;
+            }
+            item.innerHTML = `
+                <div class="agenda-aika">${aikaHtml}</div>
+                <div class="agenda-vari"></div>
+                <div class="agenda-tiedot">
+                    <div class="agenda-otsikko">${esc(t.otsikko)}</div>
+                    <div class="agenda-meta"><span class="kategoria-ikoni">${kat.ikoni}</span>${kat.nimi !== 'Muu' ? ' ' + kat.nimi : ''}</div>
+                </div>
+                <div class="agenda-initialit">${tiedot.initialit}</div>`;
+            const variEl = item.querySelector('.agenda-vari');
+            const initEl = item.querySelector('.agenda-initialit');
+            asetaVariTaiLuokka(variEl, tiedot);
+            asetaVariTaiLuokka(initEl, tiedot);
+            item.addEventListener('click', () => { haptic(); avaaTapahtuma(t.key); });
+            ryhmaEl.appendChild(item);
+        });
+        agendaLista.appendChild(ryhmaEl);
+    });
+
+    agendaLisaaBtn.classList.toggle('hidden', paivakerrat.length <= agendaNaytetyt);
+}
+
+// ============ AIKAHILA (päivä + viikko) ============
+function piirraAikahila(paivat, container) {
+    container.innerHTML = '';
+    const tanaanStr = pvmMerkkijono(new Date());
+    const h = (AH_LOPPU - AH_ALKU) * AH_TPX;
+    const tapahtumat = nakyvatTapahtumat();
+
+    // Otsikkorivi
+    const otsikot = document.createElement('div');
+    otsikot.className = 'ah-otsikot';
+    otsikot.style.gridTemplateColumns = `48px repeat(${paivat.length}, 1fr)`;
+    otsikot.appendChild(document.createElement('div'));
+    paivat.forEach(d => {
+        const o = document.createElement('div');
+        o.className = 'ah-otsikko' + (pvmMerkkijono(d) === tanaanStr ? ' tanaan' : '');
+        o.innerHTML = `${d.toLocaleDateString('fi-FI', { weekday: 'short' })}<span class="ah-pvm">${d.getDate()}</span>`;
+        if (paivat.length > 1) {
+            o.addEventListener('click', () => { nykyinenPaiva = new Date(d); asetaNakyma('paiva'); });
+        }
+        otsikot.appendChild(o);
+    });
+    container.appendChild(otsikot);
+
+    // Koko päivän rivi
+    const alldayRivi = document.createElement('div');
+    alldayRivi.className = 'ah-allday-rivi';
+    alldayRivi.style.gridTemplateColumns = `48px repeat(${paivat.length}, 1fr)`;
+    const label = document.createElement('div');
+    label.className = 'ah-allday-label';
+    label.textContent = 'koko pv';
+    alldayRivi.appendChild(label);
+    let onAllday = false;
+    paivat.forEach(d => {
+        const solu = document.createElement('div');
+        solu.className = 'ah-allday-solu';
+        tapahtumat.filter(t => {
+            const a0 = paivaNolla(new Date(t.alku)), l0 = paivaNolla(new Date(t.loppu)), d0 = paivaNolla(d);
+            return t.kokoPaiva || a0.getTime() !== l0.getTime() ? (d0 >= a0 && d0 <= l0) : false;
+        }).forEach(t => {
+            onAllday = true;
+            const tiedot = luoKoskeeTiedot(t.ketakoskee);
+            const palkki = document.createElement('div');
+            palkki.className = 'ah-allday-palkki';
+            palkki.textContent = `${kategoriaInfo(t.kategoria).ikoni} ${t.otsikko}`;
+            asetaVariTaiLuokka(palkki, tiedot);
+            palkki.addEventListener('click', () => avaaTapahtuma(t.key));
+            solu.appendChild(palkki);
+        });
+        alldayRivi.appendChild(solu);
+    });
+    if (onAllday) container.appendChild(alldayRivi);
+
+    // Aikahilan runko
+    const scroll = document.createElement('div');
+    scroll.className = 'ah-scroll';
+    const runko = document.createElement('div');
+    runko.className = 'ah-runko';
+    runko.style.gridTemplateColumns = `48px 1fr`;
+    runko.style.height = h + 'px';
+
+    const aikaSarake = document.createElement('div');
+    aikaSarake.className = 'ah-aikasarake';
+    for (let t = AH_ALKU; t <= AH_LOPPU; t++) {
+        const l = document.createElement('div');
+        l.className = 'ah-tunti-label';
+        l.style.top = ((t - AH_ALKU) * AH_TPX) + 'px';
+        l.textContent = t < AH_LOPPU ? `${String(t).padStart(2, '0')}:00` : '';
+        aikaSarake.appendChild(l);
+    }
+    runko.appendChild(aikaSarake);
+
+    const sarakkeet = document.createElement('div');
+    sarakkeet.className = 'ah-sarakkeet';
+    sarakkeet.style.gridTemplateColumns = `repeat(${paivat.length}, 1fr)`;
+
+    paivat.forEach(d => {
+        const sarake = document.createElement('div');
+        sarake.className = 'ah-sarake';
+        sarake.dataset.paivamaara = pvmMerkkijono(d);
+        for (let t = AH_ALKU + 1; t < AH_LOPPU; t++) {
+            const viiva = document.createElement('div');
+            viiva.className = 'ah-tunti-viiva';
+            viiva.style.top = ((t - AH_ALKU) * AH_TPX) + 'px';
+            sarake.appendChild(viiva);
+        }
+        // Ajastetut yksipäiväiset tapahtumat
+        const paivan = tapahtumat.filter(t => {
+            const a0 = paivaNolla(new Date(t.alku)), l0 = paivaNolla(new Date(t.loppu));
+            return !t.kokoPaiva && a0.getTime() === l0.getTime() && pvmMerkkijono(new Date(t.alku)) === pvmMerkkijono(d);
+        }).sort((a, b) => new Date(a.alku) - new Date(b.alku));
+        const sijoitellut = asetaKaistat(paivan);
+        sijoitellut.forEach(({ t, kaista, kaistoja }) => {
+            const alku = new Date(t.alku), loppu = new Date(t.loppu);
+            let alkuMin = alku.getHours() * 60 + alku.getMinutes();
+            let loppuMin = loppu.getHours() * 60 + loppu.getMinutes();
+            if (loppuMin <= alkuMin) loppuMin = alkuMin + 30;
+            const top = Math.max(0, (alkuMin - AH_ALKU * 60) / 60 * AH_TPX);
+            const korkeus = Math.max(22, (loppuMin - alkuMin) / 60 * AH_TPX);
+            const leveys = 100 / kaistoja;
+            const tiedot = luoKoskeeTiedot(t.ketakoskee);
+            const ev = document.createElement('div');
+            ev.className = 'ah-event';
+            ev.style.top = top + 'px';
+            ev.style.height = korkeus + 'px';
+            ev.style.left = `calc(${kaista * leveys}% + 2px)`;
+            ev.style.width = `calc(${leveys}% - 4px)`;
+            asetaVariTaiLuokka(ev, tiedot);
+            ev.innerHTML = `${kategoriaInfo(t.kategoria).ikoni} ${esc(t.otsikko)}<span class="ah-event-aika">${kloMerkkijono(alku)}–${kloMerkkijono(loppu)}</span>`;
+            ev.addEventListener('click', (e) => { e.stopPropagation(); avaaTapahtuma(t.key); });
+            sarake.appendChild(ev);
+        });
+        // Nyt-viiva
+        if (pvmMerkkijono(d) === tanaanStr) {
+            const nyt = new Date();
+            const nytMin = nyt.getHours() * 60 + nyt.getMinutes();
+            if (nytMin >= AH_ALKU * 60 && nytMin <= AH_LOPPU * 60) {
+                const viiva = document.createElement('div');
+                viiva.className = 'ah-nyt-viiva';
+                viiva.style.top = ((nytMin - AH_ALKU * 60) / 60 * AH_TPX) + 'px';
+                sarake.appendChild(viiva);
+            }
+        }
+        // Klikkaus tyhjään → uusi tapahtuma tähän aikaan
+        sarake.addEventListener('click', (e) => {
+            if (e.target !== sarake && !e.target.classList.contains('ah-tunti-viiva')) return;
+            const rect = sarake.getBoundingClientRect();
+            const y = e.clientY - rect.top;
+            const tunti = Math.floor(AH_ALKU + y / AH_TPX);
+            const pvm = sarake.dataset.paivamaara;
+            avaaLomake('lisaa', null, { alku: `${pvm}T${String(tunti).padStart(2, '0')}:00`, loppu: `${pvm}T${String(Math.min(tunti + 1, 23)).padStart(2, '0')}:00` });
+        });
+        sarakkeet.appendChild(sarake);
+    });
+    runko.appendChild(sarakkeet);
+    scroll.appendChild(runko);
+    container.appendChild(scroll);
+
+    // Skrollaa nykyhetkeen jos tänään näkyvissä
+    const nytMin = new Date().getHours() * 60 + new Date().getMinutes();
+    if (paivat.some(d => pvmMerkkijono(d) === tanaanStr) && nytMin > AH_ALKU * 60) {
+        scroll.scrollTop = Math.max(0, (nytMin - AH_ALKU * 60) / 60 * AH_TPX - 140);
+    }
+}
+
+// Pinta-alakaistojen laskenta päällekkäisille tapahtumille
+function asetaKaistat(tapahtumat) {
+    const kaistat = []; // viimeisin loppumin per kaista
+    const tulos = tapahtumat.map(t => {
+        const alku = new Date(t.alku).getTime();
+        let loppu = new Date(t.loppu).getTime();
+        if (loppu <= alku) loppu = alku + 30 * 60000;
+        let kaista = kaistat.findIndex(l => l <= alku);
+        if (kaista === -1) { kaista = kaistat.length; kaistat.push(loppu); }
+        else kaistat[kaista] = loppu;
+        return { t, kaista };
+    });
+    // Laske samanaikaisten ryhmien kaistamäärät
+    return tulos.map(({ t, kaista }) => {
+        const alku = new Date(t.alku).getTime(), loppu = new Date(t.loppu).getTime();
+        const päällekkäiset = tulos.filter(o => {
+            const a2 = new Date(o.t.alku).getTime(), l2 = new Date(o.t.loppu).getTime();
+            return a2 < loppu && l2 > alku;
+        });
+        const kaistoja = Math.max(...päällekkäiset.map(o => o.kaista)) + 1;
+        return { t, kaista, kaistoja };
+    });
+}
+
+// ============ KUUKAUSINÄKYMÄ ============
+function piirraKuukausi() {
+    kalenteriGrid.innerHTML = '';
+    kalenteriPaivatOtsikot.innerHTML = '';
+    kalenteriPaivatOtsikot.insertAdjacentHTML('beforeend', '<div class="viikonpaiva"></div>');
+    ['Ma', 'Ti', 'Ke', 'To', 'Pe', 'La', 'Su'].forEach(p =>
+        kalenteriPaivatOtsikot.insertAdjacentHTML('beforeend', `<div class="viikonpaiva">${p}</div>`));
+    const vuosi = nykyinenPaiva.getFullYear();
+    const kuukausi = nykyinenPaiva.getMonth();
+    const ekaKuunPaiva = new Date(vuosi, kuukausi, 1);
+    const tanaanString = pvmMerkkijono(new Date());
+    const paivaViikossa = ekaKuunPaiva.getDay() === 0 ? 7 : ekaKuunPaiva.getDay();
+    const kalenterinAloitus = new Date(ekaKuunPaiva);
+    kalenterinAloitus.setDate(ekaKuunPaiva.getDate() - (paivaViikossa - 1));
+    let paivaIt = new Date(kalenterinAloitus);
+    for (let i = 0; i < 6; i++) {
+        kalenteriGrid.insertAdjacentHTML('beforeend', `<div class="viikko-nro">${getWeekNumber(paivaIt)}</div>`);
+        for (let j = 0; j < 7; j++) {
+            const pvm = pvmMerkkijono(paivaIt);
+            let luokat = "paiva";
+            if (paivaIt.getMonth() !== kuukausi) luokat += " tyhja";
+            if (pvm === tanaanString) luokat += " tanaan";
+            kalenteriGrid.insertAdjacentHTML('beforeend',
+                `<div class="${luokat}" data-paivamaara="${pvm}"><div class="paiva-numero">${paivaIt.getDate()}</div><div class="tapahtumat-container"></div></div>`);
+            paivaIt.setDate(paivaIt.getDate() + 1);
+        }
+        if (paivaIt.getMonth() !== kuukausi && paivaIt.getDay() === 1) break;
+    }
+    naytaTapahtumatKalenterissa();
+    korostaHakuOsumatKalenterissa();
+}
+
+function handlePaivaClick(event) {
+    const paivaEl = event.target.closest('.paiva');
+    if (!paivaEl || paivaEl.classList.contains('tyhja') ||
+        event.target.closest('.tapahtuma-kuvake') || event.target.closest('.tapahtuma-palkki')) return;
+    const pvm = paivaEl.dataset.paivamaara;
+    if (!pvm) return;
+    avaaLomake('lisaa', null, { alku: pvm + 'T09:00', loppu: pvm + 'T10:00' });
+}
+
+function naytaTapahtumatKalenterissa() {
+    document.querySelectorAll('.tapahtumat-container').forEach(c => c.innerHTML = '');
+    nakyvatTapahtumat().forEach(tapahtuma => {
+        const alkuPvm = new Date(tapahtuma.alku);
+        const loppuPvm = new Date(tapahtuma.loppu);
+        const alkuAikaNolla = paivaNolla(alkuPvm).getTime();
+        const loppuAikaNolla = paivaNolla(loppuPvm).getTime();
+        const onMonipaivainenTaiKokoPaiva = alkuAikaNolla !== loppuAikaNolla || tapahtuma.kokoPaiva;
+        if (onMonipaivainenTaiKokoPaiva) {
+            let currentDate = new Date(alkuAikaNolla);
+            const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
+            while (currentDate.getTime() <= loppuAikaNolla) {
+                const pvm = pvmMerkkijono(currentDate);
+                const paivaEl = document.querySelector(`.paiva[data-paivamaara="${pvm}"]`);
+                if (paivaEl) {
+                    const palkki = document.createElement('div');
+                    palkki.className = 'tapahtuma-palkki';
+                    palkki.title = tapahtuma.otsikko;
+                    asetaVariTaiLuokka(palkki, tiedot);
+                    if (currentDate.getTime() === alkuAikaNolla) {
+                        palkki.textContent = `${kategoriaInfo(tapahtuma.kategoria).ikoni} ${tapahtuma.otsikko}`;
+                    } else {
+                        palkki.textContent = `› ${tapahtuma.otsikko}`;
+                    }
+                    palkki.addEventListener('click', (e) => { e.stopPropagation(); avaaTapahtuma(tapahtuma.key); });
+                    paivaEl.querySelector('.tapahtumat-container').appendChild(palkki);
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+        }
+    });
+    nakyvatTapahtumat().forEach(tapahtuma => {
+        const alkuAikaNolla = paivaNolla(new Date(tapahtuma.alku)).getTime();
+        const loppuAikaNolla = paivaNolla(new Date(tapahtuma.loppu)).getTime();
+        if (alkuAikaNolla === loppuAikaNolla && !tapahtuma.kokoPaiva) {
+            const paivaEl = document.querySelector(`.paiva[data-paivamaara="${tapahtuma.alku.substring(0, 10)}"]`);
+            if (paivaEl) {
+                const kuvake = document.createElement('div');
+                kuvake.title = `${tapahtuma.otsikko} ${kloMerkkijono(new Date(tapahtuma.alku))}`;
+                const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
+                kuvake.textContent = kategoriaInfo(tapahtuma.kategoria).ikoni;
+                kuvake.className = 'tapahtuma-kuvake';
+                asetaVariTaiLuokka(kuvake, tiedot);
+                kuvake.addEventListener('click', (e) => { e.stopPropagation(); avaaTapahtuma(tapahtuma.key); });
+                paivaEl.querySelector('.tapahtumat-container').appendChild(kuvake);
+            }
         }
     });
 }
 
-function piirraTehtavalista() {
-    tehtavatContainer.innerHTML = '';
-    const nakyvatTehtavat = kaikkiTehtavat
-        .filter(t => t.tila !== 'arkistoitu')
-        .sort((a, b) => a.tehty - b.tehty);
-    const avoimet = nakyvatTehtavat.filter(t => !t.tehty);
-    avoimetTehtavatLaskuri.textContent = `${avoimet.length} avointa`;
-    if (nakyvatTehtavat.length === 0) {
-        tehtavatContainer.innerHTML = '<p style="text-align:center; opacity:0.7;">Lista on tyhjä.</p>';
+function korostaHakuOsumatKalenterissa() {
+    document.querySelectorAll('.paiva.haku-osuma').forEach(el => el.classList.remove('haku-osuma'));
+    const hakutermi = hakuKentta.value.toLowerCase().trim();
+    if (!hakutermi || !window.kaikkiTapahtumat) return;
+    nakyvatTapahtumat().filter(t => {
+        const teksti = ((t.otsikko || '') + ' ' + (t.kuvaus || '')).toLowerCase();
+        return teksti.includes(hakutermi);
+    }).forEach(t => {
+        const paivaEl = document.querySelector(`.paiva[data-paivamaara="${t.alku.substring(0, 10)}"]`);
+        if (paivaEl) paivaEl.classList.add('haku-osuma');
+    });
+}
+
+// ============ SIVURAITA: TULEVAT ============
+function naytaTulevat() {
+    tulevatTapahtumatLista.innerHTML = '';
+    const nyt = new Date();
+    const lista = nakyvatTapahtumat()
+        .filter(t => new Date(t.loppu) >= nyt)
+        .sort((a, b) => new Date(a.alku) - new Date(b.alku))
+        .slice(0, 8);
+    if (lista.length === 0) {
+        tulevatTapahtumatLista.innerHTML = '<p style="text-align:center;color:var(--text-3);font-size:0.9em;">Ei tulevia tapahtumia.</p>';
         return;
     }
-    nakyvatTehtavat.forEach(tehtava => {
+    lista.forEach(t => {
+        const tiedot = luoKoskeeTiedot(t.ketakoskee);
+        const item = document.createElement('div');
+        item.className = 'tuleva-tapahtuma-item';
+        item.innerHTML = `
+            <div class="tapahtuma-item-luoja">${tiedot.initialit}</div>
+            <div class="tapahtuma-item-tiedot">
+                <div class="tapahtuma-item-aika">${tapahtumaAikaTeksti(t, true)}</div>
+                <div class="tapahtuma-item-otsikko">${esc(t.otsikko)}</div>
+                <div class="tapahtuma-item-kategoria">${kategoriaInfo(t.kategoria).ikoni} ${kategoriaInfo(t.kategoria).nimi}</div>
+            </div>`;
+        asetaVariTaiLuokka(item.querySelector('.tapahtuma-item-luoja'), tiedot);
+        item.addEventListener('click', () => avaaTapahtuma(t.key));
+        tulevatTapahtumatLista.appendChild(item);
+    });
+}
+
+// ============ MENNEET ============
+function avaaMenneet() {
+    menneetSivu = 0;
+    menneetHakuKentta.value = '';
+    naytaMenneetTapahtumat();
+    avaaSheet(sheetMenneet);
+}
+
+function naytaMenneetTapahtumat() {
+    if (!window.kaikkiTapahtumat) return;
+    const hakutermi = menneetHakuKentta.value.toLowerCase().trim();
+    const nyt = new Date();
+    const kaikkiMenneet = nakyvatTapahtumat()
+        .filter(t => {
+            if (new Date(t.loppu) >= nyt) return false;
+            if (hakutermi) {
+                const teksti = ((t.otsikko || '') + ' ' + (t.kuvaus || '')).toLowerCase();
+                return teksti.includes(hakutermi);
+            }
+            return true;
+        })
+        .sort((a, b) => new Date(b.alku) - new Date(a.alku));
+    const sivuja = Math.ceil(kaikkiMenneet.length / TAPAHTUMIA_PER_SIVU);
+    const sivun = kaikkiMenneet.slice(menneetSivu * TAPAHTUMIA_PER_SIVU, menneetSivu * TAPAHTUMIA_PER_SIVU + TAPAHTUMIA_PER_SIVU);
+    sivuInfo.textContent = `Sivu ${menneetSivu + 1} / ${sivuja || 1}`;
+    edellinenSivuBtn.disabled = menneetSivu === 0;
+    seuraavaSivuBtn.disabled = menneetSivu + 1 >= sivuja;
+    menneetTapahtumatLista.innerHTML = '';
+    if (sivun.length === 0) {
+        menneetTapahtumatLista.innerHTML = `<p style="text-align:center;color:var(--text-3);">${hakutermi ? 'Haulla ei löytynyt' : 'Ei'} menneitä tapahtumia.</p>`;
+        return;
+    }
+    sivun.forEach(t => {
+        const tiedot = luoKoskeeTiedot(t.ketakoskee);
+        const item = document.createElement('div');
+        item.className = 'tuleva-tapahtuma-item';
+        item.innerHTML = `
+            <div class="tapahtuma-item-luoja">${tiedot.initialit}</div>
+            <div class="tapahtuma-item-tiedot">
+                <div class="tapahtuma-item-aika">${tapahtumaAikaTeksti(t)}</div>
+                <div class="tapahtuma-item-otsikko">${esc(t.otsikko)}</div>
+            </div>`;
+        asetaVariTaiLuokka(item.querySelector('.tapahtuma-item-luoja'), tiedot);
+        item.addEventListener('click', () => { suljeSheet(sheetMenneet); avaaTapahtuma(t.key); });
+        menneetTapahtumatLista.appendChild(item);
+    });
+}
+
+// ============ SHEET-HALLINTA ============
+function avaaSheet(overlay) {
+    overlay.classList.remove('hidden');
+    overlay.classList.remove('sulkeutuu');
+    haptic();
+}
+
+function suljeSheet(overlay) {
+    if (!overlay || overlay.classList.contains('hidden')) return;
+    overlay.classList.add('sulkeutuu');
+    const sheet = overlay.querySelector('.sheet');
+    if (sheet) sheet.style.transform = '';
+    setTimeout(() => {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('sulkeutuu');
+    }, 240);
+}
+
+// ============ TAPAHTUMAN TIETO-SHEET ============
+function avaaTapahtuma(key) {
+    const t = haeTapahtuma(key);
+    if (!t) return;
+    sheetTapahtuma.dataset.tapahtumaId = key;
+    const kat = kategoriaInfo(t.kategoria);
+    document.getElementById('view-kategoria-rivi').innerHTML =
+        `<span class="kategoria-chip">${kat.ikoni} ${kat.nimi}</span>` +
+        (t.onToistuva ? ' <span class="kategoria-chip">🔁 Toistuva</span>' : '');
+    document.getElementById('view-otsikko').textContent = t.otsikko;
+    document.getElementById('view-aika').textContent = tapahtumaAikaTeksti(t);
+    const koskeeTieto = Array.isArray(t.ketakoskee) ? t.ketakoskee : [String(t.ketakoskee)];
+    document.getElementById('view-koskee').textContent =
+        (koskeeTieto.includes('perhe') || koskeeTieto.length >= 3) ? 'Koko perhe' : koskeeTieto.join(', ');
+    document.getElementById('view-nakyvyys').textContent =
+        'Näkyy: ' + Object.keys(t.nakyvyys || {}).filter(k => t.nakyvyys[k]).join(', ');
+    document.getElementById('view-kuvaus').innerHTML = linkify(t.kuvaus || 'Ei lisätietoja.');
+    document.getElementById('view-luoja').textContent = t.luoja;
+    const linkkiContainer = document.getElementById('view-linkki-container');
+    if (t.linkki) {
+        document.getElementById('view-linkki').href = t.linkki;
+        linkkiContainer.classList.remove('hidden');
+    } else linkkiContainer.classList.add('hidden');
+    avaaSheet(sheetTapahtuma);
+}
+
+// ============ TAPAHTUMALOMAKE ============
+function avaaLomake(tila, tapahtuma = null, esitäyte = null) {
+    const lomake = document.getElementById('tapahtuma-lomake');
+    lomake.reset();
+    const onMuokkaus = tila === 'muokkaa' && tapahtuma;
+    document.getElementById('lomake-otsikko').textContent = onMuokkaus ? 'Muokkaa tapahtumaa' : 'Uusi tapahtuma';
+    document.getElementById('f-tallenna').textContent = onMuokkaus ? 'Tallenna' : 'Lisää kalenteriin';
+    document.getElementById('poista-tapahtuma-btn').classList.toggle('hidden', !onMuokkaus);
+    document.getElementById('f-id').value = onMuokkaus ? tapahtuma.key : '';
+    // Toistumisasetukset näkyvät vain lisäyksessä
+    document.getElementById('f-toistuminen-tyyppi').closest('.kentta-rivi').classList.toggle('hidden', onMuokkaus);
+
+    const lähde = tapahtuma || {};
+    document.getElementById('f-otsikko').value = onMuokkaus || tapahtuma ? (lähde.otsikko || '') : '';
+    document.getElementById('f-kuvaus').value = lähde.kuvaus || '';
+    document.getElementById('f-kategoria').value = lähde.kategoria || 'muu';
+    document.getElementById('f-linkki').value = lähde.linkki || '';
+    document.getElementById('f-koko-paiva').checked = !!lähde.kokoPaiva;
+    document.getElementById('loppu-wrap').classList.toggle('hidden', !!lähde.kokoPaiva);
+    document.getElementById('f-loppu').required = !lähde.kokoPaiva;
+
+    if (onMuokkaus || (tapahtuma && !esitäyte)) {
+        document.getElementById('f-alku').value = (lähde.alku || '').substring(0, 16);
+        document.getElementById('f-loppu').value = (lähde.loppu || '').substring(0, 16);
+    } else if (esitäyte) {
+        document.getElementById('f-alku').value = esitäyte.alku || '';
+        document.getElementById('f-loppu').value = esitäyte.loppu || '';
+    }
+
+    // Ketä koskee
+    const ketakoskee = tapahtuma ? (Array.isArray(lähde.ketakoskee) ? lähde.ketakoskee : [String(lähde.ketakoskee)]) : [];
+    document.querySelectorAll('input[name="f-ketakoskee"]').forEach(cb => {
+        cb.checked = ketakoskee.includes(cb.value) || (ketakoskee.includes('perhe') && tapahtuma);
+    });
+    const perheBox = document.querySelector('input[name="f-ketakoskee"][value="perhe"]');
+    if (ketakoskee.includes('perhe')) {
+        perheBox.checked = true;
+        document.querySelectorAll('input[name="f-ketakoskee"]:not([value="perhe"])').forEach(cb => cb.checked = true);
+    }
+
+    // Näkyvyys
+    document.querySelectorAll('input[name="f-nakyvyys"]').forEach(cb => {
+        cb.checked = tapahtuma ? !!lähde.nakyvyys?.[cb.value] : true;
+    });
+
+    sheetLomake.dataset.tila = tila;
+    avaaSheet(sheetLomake);
+    setTimeout(() => document.getElementById('f-otsikko').focus(), 350);
+}
+
+function tallennaTapahtuma() {
+    const tila = sheetLomake.dataset.tila;
+    const key = document.getElementById('f-id').value;
+    const kokoPaiva = document.getElementById('f-koko-paiva').checked;
+    const alkuInput = document.getElementById('f-alku').value;
+    let alkuAika, loppuAika;
+    if (kokoPaiva) {
+        const pv = alkuInput.substring(0, 10);
+        if (!pv) return alert('Valitse päivämäärä ensin.');
+        alkuAika = `${pv}T00:00`;
+        loppuAika = `${(document.getElementById('f-loppu').value || alkuInput).substring(0, 10)}T23:59`;
+    } else {
+        alkuAika = alkuInput;
+        loppuAika = document.getElementById('f-loppu').value;
+    }
+    const koskeeValinnat = Array.from(document.querySelectorAll('input[name="f-ketakoskee"]:checked'))
+        .map(cb => cb.value).filter(v => v !== 'perhe');
+    if (koskeeValinnat.length === 0 && document.querySelector('input[name="f-ketakoskee"][value="perhe"]:checked')) {
+        koskeeValinnat.push('perhe');
+    }
+    const otsikko = document.getElementById('f-otsikko').value.trim();
+    if (!otsikko || !alkuAika || koskeeValinnat.length === 0) {
+        return alert('Täytä vähintään otsikko, alkuajankohta ja ketä tapahtuma koskee.');
+    }
+    const data = {
+        otsikko,
+        kuvaus: document.getElementById('f-kuvaus').value,
+        kategoria: document.getElementById('f-kategoria').value,
+        alku: alkuAika, loppu: loppuAika || alkuAika,
+        kokoPaiva,
+        linkki: document.getElementById('f-linkki').value,
+        ketakoskee: koskeeValinnat,
+        nakyvyys: Array.from(document.querySelectorAll('input[name="f-nakyvyys"]:checked'))
+            .reduce((a, c) => ({ ...a, [c.value]: true }), {})
+    };
+
+    if (tila === 'muokkaa' && key) {
+        const vanha = haeTapahtuma(key);
+        data.luoja = vanha ? vanha.luoja : nykyinenKayttaja;
+        if (vanha && vanha.onToistuva && vanha.sarjaId) {
+            // Sarjatapahtuma → kysy laajuus
+            suljeSheet(sheetLomake);
+            kysyLaajuus('Tallenna muutokset', 'Miten haluat tallentaa muutokset toistuvaan tapahtumaan?', true, (laajuus) => {
+                paivitaSarja(vanha, data, laajuus);
+            });
+        } else {
+            update(ref(database, `tapahtumat/${key}`), data).then(() => {
+                suljeSheet(sheetLomake);
+                naytaIlmoitus('Tapahtuma päivitetty.');
+            });
+        }
+    } else {
+        data.luoja = nykyinenKayttaja;
+        data.toistuminen = {
+            tyyppi: document.getElementById('f-toistuminen-tyyppi').value,
+            paattyy: document.getElementById('f-toistuminen-paattyy').value || null
+        };
+        if (data.toistuminen.tyyppi !== 'ei') {
+            luoToistuvatTapahtumat(data);
+        } else {
+            delete data.toistuminen;
+            push(ref(database, 'tapahtumat'), data).then(() => {
+                suljeSheet(sheetLomake);
+                naytaIlmoitus('Tapahtuma lisätty!');
+            });
+        }
+    }
+}
+
+// ============ TOISTUVAT TAPAHTUMAT ============
+function luoToistuvatTapahtumat(perusTapahtuma) {
+    const toistuminen = perusTapahtuma.toistuminen;
+    delete perusTapahtuma.toistuminen;
+    const alkuPvm = new Date(perusTapahtuma.alku);
+    const loppuPvm = new Date(perusTapahtuma.loppu);
+    const paattyyPvm = toistuminen.paattyy ? new Date(toistuminen.paattyy + 'T23:59') : null;
+    const sarjaId = 'sarja_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    const tapahtumat = [];
+    let nykyinenPvm = new Date(alkuPvm);
+    const kestoMs = loppuPvm.getTime() - alkuPvm.getTime();
+    let indeksi = 0;
+    while ((!paattyyPvm || nykyinenPvm <= paattyyPvm) && tapahtumat.length < 100) {
+        const t = { ...perusTapahtuma };
+        t.alku = `${pvmMerkkijono(nykyinenPvm)}${perusTapahtuma.alku.substring(10)}`;
+        const loppuDate = new Date(nykyinenPvm.getTime() + kestoMs);
+        t.loppu = `${pvmMerkkijono(loppuDate)}${perusTapahtuma.loppu.substring(10)}`;
+        t.sarjaId = sarjaId;
+        t.sarjaIndeksi = indeksi;
+        t.onToistuva = true;
+        tapahtumat.push(t);
+        indeksi++;
+        switch (toistuminen.tyyppi) {
+            case 'paivittain': nykyinenPvm.setDate(nykyinenPvm.getDate() + 1); break;
+            case 'viikoittain': nykyinenPvm.setDate(nykyinenPvm.getDate() + 7); break;
+            case 'kuukausittain': nykyinenPvm.setMonth(nykyinenPvm.getMonth() + 1); break;
+        }
+    }
+    Promise.all(tapahtumat.map(t => push(ref(database, 'tapahtumat'), t))).then(() => {
+        suljeSheet(sheetLomake);
+        naytaIlmoitus(`Luotu ${tapahtumat.length} toistuvaa tapahtumaa!`);
+    }).catch(() => naytaIlmoitus('Virhe toistuvien tapahtumien luonnissa!'));
+}
+
+function kysyLaajuus(otsikko, kuvaus, onMuokkaus, cb) {
+    document.getElementById('laajuus-otsikko').textContent = otsikko;
+    document.getElementById('laajuus-kuvaus').textContent = kuvaus;
+    document.getElementById('laajuus-huomautus').classList.toggle('hidden', !onMuokkaus);
+    document.getElementById('vahvista-laajuus-btn').textContent = onMuokkaus ? 'Tallenna' : 'Poista';
+    document.getElementById('vahvista-laajuus-btn').className = onMuokkaus ? 'btn-primary' : 'btn-danger';
+    document.querySelector('input[name="laajuus"][value="yksittainen"]').checked = true;
+    laajuusCallback = cb;
+    avaaSheet(sheetLaajuus);
+}
+
+// Sarjan päivitys: metakentät levitetään, ajat vain valittuun
+function paivitaSarja(vanha, data, laajuus) {
+    const kohteet = sarjanKohteet(vanha, laajuus);
+    if (laajuus === 'yksittainen') {
+        update(ref(database, `tapahtumat/${vanha.key}`), data).then(() =>
+            naytaIlmoitus('Tapahtuma päivitetty.'));
+        return;
+    }
+    const meta = {};
+    SARJA_META_KENTAT.forEach(k => { if (data[k] !== undefined) meta[k] = data[k]; });
+    const paivitykset = kohteet.map(t => update(ref(database, `tapahtumat/${t.key}`), meta));
+    // Aikamuutokset aina vain valittuun instanssiin
+    paivitykset.push(update(ref(database, `tapahtumat/${vanha.key}`), { alku: data.alku, loppu: data.loppu }));
+    Promise.all(paivitykset).then(() =>
+        naytaIlmoitus(`Päivitetty ${kohteet.length} sarjan tapahtumaa.`));
+}
+
+function sarjanKohteet(tapahtuma, laajuus) {
+    const sarja = window.kaikkiTapahtumat.filter(t => t.sarjaId === tapahtuma.sarjaId);
+    if (laajuus === 'koko-sarja') return sarja;
+    if (laajuus === 'tulevat') return sarja.filter(t => t.sarjaIndeksi >= tapahtuma.sarjaIndeksi);
+    return [tapahtuma];
+}
+
+function poistaTapahtuma() {
+    const key = document.getElementById('f-id').value;
+    const t = haeTapahtuma(key);
+    if (!t) return;
+    suljeSheet(sheetLomake);
+    if (t.onToistuva && t.sarjaId) {
+        kysyLaajuus('Poista toistuva tapahtuma', 'Valitse poistamisen laajuus:', false, (laajuus) => {
+            const kohteet = sarjanKohteet(t, laajuus);
+            Promise.all(kohteet.map(k => remove(ref(database, `tapahtumat/${k.key}`)))).then(() =>
+                naytaIlmoitus(`Poistettu ${kohteet.length} tapahtumaa.`));
+        });
+    } else {
+        if (confirm('Haluatko varmasti poistaa tämän tapahtuman?')) {
+            remove(ref(database, `tapahtumat/${key}`)).then(() => naytaIlmoitus('Tapahtuma poistettu.'));
+        }
+    }
+}
+
+// ============ TEHTÄVÄT ============
+function piirraTehtavalista() {
+    tehtavatContainer.innerHTML = '';
+    const nakyvat = kaikkiTehtavat
+        .filter(t => t.tila !== 'arkistoitu')
+        .sort((a, b) => a.tehty - b.tehty);
+    const avoimet = nakyvat.filter(t => !t.tehty);
+    avoimetTehtavatLaskuri.textContent = `${avoimet.length} avointa`;
+    if (avoimet.length > 0) {
+        tabTehtavatBadge.textContent = avoimet.length;
+        tabTehtavatBadge.classList.remove('hidden');
+    } else tabTehtavatBadge.classList.add('hidden');
+    if (nakyvat.length === 0) {
+        tehtavatContainer.innerHTML = '<p style="text-align:center;color:var(--text-3);">Lista on tyhjä. 🎉</p>';
+        return;
+    }
+    nakyvat.forEach(tehtava => {
+        const wrap = document.createElement('div');
+        wrap.className = 'tehtava-wrap';
+        const tausta = document.createElement('div');
+        tausta.className = 'swipe-tausta';
+        tausta.textContent = tehtava.tehty ? '↩' : '✓';
         const item = document.createElement('div');
         item.className = 'tehtava-item';
         const tila = maaritaTehtavanTila(tehtava);
-        if (tila) {
-            item.classList.add(`status-${tila}`);
-        }
+        if (tila) item.classList.add(`status-${tila}`);
         rakennaTehtavaItemView(item, tehtava);
-        tehtavatContainer.appendChild(item);
+        wrap.appendChild(tausta);
+        wrap.appendChild(item);
+        lisaaTehtavaSwipe(item, tehtava);
+        tehtavatContainer.appendChild(wrap);
     });
+}
+
+function maaritaTehtavanTila(tehtava) {
+    if (tehtava.tehty) return 'tehty';
+    if (tehtava.maarapaiva) {
+        const nyt = new Date();
+        const mp = new Date(tehtava.maarapaiva);
+        if (nyt > mp) return 'myohassa';
+        if (mp - nyt < 86400000) return 'kiireellinen';
+        return 'ok';
+    }
+    return '';
 }
 
 function rakennaTehtavaItemView(itemElement, tehtava) {
@@ -1066,43 +1294,39 @@ function rakennaTehtavaItemView(itemElement, tehtava) {
     checkbox.type = 'checkbox';
     checkbox.checked = tehtava.tehty;
     checkbox.addEventListener('change', () => paivitaTehtavanTila(tehtava.key, checkbox.checked));
-    const tiedotContainer = document.createElement('div');
-    tiedotContainer.className = 'tehtava-tiedot';
+    const tiedot = document.createElement('div');
+    tiedot.className = 'tehtava-tiedot';
     const teksti = document.createElement('p');
     teksti.className = 'tehtava-teksti';
     teksti.textContent = tehtava.teksti;
     const meta = document.createElement('small');
     meta.className = 'tehtava-meta';
-    
     let metaTeksti = '';
     if (tehtava.maarapaiva) {
-        const pvm = new Date(tehtava.maarapaiva).toLocaleString('fi-FI', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
-        metaTeksti += `Määräpäivä: ${pvm} | `;
+        const pvm = new Date(tehtava.maarapaiva);
+        metaTeksti += `📅 ${pvm.toLocaleDateString('fi-FI', { day: 'numeric', month: 'numeric' })} ${kloMerkkijono(pvm)} · `;
     }
-    metaTeksti += `Lisännyt ${tehtava.luoja}`;
-    if (tehtava.muokattuAika) {
-        metaTeksti += ` (muokattu ${new Date(tehtava.muokattuAika).toLocaleDateString('fi-FI')})`;
-    }
-
+    metaTeksti += `Lisäsi ${tehtava.luoja}`;
+    if (tehtava.muokattuAika) metaTeksti += ` (muokattu)`;
     meta.textContent = metaTeksti;
-    tiedotContainer.appendChild(teksti);
-    tiedotContainer.appendChild(meta);
+    tiedot.appendChild(teksti);
+    tiedot.appendChild(meta);
     vasen.appendChild(checkbox);
-    vasen.appendChild(tiedotContainer);
+    vasen.appendChild(tiedot);
     const oikea = document.createElement('div');
     oikea.className = 'tehtava-oikea';
     if (tehtava.kohdistettu && tehtava.kohdistettu.length > 0) {
-        const kohdistusContainer = document.createElement('div');
-        kohdistusContainer.className = 'tehtava-kohdistus';
+        const kohdistus = document.createElement('div');
+        kohdistus.className = 'tehtava-kohdistus';
         tehtava.kohdistettu.forEach(nimi => {
             const pallo = document.createElement('div');
             pallo.className = 'kohdistus-pallo';
             pallo.textContent = nimi.charAt(0).toUpperCase();
-            pallo.style.backgroundColor = KAYTTAJA_VARIT[nimi] || '#888';
+            pallo.style.backgroundColor = henkiloVari(nimi);
             pallo.title = nimi;
-            kohdistusContainer.appendChild(pallo);
+            kohdistus.appendChild(pallo);
         });
-        oikea.appendChild(kohdistusContainer);
+        oikea.appendChild(kohdistus);
     }
     const muokkaaNappi = document.createElement('button');
     muokkaaNappi.className = 'muokkaa-tehtava-nappi';
@@ -1128,45 +1352,43 @@ function siirryMuokkaustilaan(itemElement, tehtava) {
     editInput.type = 'text';
     editInput.value = tehtava.teksti;
     editInput.className = 'edit-input';
-    const editMaarapaiva = document.createElement('input');
-    editMaarapaiva.type = 'datetime-local';
-    editMaarapaiva.value = tehtava.maarapaiva || '';
+    const editMp = document.createElement('input');
+    editMp.type = 'datetime-local';
+    editMp.value = tehtava.maarapaiva || '';
     vasen.appendChild(editInput);
-    vasen.appendChild(editMaarapaiva);
+    vasen.appendChild(editMp);
     const oikea = document.createElement('div');
     oikea.className = 'tehtava-oikea edit-controls';
     const assignContainer = document.createElement('div');
     assignContainer.className = 'assign-buttons';
-    ['Toni', 'Kaisa', 'Oona'].forEach(nimi => {
+    HENKILOT.forEach(nimi => {
         const btn = document.createElement('button');
         btn.className = 'assign-btn';
         btn.dataset.assignee = nimi;
         btn.textContent = nimi.charAt(0);
-        if (tehtava.kohdistettu && tehtava.kohdistettu.includes(nimi)) {
-            btn.classList.add('active');
-        }
+        if (tehtava.kohdistettu && tehtava.kohdistettu.includes(nimi)) btn.classList.add('active');
         btn.addEventListener('click', () => btn.classList.toggle('active'));
         assignContainer.appendChild(btn);
     });
     const tallennaNappi = document.createElement('button');
     tallennaNappi.textContent = 'Tallenna';
+    tallennaNappi.className = 'btn-primary pieni-nappi';
     tallennaNappi.addEventListener('click', () => {
         const uusiTeksti = editInput.value.trim();
         if (uusiTeksti) {
-            const uudetKohdistukset = Array.from(assignContainer.querySelectorAll('.assign-btn.active')).map(b => b.dataset.assignee);
-            const paivitys = {
+            const kohdistukset = Array.from(assignContainer.querySelectorAll('.assign-btn.active')).map(b => b.dataset.assignee);
+            update(ref(database, `tehtavalista/${tehtava.key}`), {
                 teksti: uusiTeksti,
-                kohdistettu: uudetKohdistukset,
-                maarapaiva: editMaarapaiva.value || null, // Poistaa kentän, jos se on tyhjä
+                kohdistettu: kohdistukset,
+                maarapaiva: editMp.value || null,
                 muokannut: nykyinenKayttaja,
                 muokattuAika: serverTimestamp()
-            };
-            update(ref(database, `tehtavalista/${tehtava.key}`), paivitys);
+            });
         }
     });
     const peruutaNappi = document.createElement('button');
     peruutaNappi.textContent = 'Peruuta';
-    peruutaNappi.className = 'cancel-btn';
+    peruutaNappi.className = 'btn-ghost pieni-nappi';
     peruutaNappi.addEventListener('click', () => rakennaTehtavaItemView(itemElement, tehtava));
     oikea.appendChild(assignContainer);
     oikea.appendChild(tallennaNappi);
@@ -1178,47 +1400,36 @@ function siirryMuokkaustilaan(itemElement, tehtava) {
 
 function lisaaTehtava() {
     const teksti = uusiTehtavaTeksti.value.trim();
-    if (teksti === '') return;
-    const kohdistetutHenkilot = Array.from(lisaaTehtavaHenkilot.querySelectorAll('.assign-btn.active'))
-                                     .map(btn => btn.dataset.assignee);
-    const uusiTehtava = {
-        teksti: teksti,
-        tehty: false,
-        luoja: nykyinenKayttaja,
-        lisattyAika: serverTimestamp(),
-        tila: 'aktiivinen'
+    if (!teksti) return;
+    const kohdistetut = Array.from(document.querySelectorAll('#lisaa-tehtava-henkilot .assign-btn.active'))
+        .map(b => b.dataset.assignee);
+    const uusi = {
+        teksti, tehty: false, luoja: nykyinenKayttaja,
+        lisattyAika: serverTimestamp(), tila: 'aktiivinen'
     };
-    if (kohdistetutHenkilot.length > 0) {
-        uusiTehtava.kohdistettu = kohdistetutHenkilot;
-    }
-    if (lisaaMaarapaivaToggle.checked && uusiTehtavaMaarapaiva.value) {
-        uusiTehtava.maarapaiva = uusiTehtavaMaarapaiva.value;
-    }
-    push(ref(database, 'tehtavalista'), uusiTehtava).then(() => {
+    if (kohdistetut.length > 0) uusi.kohdistettu = kohdistetut;
+    const mpToggle = document.getElementById('lisaa-maarapaiva-toggle');
+    const mpInput = document.getElementById('uusi-tehtava-maarapaiva');
+    if (mpToggle.checked && mpInput.value) uusi.maarapaiva = mpInput.value;
+    push(ref(database, 'tehtavalista'), uusi).then(() => {
         uusiTehtavaTeksti.value = '';
-        lisaaTehtavaHenkilot.querySelectorAll('.assign-btn').forEach(btn => btn.classList.remove('active'));
-        lisaaMaarapaivaToggle.checked = false;
-        uusiTehtavaMaarapaiva.classList.add('hidden');
-        uusiTehtavaMaarapaiva.value = '';
+        document.querySelectorAll('#lisaa-tehtava-henkilot .assign-btn').forEach(b => b.classList.remove('active'));
+        mpToggle.checked = false;
+        mpInput.classList.add('hidden');
+        mpInput.value = '';
+        haptic();
     });
 }
 
 function paivitaTehtavanTila(key, onkoTehty) {
     update(ref(database, `tehtavalista/${key}`), { tehty: onkoTehty });
+    haptic();
 }
 
-function arkistoiTehtava(key) {
-    update(ref(database, `tehtavalista/${key}`), { tila: 'arkistoitu' });
-}
-
-function palautaTehtava(key) {
-    update(ref(database, `tehtavalista/${key}`), { tila: 'aktiivinen' });
-}
-
+function arkistoiTehtava(key) { update(ref(database, `tehtavalista/${key}`), { tila: 'arkistoitu' }); }
+function palautaTehtava(key) { update(ref(database, `tehtavalista/${key}`), { tila: 'aktiivinen' }); }
 function poistaTehtava(key) {
-    if (confirm('Haluatko varmasti poistaa tämän tehtävän lopullisesti? Tätä ei voi perua.')) {
-        remove(ref(database, `tehtavalista/${key}`));
-    }
+    if (confirm('Poistetaanko tehtävä lopullisesti?')) remove(ref(database, `tehtavalista/${key}`));
 }
 
 function avaaArkisto() {
@@ -1227,54 +1438,244 @@ function avaaArkisto() {
         .filter(t => t.tila === 'arkistoitu')
         .sort((a, b) => (a.lisattyAika > b.lisattyAika) ? -1 : 1);
     if (arkistoidut.length === 0) {
-        arkistoidutTehtavatLista.innerHTML = '<p style="text-align:center; opacity:0.7;">Arkisto on tyhjä.</p>';
+        arkistoidutTehtavatLista.innerHTML = '<p style="text-align:center;color:var(--text-3);">Arkisto on tyhjä.</p>';
     } else {
         arkistoidut.forEach(tehtava => {
             const item = document.createElement('div');
             item.className = 'arkisto-item';
-            
             const teksti = document.createElement('span');
             teksti.className = 'arkisto-item-teksti';
             teksti.textContent = tehtava.teksti;
-
             const nappulat = document.createElement('div');
             nappulat.className = 'arkisto-item-nappulat';
-
-            const palautaNappi = document.createElement('button');
-            palautaNappi.textContent = 'Palauta';
-            palautaNappi.className = 'pieni-nappi';
-            palautaNappi.addEventListener('click', () => palautaTehtava(tehtava.key));
-
-            const poistaNappi = document.createElement('button');
-            poistaNappi.textContent = 'Poista pysyvästi';
-            poistaNappi.className = 'delete-btn pieni-nappi';
-            poistaNappi.addEventListener('click', () => poistaTehtava(tehtava.key));
-
-            nappulat.appendChild(palautaNappi);
-            nappulat.appendChild(poistaNappi);
+            const palauta = document.createElement('button');
+            palauta.textContent = 'Palauta';
+            palauta.className = 'pieni-nappi';
+            palauta.addEventListener('click', () => palautaTehtava(tehtava.key));
+            const poista = document.createElement('button');
+            poista.textContent = 'Poista';
+            poista.className = 'btn-danger pieni-nappi';
+            poista.addEventListener('click', () => poistaTehtava(tehtava.key));
+            nappulat.appendChild(palauta);
+            nappulat.appendChild(poista);
             item.appendChild(teksti);
             item.appendChild(nappulat);
             arkistoidutTehtavatLista.appendChild(item);
         });
     }
-
-    tehtavaArkistoModal.classList.remove('hidden');
+    avaaSheet(sheetArkisto);
 }
 
-function maaritaTehtavanTila(tehtava) {
-    if (tehtava.tehty) {
-        return 'tehty';
-    }
-    if (tehtava.maarapaiva) {
-        const nyt = new Date();
-        const maarapaiva = new Date(tehtava.maarapaiva);
-        if (nyt > maarapaiva) {
-            return 'myohassa';
+// ============ VÄLILEHDET ============
+function vaihdaPaneli(paneli) {
+    document.body.dataset.panel = paneli;
+    tabbar.querySelectorAll('.tab-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.panel === paneli));
+    haptic();
+}
+
+// ============ ELEET ============
+function lisaaEleetJaSheetKahvat() {
+    // Horisontaalinen pyyhkäisy: jakson vaihto näkymissä
+    let sx = 0, sy = 0;
+    nakymat.addEventListener('touchstart', (e) => {
+        sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+    }, { passive: true });
+    nakymat.addEventListener('touchend', (e) => {
+        const dx = e.changedTouches[0].clientX - sx;
+        const dy = e.changedTouches[0].clientY - sy;
+        if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.6) {
+            siirryJaksoa(dx < 0 ? 1 : -1);
+            haptic();
         }
-        if (maarapaiva - nyt < 86400000) { // 24 tuntia millisekunteina
-            return 'kiireellinen';
+    }, { passive: true });
+
+    // Sheet-kahvasta alasveto → sulje
+    document.querySelectorAll('.sheet-kahva').forEach(kahva => {
+        const sheet = kahva.closest('.sheet');
+        const overlay = kahva.closest('.sheet-overlay');
+        let startY = 0, delta = 0;
+        kahva.addEventListener('touchstart', (e) => {
+            startY = e.touches[0].clientY;
+            sheet.style.transition = 'none';
+        }, { passive: true });
+        kahva.addEventListener('touchmove', (e) => {
+            delta = Math.max(0, e.touches[0].clientY - startY);
+            sheet.style.transform = `translateY(${delta}px)`;
+        }, { passive: true });
+        kahva.addEventListener('touchend', () => {
+            sheet.style.transition = '';
+            if (delta > 90) suljeSheet(overlay);
+            else sheet.style.transform = '';
+            delta = 0;
+        }, { passive: true });
+    });
+
+    // Pull-to-refresh kalenteripaneelissa
+    const paneli = document.getElementById('panel-kalenteri');
+    let ptrY = 0, ptrEta = 0, ptrOk = false;
+    paneli.addEventListener('touchstart', (e) => {
+        const scrollY = window.scrollY || document.documentElement.scrollTop;
+        const ahScroll = paneli.querySelector('.ah-scroll');
+        const ahYlhaalla = !ahScroll || ahScroll.scrollTop <= 0;
+        ptrOk = scrollY <= 0 && ahYlhaalla;
+        ptrY = e.touches[0].clientY;
+        ptrEta = 0;
+    }, { passive: true });
+    paneli.addEventListener('touchmove', (e) => {
+        if (!ptrOk) return;
+        ptrEta = Math.max(0, (e.touches[0].clientY - ptrY) * 0.5);
+        if (ptrEta > 10) {
+            ptrIndikaattori.style.height = Math.min(ptrEta, 56) + 'px';
+            ptrIndikaattori.classList.add('ptr-aktiivinen');
         }
-        return 'ok';
+    }, { passive: true });
+    paneli.addEventListener('touchend', () => {
+        if (ptrEta > 60) {
+            piirraNakyma();
+            naytaTulevat();
+            naytaIlmoitus('Päivitetty ✓', 1500);
+        }
+        setTimeout(() => {
+            ptrIndikaattori.classList.remove('ptr-aktiivinen');
+            ptrIndikaattori.style.height = '';
+        }, ptrEta > 60 ? 700 : 0);
+        ptrEta = 0; ptrOk = false;
+    }, { passive: true });
+}
+
+function lisaaTehtavaSwipe(item, tehtava) {
+    let sx = 0, sy = 0, moving = false;
+    item.addEventListener('touchstart', (e) => {
+        sx = e.touches[0].clientX; sy = e.touches[0].clientY; moving = false;
+        item.style.transition = 'none';
+    }, { passive: true });
+    item.addEventListener('touchmove', (e) => {
+        const dx = e.touches[0].clientX - sx;
+        const dy = e.touches[0].clientY - sy;
+        if (!moving && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) moving = true;
+        if (moving) {
+            const x = Math.min(Math.max(dx, 0), 110);
+            item.style.transform = `translateX(${x}px)`;
+            const tausta = item.parentElement.querySelector('.swipe-tausta');
+            if (tausta) tausta.style.opacity = Math.min(1, x / 60);
+        }
+    }, { passive: true });
+    item.addEventListener('touchend', (e) => {
+        item.style.transition = '';
+        const dx = e.changedTouches[0].clientX - sx;
+        if (moving && dx > 70) {
+            item.style.transform = '';
+            paivitaTehtavanTila(tehtava.key, !tehtava.tehty);
+            naytaIlmoitus(tehtava.tehty ? 'Tehtävä palautettu' : 'Tehtävä tehty! ✓', 1800);
+        } else {
+            item.style.transform = '';
+            const tausta = item.parentElement.querySelector('.swipe-tausta');
+            if (tausta) tausta.style.opacity = 0;
+        }
+        moving = false;
+    }, { passive: true });
+}
+
+// ============ MUISTUTUKSET ============
+function lataaMuistutusAsetukset() {
+    try {
+        const tallennettu = JSON.parse(localStorage.getItem('kalenteri-muistutukset'));
+        if (tallennettu) muistutusAsetukset = { ...muistutusAsetukset, ...tallennettu };
+    } catch (e) { /* käytä oletuksia */ }
+    document.getElementById('muistutukset-toggle').checked = muistutusAsetukset.kaytossa;
+    document.getElementById('muistutus-ajoitus').value = String(muistutusAsetukset.ajoitus);
+    document.getElementById('tehtava-muistutukset-toggle').checked = muistutusAsetukset.tehtavat;
+    paivitaMuistutusStatus();
+}
+
+function tallennaMuistutusAsetuksetUI() {
+    muistutusAsetukset.kaytossa = document.getElementById('muistutukset-toggle').checked;
+    muistutusAsetukset.ajoitus = parseInt(document.getElementById('muistutus-ajoitus').value);
+    muistutusAsetukset.tehtavat = document.getElementById('tehtava-muistutukset-toggle').checked;
+    localStorage.setItem('kalenteri-muistutukset', JSON.stringify(muistutusAsetukset));
+    if (muistutusAsetukset.kaytossa && 'Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().then(() => paivitaMuistutusStatus());
     }
-    return ''; // Ei erityistä tilaa
+    alustaMuistutukset();
+    paivitaMuistutusStatus();
+    naytaIlmoitus('Muistutusasetukset tallennettu.');
+}
+
+function paivitaMuistutusStatus() {
+    const el = document.getElementById('muistutus-status');
+    if (!muistutusAsetukset.kaytossa) {
+        el.textContent = 'Muistutukset eivät ole käytössä.';
+        return;
+    }
+    let tila = 'Muistutukset näytetään sovelluksen ollessa auki.';
+    if ('Notification' in window) {
+        if (Notification.permission === 'granted') tila = 'Selaimen ilmoitukset sallittu.';
+        else if (Notification.permission === 'denied') tila = 'Selaimen ilmoitukset estetty — muistutukset näytetään sovelluksessa.';
+    }
+    el.textContent = tila;
+}
+
+function alustaMuistutukset() {
+    if (muistutusIntervalli) clearInterval(muistutusIntervalli);
+    if (!muistutusAsetukset.kaytossa) return;
+    muistutusIntervalli = setInterval(() => {
+        tarkistaMuistutukset();
+        tarkistaTehtavaMuistutukset();
+    }, 30000);
+    tarkistaMuistutukset();
+    tarkistaTehtavaMuistutukset();
+}
+
+function muistutettuJo(avain) {
+    try {
+        const lista = JSON.parse(sessionStorage.getItem('muistutetut') || '[]');
+        if (lista.includes(avain)) return true;
+        lista.push(avain);
+        if (lista.length > 300) lista.shift();
+        sessionStorage.setItem('muistutetut', JSON.stringify(lista));
+    } catch (e) { /* sessionStorage ei käytettävissä */ }
+    return false;
+}
+
+function tarkistaMuistutukset() {
+    if (!muistutusAsetukset.kaytossa || !window.kaikkiTapahtumat || !nykyinenKayttaja) return;
+    const nyt = Date.now();
+    const raja = muistutusAsetukset.ajoitus * 60000;
+    nakyvatTapahtumat().forEach(t => {
+        const alku = new Date(t.alku).getTime();
+        const ero = alku - nyt;
+        if (ero > 0 && ero <= raja && !muistutettuJo(`${t.key}|${t.alku}`)) {
+            const min = Math.round(ero / 60000);
+            lahetaMuistutus(`Tapahtuma ${min <= 1 ? 'alkaa pian' : `alkaa ${min} min päästä`}`, t.otsikko);
+        }
+    });
+}
+
+function tarkistaTehtavaMuistutukset() {
+    if (!muistutusAsetukset.kaytossa || !muistutusAsetukset.tehtavat) return;
+    const tanaan = pvmMerkkijono(new Date());
+    if (localStorage.getItem('muistutus-tehtavat-pvm') === tanaan) return;
+    const tanaanTehtavat = kaikkiTehtavat.filter(t =>
+        !t.tehty && t.tila !== 'arkistoitu' && t.maarapaiva &&
+        pvmMerkkijono(new Date(t.maarapaiva)) === tanaan);
+    if (tanaanTehtavat.length > 0) {
+        lahetaMuistutus('Tänään määräpäivä', `${tanaanTehtavat.length} tehtävää: ${tanaanTehtavat[0].teksti}${tanaanTehtavat.length > 1 ? '…' : ''}`);
+        localStorage.setItem('muistutus-tehtavat-pvm', tanaan);
+    } else {
+        localStorage.setItem('muistutus-tehtavat-pvm', tanaan);
+    }
+}
+
+function lahetaMuistutus(otsikko, viesti) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+            new Notification(otsikko, { body: viesti, icon: 'logo.png' });
+        } catch (e) {
+            naytaIlmoitus(`${otsikko}: ${viesti}`, 5000);
+        }
+    } else {
+        naytaIlmoitus(`${otsikko}: ${viesti}`, 5000);
+    }
+    haptic();
 }

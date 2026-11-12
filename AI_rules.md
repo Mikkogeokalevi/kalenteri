@@ -1,362 +1,64 @@
-# AI Rules - Kauppisen perhekalenteri
+# AI Rules - Kauppisen perhekalenteri (v2.0 "Premium")
 
 ## Sovelluksen yleiskuvaus
 
-**Kauppisen perhekalenteri** on suomenkielinen web-pohjainen kalenteri- ja tehtävienhallintasovellus, joka on suunniteltu perheen yhteiskäyttöön.
+**Kauppisen perhekalenteri** on suomenkielinen, tuotantokäytössä oleva web-pohjainen kalenteri- ja tehtävienhallintasovellus perheen yhteiskäyttöön. iOS-tyylinen premium-ulkoasu (v2.0, marraskuu 2026).
 
-## Perheenjäsenet ja värikoodit
+## Perheenjäsenet ja värit
 
-| Henkilö | Väri | Hex-koodi |
-|---------|------|-----------|
-| Toni | Vihreä | `#2e8b57` |
-| Kaisa | Violetti | `#9370db` |
-| Oona | Sininen | `#4682b4` |
-| Perhe (kaikki) | Punainen | `#f08080` |
+| Henkilö | CSS-muuttuja | Vaalea | Tumma |
+|---------|--------------|--------|-------|
+| Toni | `--c-toni` | `#16a34a` | `#4ade80` |
+| Kaisa | `--c-kaisa` | `#9333ea` | `#c084fc` |
+| Oona | `--c-oona` | `#2563eb` | `#60a5fa` |
+| Perhe | `--c-perhe` | `#e11d48` | `#fb7185` |
+
+Käyttäjän oma aksenttiteema: `body.theme-toni/kaisa/oona` muuttaa `--accent`-värin.
+Vaalea/tumma teema: `document.documentElement[data-teema]` (`vaalea`/`tumma`), valinta localStorage `kalenteri-teema` (auto/vaalea/tumma).
 
 ## Tekninen stack
 
-- **Frontend**: Vanilla JavaScript (ES6 modules), HTML5, CSS3
-- **Backend**: Firebase
-  - Firebase Realtime Database (tietojen tallennus)
-  - Firebase Authentication (kirjautuminen sähköposti/salasana)
-- **Ei build-työkaluja** – suora selainlataus
+- **Frontend**: Vanilla JavaScript (ES6), HTML5, CSS3 — ei build-työkaluja
+- **Backend**: Firebase Realtime Database + Authentication (email/salasana), CDN-importit
+- **PWA**: manifest.json + sw.js (cache `kalenteri-v11`)
 
 ## Tiedostorakenne
 
 | Tiedosto | Kuvaus |
 |----------|--------|
-| `index.html` | Pääsivu, kaikki UI-elementit |
-| `script.js` | Päälogiikka: tapahtumat, tehtävät, kalenteri, Firebase-yhteys |
-| `style.css` | Kaikki tyylit |
-| `auth.js` | Autentikointilogiikka |
-| `utils.js` | Apufunktiot (päivämäärät, formatointi) |
-| `vakiot.js` | Vakiot ja konfiguraatio |
-| `ohjeet.js` | Käyttöohjeet |
-| `backup.bat` | Varmuuskopiointiskripti |
-| `update_github.bat` | GitHub-päivitysskripti |
+| `index.html` | Koko UI: login, appbar, näkymät, sivuraita, tab bar, FAB, 6 sheetiä |
+| `script.js` | Koko sovelluslogiikka (~1650 r.) — pidä yhtenä tiedostona! |
+| `style.css` | Design system, molemmat teemat, responsiivisuus |
+| `sw.js` | Service Worker (v11): fontit cache-first, app-tiedostot network-first, Firebase ohitetaan |
+| `manifest.json` | PWA + shortcut "Uusi tapahtuma" (`?uusi=1`) |
+| `backup.bat` / `update_github.bat` | Varmuuskopio / Git-push |
+| `logo.png` | Logo/ikoni |
 
 ## Keskeiset ominaisuudet
 
-1. **Tapahtumakalenteri**
-   - Kuukausinäkymä
-   - Tapahtumien lisäys, muokkaus, poisto
-   - Koko päivän tapahtumat tai aikavälillä
-   - Linkkien lisäys (esim. Google Maps, Teams)
+1. **Näkymät**: Agenda (oletus mobiilissa), Päivä, Viikko, Kuukausi — segmented control + pyyhkäisy. Viikko/päivä = aikahila (6–24), kaistalaskenta päällekkäisille.
+2. **Kategoriat**: tyo/harrastus/juhlat/terveys/koulu/ostokset/matka/muu — ikonit `KATEGORIAT`-mapissa, kenttä `tapahtuma.kategoria`.
+3. **Toistuvat tapahtumat**: max 100 instanssia `sarjaId`+`sarjaIndeksi`-tunnisteilla. Muokkaus JA poisto kysyvät laajuuden (yksittäinen/tulevat/koko sarja) yhteisestä `sheet-laajuus`-dialogista. Sarjamuokkauksessa metakentät (`SARJA_META_KENTAT`) levitetään, ajat vain valittuun instanssiin.
+4. **Muistutukset**: sovelluksen-sisäiset, `localStorage['kalenteri-muistutukset']`, 30s tarkistus, Notification API jos sallittu, toast fallback. Dedupe sessionStorage.
+5. **Tehtävät**: `/tehtavalista`, kohdistus, määräpäivä, tilavärit, arkisto, **swipe-to-complete**.
+6. **Mobiili**: tab bar (kalenteri/tehtävät/asetukset), FAB, bottom sheetit + alasveto, pull-to-refresh, safe-areat, 16px inputit (iOS zoom-esto), haptiikka.
 
-2. **Tulevat tapahtumat -lista**
-   - Suodatus henkilön mukaan (Kaikki, Perhe, Toni, Kaisa, Oona)
-   - Hakutoiminto
-   - Sivutus (10 tapahtumaa/sivu)
+## Firebase-polut
 
-3. **Yhteinen muistilista (tehtävät)**
-   - Tehtävien kohdistus henkilöille
-   - Määräpäivän asetus
-   - Arkistointi
-
-4. **Menneet tapahtumat**
-   - Erillinen modal-ikkuna
-   - Haku ja sivutus
-
-5. **Käyttäjähallinta**
-   - Kirjautuminen/uloskirjautuminen
-   - Näkyvyysasetukset tapahtumille
-
-## Kieli ja lokalisointi
-
-- **Kieli**: Suomi
-- Kaikki UI-tekstit suomeksi
-- Päivämääräformaatti: suomalainen (pp.kk.vvvv)
-- Viikonpäivät alkavat maanantaista
+- Tapahtumat: `/tapahtumat` — kentät: otsikko, kuvaus, alku, loppu, kokoPaiva, linkki, kategoria, luoja, ketakoskee[], nakyvyys{}, toistuminen{tyyppi,paattyy} (vain lisäysdata), sarjaId, sarjaIndeksi, onToistuva
+- Tehtävät: `/tehtavalista`
 
 ## Kehityssäännöt
 
-### Koodityyli
-- Käytä suomenkielisiä muuttuja- ja funktionimia (kuten nykyisessä koodissa)
-- Noudata olemassa olevaa koodityyliä
-- Älä lisää tai poista kommentteja ilman pyyntöä
-- ES6 module -syntaksi (import/export)
-
-### UI/UX
-- Säilytä nykyinen visuaalinen ilme
-- Värikoodit perheenjäsenille pysyvät samoina
-- Responsiivinen suunnittelu
-
-### Firebase
-- Realtime Database polut:
-  - Tapahtumat: `/tapahtumat`
-  - Tehtävät: `/tehtavat`
-- Käytä `serverTimestamp()` aikaleimoja varten
-
-### Testaus
-- Testaa aina kirjautuneena ja kirjautumattomana
-- Testaa eri perheenjäsenten näkyvyysasetuksilla
-
-## Muistettavaa
-
-- Sovellus on tuotantokäytössä (oikea perhe käyttää sitä)
-- Älä riko olemassa olevia toiminnallisuuksia
-- Firebase API-avain on koodissa (normaali käytäntö Firebase web-sovelluksille)
-
----
-
-## Tulevat säännöt ja muistiinpanot
-
-*Tähän lisätään uudet säännöt sitä mukaa kun niitä tulee:*
-
----
-
-## � NYKYINEN TILANNE (päivitetty 7.2.2026)
-
-### ✅ VALMIIT OMINAISUUDET
-
-**Vaihe 1.1: CSS-modernisointi** ✅
-- Moderni tumma väripaletti CSS-muuttujilla
-- Google Fonts (Inter, Space Grotesk)
-- Korttipohjainen layout
-- Responsiivinen mobiililayout
-- Animaatiot ja siirtymät
-- Päivitetyt käyttäjävärit:
-  - Toni: `#4ade80` (vihreä)
-  - Kaisa: `#c084fc` (violetti)
-  - Oona: `#60a5fa` (sininen)
-  - Perhe: `#fb7185` (punainen)
-
-**Vaihe 1.2: Perusilmoitukset** ❌ POISTETTU
-- Ei toiminut mobiilissa (Android Firefox/Samsung)
-- Kaikki muistutustoiminnallisuus poistettu kokonaan
-- NotificationManager ja NotificationSettings luokat poistettu
-- Muistutusindikaattorit poistettu listauksista
-
-**PWA-tuki** ✅
-- manifest.json
-- sw.js (Service Worker, versio v9)
-- Offline-välimuisti fonteille ja tiedostoille
-
-**Vaihe 2.1: Toistuvat tapahtumat** ✅
-- Toistumisasetukset (päivittäin, viikoittain, kuukausittain)
-- Päättymispäivän asetus (valinnainen)
-- Automaattinen toistuvien tapahtumien luonti
-- Rajoitus 100 tapahtumaan kerralla
-- CSS-tyylit toistumisasetuksille
-
-### 🔧 TIEDOSTORAKENNE
-
-| Tiedosto | Rivejä | Kuvaus |
-|----------|--------|--------|
-| `script.js` | ~1170 | Päälogiikka, toistuvat tapahtumat |
-| `style.css` | ~1234 | Kaikki tyylit, toistumisasetukset |
-| `index.html` | ~340 | UI-rakenne, toistumislomakkeet |
-| `sw.js` | ~50 | Service Worker (v9) |
-| `manifest.json` | ~20 | PWA-manifesti |
-
-### ⚠️ TÄRKEÄÄ MUISTAA
-
-1. **ÄLÄ REFAKTOROI script.js:ää moduuleihin** - yritettiin, meni rikki
-2. **Testaa AINA kirjautuminen** ennen pushia
-3. **Päivitä sw.js CACHE_NAME** kun teet muutoksia (nyt v9)
-4. **Sovellus on tuotantokäytössä** - oikea perhe käyttää
-
-### 🎯 SEURAAVAKSI (Vaihe 2)
-
-1. **Toistuvat tapahtumat** ✅ - viikoittaiset/kuukausittaiset
-2. **Push-ilmoitukset 2.0** - PWA:n kautta (ei toteuteta)
-3. **Raporttinäkymä** - viikkoyhteenveto
-
----
-
-## �� Kehityssuunnitelma ja parannusehdotukset
-
-### Analyysi nykytilanteesta
-**Vahvuudet:**
-- Toimiva peruskalenteri – kuukausinäkymä, tapahtumien hallinta
-- Hyvä tehtäväjärjestelmä – kohdistus henkilöille, määräpäivät, arkisto
-- Perhekeskeinen – värikoodit, näkyvyysasetukset
-- Teknisesti siisti – Vanilla JS, Firebase, PWA-tuki
-- Suomenkielinen – täysin lokalisoitu
-
-**Kehityskohteet:**
-- Käyttöliittymä on hieman vanhanaikainen
-- Puuttuvat modernit ominaisuudet (ilmoitukset, synkronointi)
-- Mobiilikokemus voisi olla parempi
-- Ei raportointia tai tilastoja
-
----
-
-### 🎯 Parannusehdotukset (prioriteettijärjestyksessä)
-
-#### 1. **Käyttöliittymän modernisointi** (Korkea prioriteetti)
-- **Visuaalinen päivitys** – moderni CSS, paremmat värit, animaatiot
-- **Mobiiliresponsiivisuus** – parempi puhelinkäyttö
-- **Paremmat ikonit** – moderni ikonijärjestelmä
-- **Tumma/vaalea teema** – käyttäjän valittavissa
-
-#### 2. **Ilmoitukset ja muistutukset** (Korkea prioriteetti)
-- **Push-ilmoitukset** – tapahtumamuistutukset
-- **Selaimeen perustuvat ilmoitukset** – PWA:n kautta
-- **Muistutusasetukset** – milloin ilmoittaa
-- **Tehtävämuistutukset** – määräpäivien lähestyessä
-
-#### 3. **Tapahtumien laajennukset** (Keskipitkä prioriteetti)
-- **Toistuvat tapahtumat** – viikoittaiset, kuukausittaiset
-- **Tapahtumakategoriat** – työ, vapaa-aika, juhlat jne.
-- **Tiedostoliitteet** – kuvat, dokumentit
-- **Kutsut ja RSVP** – kutsu muita perheenjäseniä
-
-#### 4. **Raportointi ja tilastot** (Keskipitkä prioriteetti)
-- **Viikko/kuukausiraportit** – perheen yhteenveto
-- **Tehtävätilastot** – kuka tekee mitä
-- **Kiireellisyysnäkymä** – tänään/tämän viikon tapahtumat
-- **Tulostettava versio** – paperille tulostus
-
-#### 5. **Käyttökokemuksen parannukset** (Matala prioriteetti)
-- **Pikatoiminnot** – drag&drop, näppäinoikotiet
-- **Hakutoiminnon parannus** – tarkempi haku, suodattimet
-- **Offline-tuen parannus** – enemmän toiminnallisuus offline
-- **Tuo/vie** – kalenteritiedostojen tuonti/exportti
-
----
-
-### 🛠️ Toteutussuunnitelma
-
-#### Vaihe 1 (1-2 viikkoa) – Perusmodernisointi
-**Tavoitteet:**
-- Käyttöliittymän modernisointi (CSS, värit, layout)
-- Mobiiliresponsiivisuuden parannus
-- Perusilmoitusten lisääminen
-
-**Konkreettiset tehtävät:**
-1. **CSS-uudistus**:
-   - Moderni väripaletti ja kontrastit
-   - Korttipohjainen layout
-   - Parempi animaatiot ja siirtymät
-   - Responsiivinen grid/flexbox
-
-2. **Mobiilioptimointi**:
-   - Touch-ystävälliset napit
-   - Parempi puhelinnäkymä
-   - Swipe-temput kalenterissa
-
-3. **Perusilmoitukset**:
-   - Browser Notification API
-   - Tapahtumamuistutukset (15min, 1h ennen)
-   - Tehtävämuistutukset määräpäiville
-
-#### Vaihe 2 (2-3 viikkoa) – Laajennukset
-**Tavoitteet:**
-- Toistuvat tapahtumat
-- Push-ilmoitusten täysversio
-- Raporttinäkymän perusversio
-
-**Konkreettiset tehtävät:**
-1. **Toistuvat tapahtumat**:
-   - Viikoittaiset/kuukausittaiset toistot
-   - Poikkeuspäivien hallinta
-   - Toistojen muokkaus/poisto
-
-2. **Ilmoitukset 2.0**:
-   - Push-ilmoitukset PWA:n kautta
-   - Muistutusasetukset käyttäjälle
-   - Ilmoitushistoria
-
-3. **Raportointi**:
-   - Viikkonäkymä tapahtumista
-   - Tehtävätilastot perheenjäsenittäin
-   - Tulostettava versio
-
-#### Vaihe 3 (jatkokehitys) – Edistyneet ominaisuudet
-**Tavoitteet:**
-- Kategoriat ja liitteet
-- Tilastot ja analytiikka
-- Kutsujärjestelmä
-
-**Konkreettiset tehtävät:**
-1. **Kategoriat**:
-   - Tapahtumaluokat (työ, vapaa-aika, juhlat)
-   - Omat värit kategorioille
-   - Suodatus kategorioilla
-
-2. **Liitteet**:
-   - Kuvien lisäys tapahtumiin
-   - Dokumenttiliitteet
-   - Tiedostojen hallinta Firebase Storage
-
-3. **Kutsut**:
-   - Kutsu muita perheenjäseniä
-   - RSVP-vastaukset
-   - Kutsuhistoria
-
----
-
-### 💡 Teknisiä parannuksia
-
-#### Suorituskyky
-- **Lazy loading** – suurten datamäärien käsittely
-- **Optimoitu välimuisti** – parempi SW-strategia
-- **Kuvien optimointi** – logo ja mahdolliset liitteet
-
-#### Tietoturva
-- **Parempi autentikointi** – 2FA, salasanan vaihto
-- **Tietojen varmuuskopiointi** – automaattiset varmuuskopiot
-- **Lokitietojen hallinta** – kuka teki mitä ja milloin
-
----
-
-### 📱 Mobiiliparannukset
-
-#### Touch-optimointi
-- **Suuremmat napit** – helpompi käyttö puhelimella
-- **Swipe-temput** – viikkojen vaihto, tapahtumien selaus
-- **Pohjateema** – mobiilinäkymä
-
-#### PWA-parannukset
-- **Täysin offline** – kaikki toiminnallisuus ilman verkkoyhteyttä
-- **Kotinäytön widget** – pikakatsaus tapahtumiin
-- **Jakotoiminnot** – jaa tapahtumia muihin sovelluksiin
-
----
-
-### 🎨 Visuaaliset parannukset
-
-#### Väriteema
-- **Moderni paletti** – parempi kontrasti, esteettömyys
-- **Personoitavat teemat** – jokaisen perheenjäsenen oma teema
-- **Parempi kontrasti** – esteettömyysstandardien mukainen
-
-#### Layout
-- **Korttipohjainen UI** – modernimpi ulkoasu
-- **Parempi tilankäyttö** – enemmän tietoa näytöllä
-- **Animaatiot** – siirtymät ja palaute
-
----
-
-### ⏰ Aikataulun selitys
-
-**"1-2 viikkoa"** tarkoittaa:
-- **Oikeaa kehitysaikaa** – jos työskentelet aktiivisesti
-- **Ei ole sitova** – arvio riippuu kokemuksesta ja käytettävästä ajasta
-- **Voi tehdä osissa** – ei tarvitse tehdä kaikkea kerralla
-- **Joustava** – voit tehdä yhden ominaisuuden viikossa tai useamman
-
-**Käytännössä:**
-- **Vaihe 1**: Aloita CSS-uudistuksella, tee se valmiiksi
-- **Vaihe 2**: Kun Vaihe 1 on valmis, siirry seuraavaan
-- **Voit tehdä vain osan** – esim. vain CSS-uudistuksen ja pysähtyä siihen
-
----
-
-### 🎯 Suositus aloitukseen
-
-**Aloita Vaiheella 1**, koska:
-1. **Visuaalinen parannus** on heti näkyvissä
-2. **Perustaa muutoksille** hyvän pohjan
-3. **Antaa motivaatiota** jatkaa kehitystä
-4. **Ei riko olemassa olevaa toiminnallisuutta**
-
-**Ensimmäinen konkreettinen tehtävä:**
-- Moderni CSS-väripaletti
-- Korttipohjainen layout
-- Parempi mobiilikokemus
-
----
-
-<!-- Lisää uudet säännöt tähän -->
+- Suomenkieliset muuttuja-/funktionimet, noudata tyyliä
+- **ÄLÄ refaktoroi script.js:ää moduuleihin** — yritettiin, meni rikki
+- **Päivitä sw.js CACHE_NAME** aina kun julkaiset muutoksia
+- Testaa kirjautuminen ennen pushia; sovellus on tuotannossa
+- `esc()` kaikkiin innerHTML-injektioihin käyttäjädatan kanssa
+- Käyttäjävärin luetaan aina `cssVari()`/`henkiloVari()`-funktiolla (teemat vaihtuvat)
+
+## Tulevat ideat
+
+- Push-ilmoitukset: FCM + Cloud Functions (vaatii Blaze; rakenne valmis muistutusmoduulissa)
+- Raporttinäkymä / viikkoyhteenveto
+- Liitteet tapahtumiin (Firebase Storage)

@@ -3,22 +3,39 @@
   "short_name": "Kalenteri",
   "description": "Perheen yhteinen kalenteri ja tehtävälista",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#1a2015",
-  "theme_color": "#3D4F2B",
+  "display_override": ["standalone", "browser"],
+  "background_color": "#f2f4f7",
+  "theme_color": "#f2f4f7",
   "orientation": "portrait-primary",
+  "categories": ["productivity", "lifestyle"],
   "icons": [
     {
       "src": "logo.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "logo.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Uusi tapahtuma",
+      "short_name": "Lisää",
+      "url": "./index.html?uusi=1",
+      "icons": [{ "src": "logo.png", "sizes": "192x192" }]
     }
   ]
 }
