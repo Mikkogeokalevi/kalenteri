@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getDatabase, ref, push, onValue, update, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+import { getDatabase, ref, push, onValue, update, remove, serverTimestamp, query, orderByChild, startAt, endAt } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -17,7 +17,7 @@ const database = getDatabase(app);
 const auth = getAuth(app);
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '2.4.3';
+const VERSIO = '2.5.0';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: '--c-toni', Kaisa: '--c-kaisa', Oona: '--c-oona', perhe: '--c-perhe' };
@@ -37,6 +37,7 @@ const EMOJI_VALINNAT = [
     '🎮','🎵','🎨','📚','🍽️','🍕','🎂','☕','💪','🧘','🩺','💊','🦷','👶','🐕','🎁',
     '🎄','🏖️','💰','📝','🔧','🏠','🌳','⛷️'
 ];
+const SYNKKAUS_TAAKSE_PV = 60; // jatkuvaan synkkaan vain ~2 kk taaksepäin — vanhat Historia-välilehdeltä
 const TAPAHTUMIA_PER_SIVU = 10;
 const AGENDA_PAIVIA_PER_ERÄ = 14;
 const AH_ALKU = 6, AH_LOPPU = 24, AH_TPX = 56; // aikahila: tunnit ja pikselikorkeus/tunti
@@ -65,6 +66,8 @@ let agendaNaytetyt = AGENDA_PAIVIA_PER_ERÄ;
 let unsubscribeFromEvents = null;
 let unsubscribeFromTasks = null;
 let unsubscribeFromCategories = null;
+let unsubscribeFromHistory = null;
+let historiaVanhat = [];
 let mukautetutKategoriat = {};
 let muokattavaKategoriaId = null;
 let historiaNaytetyt = 25;
@@ -213,6 +216,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (unsubscribeFromEvents) unsubscribeFromEvents();
             if (unsubscribeFromTasks) unsubscribeFromTasks();
             if (unsubscribeFromCategories) unsubscribeFromCategories();
+            lopetaHistoriaKuuntelu();
+            historiaVanhat = [];
             mukautetutKategoriat = {};
             if (muistutusIntervalli) clearInterval(muistutusIntervalli);
             appShell.classList.add('hidden');
@@ -487,14 +492,31 @@ function lisaaKuuntelijat() {
 }
 
 function haeTapahtuma(key) {
-    return window.kaikkiTapahtumat ? window.kaikkiTapahtumat.find(t => t.key === key) : null;
+    return kaikkiTapahtumatYhdistettyna().find(t => t.key === key) || null;
+}
+
+// Synkkauksen raja: tätä vanhemmat tapahtumat eivät kuulu jatkuvaan kuunteluun
+function synkkausRajaISO() {
+    const d = new Date();
+    d.setDate(d.getDate() - SYNKKAUS_TAAKSE_PV);
+    return pvmMerkkijono(d);
+}
+
+// Yhdistetty joukko: synkattu ikkuna + laiskasti ladatut vanhat (avaimet deduplikoidaan)
+function kaikkiTapahtumatYhdistettyna() {
+    const yhdistetty = [...(window.kaikkiTapahtumat || [])];
+    const keys = new Set(yhdistetty.map(t => t.key));
+    historiaVanhat.forEach(t => { if (!keys.has(t.key)) yhdistetty.push(t); });
+    return yhdistetty;
 }
 
 // ============ FIREBASE-KUUNTELU ============
 function kuunteleTapahtumia() {
     if (unsubscribeFromEvents) unsubscribeFromEvents();
-    const tapahtumatRef = ref(database, 'tapahtumat');
-    unsubscribeFromEvents = onValue(tapahtumatRef, (snapshot) => {
+    // Vain tuoreet + tulevat jatkuvaan synkkaan (säästää latausta) —
+    // vanhat tapahtumat ladataan vain kun Historia-välilehti on auki
+    const tapahtumatQ = query(ref(database, 'tapahtumat'), orderByChild('alku'), startAt(synkkausRajaISO()));
+    unsubscribeFromEvents = onValue(tapahtumatQ, (snapshot) => {
         window.kaikkiTapahtumat = [];
         snapshot.forEach((child) => {
             window.kaikkiTapahtumat.push({ key: child.key, ...child.val() });
@@ -504,6 +526,23 @@ function kuunteleTapahtumia() {
         paivitaHistoriaVuodet();
         piirraHistoria();
     });
+}
+
+// Vanhat tapahtumat omaan kuunteluun vain kun Historia on aktiivinen
+function kuunteleHistoriaa() {
+    if (unsubscribeFromHistory) return;
+    unsubscribeFromHistory = onValue(
+        query(ref(database, 'tapahtumat'), orderByChild('alku'), endAt(synkkausRajaISO())),
+        (snapshot) => {
+            historiaVanhat = [];
+            snapshot.forEach(child => historiaVanhat.push({ key: child.key, ...child.val() }));
+            paivitaHistoriaVuodet();
+            piirraHistoria();
+        });
+}
+
+function lopetaHistoriaKuuntelu() {
+    if (unsubscribeFromHistory) { unsubscribeFromHistory(); unsubscribeFromHistory = null; }
 }
 
 function kuunteleTehtavia() {
@@ -600,7 +639,7 @@ function tallennaKategoria() {
 }
 
 function poistaKategoria(id, nimi) {
-    const kaytossa = (window.kaikkiTapahtumat || []).filter(t => t.kategoria === id).length;
+    const kaytossa = kaikkiTapahtumatYhdistettyna().filter(t => t.kategoria === id).length;
     const viesti = kaytossa > 0
         ? `Poistetaanko kategoria "${nimi}"? Sen ${kaytossa} tapahtumaa siirtyy kategoriaan "Muu".`
         : `Poistetaanko kategoria "${nimi}"?`;
@@ -690,9 +729,10 @@ function piirraNakyma() {
 }
 
 // ============ SUODATUSAPU ============
-function nakyvatTapahtumat() {
-    if (!window.kaikkiTapahtumat || !nykyinenKayttaja) return [];
-    return window.kaikkiTapahtumat.filter(t => t.nakyvyys?.[nykyinenKayttaja] && t.alku && t.loppu);
+function nakyvatTapahtumat(joukko = null) {
+    const lahde = joukko || kaikkiTapahtumatYhdistettyna();
+    if (!nykyinenKayttaja) return [];
+    return lahde.filter(t => t.nakyvyys?.[nykyinenKayttaja] && t.alku && t.loppu);
 }
 
 // Yleinen henkilösuodatin (agenda + historia)
@@ -1207,7 +1247,7 @@ function naytaTulevat() {
 
 // ============ HISTORIA (menneet tapahtumat) ============
 function piirraHistoria() {
-    if (!historiaLista || !window.kaikkiTapahtumat) return;
+    if (!historiaLista) return;
     historiaLista.innerHTML = '';
     const nyt = new Date();
     let lista = nakyvatTapahtumat().filter(t => new Date(t.loppu) < nyt);
@@ -1237,9 +1277,9 @@ function piirraHistoria() {
 }
 
 function paivitaHistoriaVuodet() {
-    if (!historiaVuosi || !window.kaikkiTapahtumat) return;
+    if (!historiaVuosi) return;
     const valittu = historiaVuosi.value;
-    const vuodet = [...new Set(window.kaikkiTapahtumat
+    const vuodet = [...new Set(kaikkiTapahtumatYhdistettyna()
         .map(t => new Date(t.alku).getFullYear())
         .filter(v => !isNaN(v)))].sort((a, b) => b - a);
     historiaVuosi.innerHTML = '<option value="kaikki">Kaikki vuodet</option>' +
@@ -1506,7 +1546,7 @@ function paivitaSarja(vanha, data, laajuus) {
 }
 
 function sarjanKohteet(tapahtuma, laajuus) {
-    const sarja = window.kaikkiTapahtumat.filter(t => t.sarjaId === tapahtuma.sarjaId);
+    const sarja = kaikkiTapahtumatYhdistettyna().filter(t => t.sarjaId === tapahtuma.sarjaId);
     if (laajuus === 'koko-sarja') return sarja;
     if (laajuus === 'tulevat') return sarja.filter(t => t.sarjaIndeksi >= tapahtuma.sarjaIndeksi);
     return [tapahtuma];
@@ -1762,6 +1802,8 @@ function vaihdaPaneli(paneli) {
     document.body.dataset.panel = paneli;
     tabbar.querySelectorAll('.tab-btn').forEach(b =>
         b.classList.toggle('active', b.dataset.panel === paneli));
+    if (paneli === 'historia') kuunteleHistoriaa();
+    else lopetaHistoriaKuuntelu();
     haptic();
 }
 
