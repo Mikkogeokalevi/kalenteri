@@ -17,7 +17,7 @@ const database = getDatabase(app);
 const auth = getAuth(app);
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '2.2.2';
+const VERSIO = '2.3.1';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: 'var(--c-toni)', Kaisa: 'var(--c-kaisa)', Oona: 'var(--c-oona)', perhe: 'var(--c-perhe)' };
@@ -32,6 +32,11 @@ const KATEGORIAT = {
     matka:    { nimi: 'Matka',     ikoni: '✈️' },
     muu:      { nimi: 'Muu',       ikoni: '📌' }
 };
+const EMOJI_VALINNAT = [
+    '🧭','🗺️','📍','🔍','🌲','🏕️','🚗','✈️','⚽','🏀','🎾','🏊','🚴','🎣','🏹','🎯',
+    '🎮','🎵','🎨','📚','🍽️','🍕','🎂','☕','💪','🧘','🩺','💊','🦷','👶','🐕','🎁',
+    '🎄','🏖️','💰','📝','🔧','🏠','🌳','⛷️'
+];
 const TAPAHTUMIA_PER_SIVU = 10;
 const AGENDA_PAIVIA_PER_ERÄ = 14;
 const AH_ALKU = 6, AH_LOPPU = 24, AH_TPX = 56; // aikahila: tunnit ja pikselikorkeus/tunti
@@ -59,6 +64,9 @@ let agendaAlkuPvm = paivaNolla(new Date());
 let agendaNaytetyt = AGENDA_PAIVIA_PER_ERÄ;
 let unsubscribeFromEvents = null;
 let unsubscribeFromTasks = null;
+let unsubscribeFromCategories = null;
+let mukautetutKategoriat = {};
+let muokattavaKategoriaId = null;
 let historiaNaytetyt = 25;
 let kaikkiTehtavat = [];
 let muistutusAsetukset = { kaytossa: false, ajoitus: 60, tehtavat: false };
@@ -127,7 +135,14 @@ function pvmMerkkijono(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1
 function kloMerkkijono(d) { return d.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' }); }
 function cssVari(nimi) { return getComputedStyle(document.body).getPropertyValue(nimi).trim() || '#666'; }
 function henkiloVari(nimi) { return cssVari(KAYTTAJA_VARIT[nimi] || '--c-perhe'); }
-function kategoriaInfo(kat) { return KATEGORIAT[kat] || KATEGORIAT.muu; }
+function kategoriaInfo(kat) { return KATEGORIAT[kat] || mukautetutKategoriat[kat] || KATEGORIAT.muu; }
+
+// Kaikki kategoriat: valmiit ensin, sitten mukautetut aakkosjärjestyksessä
+function kaikkiKategoriat() {
+    const omat = Object.entries(mukautetutKategoriat)
+        .sort((a, b) => (a[1].nimi || '').localeCompare(b[1].nimi || '', 'fi'));
+    return [...Object.entries(KATEGORIAT), ...omat];
+}
 
 function esc(s) {
     return String(s || '').replace(/[&<>"']/g, c =>
@@ -186,6 +201,8 @@ document.addEventListener('DOMContentLoaded', () => {
             nykyinenKayttaja = null;
             if (unsubscribeFromEvents) unsubscribeFromEvents();
             if (unsubscribeFromTasks) unsubscribeFromTasks();
+            if (unsubscribeFromCategories) unsubscribeFromCategories();
+            mukautetutKategoriat = {};
             if (muistutusIntervalli) clearInterval(muistutusIntervalli);
             appShell.classList.add('hidden');
             loginOverlay.classList.remove('hidden');
@@ -195,6 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
     lataaTeema();
     const loginVersio = document.getElementById('login-versio');
     if (loginVersio) loginVersio.textContent = `v${VERSIO}`;
+    taytaEmojiValitsin();
     taytaKategoriavalinnat();
     lisaaKuuntelijat();
 });
@@ -247,6 +265,7 @@ function startAppForUser(userName) {
     asetaNakyma(nakymanTyyppi, false);
     kuunteleTapahtumia();
     kuunteleTehtavia();
+    kuunteleKategorioita();
     if (new URLSearchParams(location.search).get('uusi') === '1') {
         avaaLomake('lisaa');
         history.replaceState(null, '', location.pathname);
@@ -272,21 +291,30 @@ function asetaTeema(teema) {
 
 function taytaKategoriavalinnat() {
     const fKat = document.getElementById('f-kategoria');
+    const fValittu = fKat.value;
+    const sValittu = kategoriaSuodatin ? kategoriaSuodatin.value : 'kaikki';
+    const hValittu = historiaKategoria ? historiaKategoria.value : 'kaikki';
+    const kaikki = kaikkiKategoriat();
+
     fKat.innerHTML = '';
-    Object.entries(KATEGORIAT).forEach(([id, k]) => {
+    kaikki.forEach(([id, k]) => {
         const o = document.createElement('option');
         o.value = id;
         o.textContent = `${k.ikoni} ${k.nimi}`;
         fKat.appendChild(o);
     });
-    kategoriaSuodatin.innerHTML = '<option value="kaikki">Kaikki kategoriat</option>';
-    if (historiaKategoria) historiaKategoria.innerHTML = '<option value="kaikki">Kaikki kategoriat</option>';
-    Object.entries(KATEGORIAT).forEach(([id, k]) => {
-        const o = document.createElement('option');
-        o.value = id;
-        o.textContent = `${k.ikoni} ${k.nimi}`;
-        kategoriaSuodatin.appendChild(o);
-        if (historiaKategoria) historiaKategoria.appendChild(o.cloneNode(true));
+    if (kaikki.some(([id]) => id === fValittu)) fKat.value = fValittu;
+
+    [[kategoriaSuodatin, sValittu], [historiaKategoria, hValittu]].forEach(([sel, vanha]) => {
+        if (!sel) return;
+        sel.innerHTML = '<option value="kaikki">Kaikki kategoriat</option>';
+        kaikki.forEach(([id, k]) => {
+            const o = document.createElement('option');
+            o.value = id;
+            o.textContent = `${k.ikoni} ${k.nimi}`;
+            sel.appendChild(o);
+        });
+        sel.value = (vanha === 'kaikki' || kaikki.some(([id]) => id === vanha)) ? vanha : 'kaikki';
     });
 }
 
@@ -332,6 +360,15 @@ function lisaaKuuntelijat() {
         historiaSort.addEventListener('change', () => piirraHistoria());
         historiaLisaaBtn.addEventListener('click', () => { historiaNaytetyt += 25; piirraHistoria(); });
         historiaTakaisiBtn.addEventListener('click', () => vaihdaPaneli('kalenteri'));
+    }
+
+    // Omat kategoriat -lomake
+    const katTallenna = document.getElementById('tallenna-kategoria-btn');
+    if (katTallenna) {
+        katTallenna.addEventListener('click', tallennaKategoria);
+        document.getElementById('peruuta-kategoria-btn').addEventListener('click', peruutaKategoriaMuokkaus);
+        document.getElementById('kategoria-ikoni').addEventListener('input', (e) => merkitseEmojiValinta(e.target.value.trim()));
+        document.getElementById('kategoria-nimi').addEventListener('keydown', (e) => { if (e.key === 'Enter') tallennaKategoria(); });
     }
 
     // Kuukausiruudukon päiväklikki
@@ -462,6 +499,110 @@ function kuunteleTehtavia() {
         piirraTehtavalista();
         if (!sheetArkisto.classList.contains('hidden')) avaaArkisto();
     });
+}
+
+// ============ OMAT KATEGORIAT (Firebase: /kategoriat) ============
+function kuunteleKategorioita() {
+    if (unsubscribeFromCategories) unsubscribeFromCategories();
+    unsubscribeFromCategories = onValue(ref(database, 'kategoriat'), (snapshot) => {
+        mukautetutKategoriat = {};
+        snapshot.forEach(child => { mukautetutKategoriat[child.key] = child.val(); });
+        taytaKategoriavalinnat();
+        piirraKategoriaHallinta();
+        piirraNakyma();
+        piirraHistoria();
+    });
+}
+
+function piirraKategoriaHallinta() {
+    const lista = document.getElementById('kategoria-lista');
+    if (!lista) return;
+    lista.innerHTML = '';
+    const omat = Object.entries(mukautetutKategoriat)
+        .sort((a, b) => (a[1].nimi || '').localeCompare(b[1].nimi || '', 'fi'));
+    if (omat.length === 0) {
+        lista.innerHTML = '<p class="kat-ohje">Ei omia kategorioita vielä. Lisää alta esim. 🧭 Geokätköily — kategoria näkyy heti koko perheelle.</p>';
+        return;
+    }
+    omat.forEach(([id, k]) => {
+        const rivi = document.createElement('div');
+        rivi.className = 'kategoria-rivi-item';
+        rivi.innerHTML = `<span class="kat-ikoni">${k.ikoni || '📌'}</span>
+            <span class="kat-nimi">${esc(k.nimi || '')}</span>
+            <span class="kat-tekija">${k.luoja ? esc(k.luoja) : ''}</span>
+            <button class="icon-btn kat-muokkaa" title="Muokkaa" aria-label="Muokkaa">✏️</button>
+            <button class="icon-btn kat-poista" title="Poista" aria-label="Poista">🗑️</button>`;
+        rivi.querySelector('.kat-muokkaa').addEventListener('click', () => aloitaKategorianMuokkaus(id));
+        rivi.querySelector('.kat-poista').addEventListener('click', () => poistaKategoria(id, k.nimi));
+        lista.appendChild(rivi);
+    });
+}
+
+function aloitaKategorianMuokkaus(id) {
+    const k = mukautetutKategoriat[id];
+    if (!k) return;
+    muokattavaKategoriaId = id;
+    document.getElementById('kategoria-nimi').value = k.nimi || '';
+    document.getElementById('kategoria-ikoni').value = k.ikoni || '';
+    document.getElementById('tallenna-kategoria-btn').textContent = 'Tallenna muutokset';
+    document.getElementById('peruuta-kategoria-btn').classList.remove('hidden');
+    merkitseEmojiValinta(k.ikoni);
+}
+
+function peruutaKategoriaMuokkaus() {
+    muokattavaKategoriaId = null;
+    document.getElementById('kategoria-nimi').value = '';
+    document.getElementById('kategoria-ikoni').value = '';
+    document.getElementById('tallenna-kategoria-btn').textContent = 'Lisää kategoria';
+    document.getElementById('peruuta-kategoria-btn').classList.add('hidden');
+    merkitseEmojiValinta('');
+}
+
+function tallennaKategoria() {
+    const nimi = document.getElementById('kategoria-nimi').value.trim();
+    const ikoni = document.getElementById('kategoria-ikoni').value.trim() || '📌';
+    if (!nimi) { naytaIlmoitus('Anna kategorialle nimi'); return; }
+    const data = { nimi, ikoni, luoja: nykyinenKayttaja };
+    const lupaus = muokattavaKategoriaId
+        ? update(ref(database, `kategoriat/${muokattavaKategoriaId}`), data)
+        : push(ref(database, 'kategoriat'), data);
+    lupaus.then(() => {
+        naytaIlmoitus(muokattavaKategoriaId ? 'Kategoria päivitetty' : `Kategoria "${nimi}" lisätty`);
+        peruutaKategoriaMuokkaus();
+    }).catch(err => { console.error('Kategoriatallennus epäonnistui:', err); naytaIlmoitus('Tallennus epäonnistui'); });
+}
+
+function poistaKategoria(id, nimi) {
+    const kaytossa = (window.kaikkiTapahtumat || []).filter(t => t.kategoria === id).length;
+    const viesti = kaytossa > 0
+        ? `Poistetaanko kategoria "${nimi}"? Sen ${kaytossa} tapahtumaa siirtyy kategoriaan "Muu".`
+        : `Poistetaanko kategoria "${nimi}"?`;
+    if (!confirm(viesti)) return;
+    remove(ref(database, `kategoriat/${id}`));
+    if (muokattavaKategoriaId === id) peruutaKategoriaMuokkaus();
+    naytaIlmoitus('Kategoria poistettu');
+}
+
+function taytaEmojiValitsin() {
+    const valitsin = document.getElementById('emoji-valitsin');
+    if (!valitsin) return;
+    EMOJI_VALINNAT.forEach(em => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'emoji-nappi';
+        b.textContent = em;
+        b.addEventListener('click', () => {
+            haptic();
+            document.getElementById('kategoria-ikoni').value = em;
+            merkitseEmojiValinta(em);
+        });
+        valitsin.appendChild(b);
+    });
+}
+
+function merkitseEmojiValinta(valittu) {
+    document.querySelectorAll('#emoji-valitsin .emoji-nappi').forEach(b =>
+        b.classList.toggle('active', b.textContent === valittu));
 }
 
 // ============ NÄKYMÄHALLINTA ============
@@ -941,6 +1082,22 @@ function naytaTapahtumatKalenterissa() {
             }
         }
     });
+    // Rajoita näkyvien merkkien määrä per solu — "+N" avaa päivänäkymän
+    const maxNakyvat = matchMedia('(min-width: 900px)').matches ? 3 : 2;
+    document.querySelectorAll('#kalenteri-grid .tapahtumat-container').forEach(c => {
+        const items = [...c.children];
+        if (items.length <= maxNakyvat) return;
+        items.slice(maxNakyvat).forEach(el => el.style.display = 'none');
+        const lisaa = document.createElement('div');
+        lisaa.className = 'lisaa-palkki';
+        lisaa.textContent = `+${items.length - maxNakyvat}`;
+        lisaa.addEventListener('click', (e) => {
+            e.stopPropagation();
+            nykyinenPaiva = new Date(c.closest('.paiva').dataset.paivamaara + 'T12:00:00');
+            asetaNakyma('paiva');
+        });
+        c.appendChild(lisaa);
+    });
 }
 
 function korostaHakuOsumatKalenterissa() {
@@ -1001,7 +1158,7 @@ function piirraHistoria() {
     else if (sort === 'vanhimmat') lista.sort((a, b) => new Date(a.alku) - new Date(b.alku));
     else if (sort === 'otsikko') lista.sort((a, b) => (a.otsikko || '').localeCompare(b.otsikko || '', 'fi'));
     else if (sort === 'kategoria') {
-        const jarjestys = Object.keys(KATEGORIAT);
+        const jarjestys = kaikkiKategoriat().map(([id]) => id);
         lista.sort((a, b) => jarjestys.indexOf(a.kategoria || 'muu') - jarjestys.indexOf(b.kategoria || 'muu')
             || new Date(b.alku) - new Date(a.alku));
     }

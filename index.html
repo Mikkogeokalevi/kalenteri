@@ -413,6 +413,21 @@
                 <p id="muistutus-status" class="muistutus-status"></p>
             </div>
             <div class="asetus-osio">
+                <h4>Omat kategoriat</h4>
+                <div id="kategoria-lista" class="kategoria-lista"></div>
+                <div class="kategoria-lomake">
+                    <div id="emoji-valitsin" class="emoji-valitsin"></div>
+                    <div class="kategoria-rivi-lomake">
+                        <input type="text" id="kategoria-ikoni" maxlength="4" placeholder="🧭" aria-label="Ikoni">
+                        <input type="text" id="kategoria-nimi" maxlength="30" placeholder="Kategorian nimi" aria-label="Kategorian nimi">
+                    </div>
+                    <div class="asetus-rivi">
+                        <button id="tallenna-kategoria-btn" class="btn-secondary">Lisää kategoria</button>
+                        <button id="peruuta-kategoria-btn" class="btn-secondary hidden">Peruuta</button>
+                    </div>
+                </div>
+            </div>
+            <div class="asetus-osio">
                 <h4>Muut</h4>
                 <div class="asetus-rivi">
                     <button id="asetukset-menneet-btn" class="btn-secondary">Menneet tapahtumat</button>
