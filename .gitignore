@@ -1,0 +1,5 @@
+# Firebase export/import -välivaiheen tiedostot (varmuuskopiot — älä commitoi)
+firebase-export*.json
+firebase-import*.json
+*-export.json
+*-import.json

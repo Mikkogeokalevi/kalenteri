@@ -3,13 +3,13 @@ import { getDatabase, ref, push, onValue, update, remove, serverTimestamp, query
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCZIupycr2puYrPK2KajAW7PcThW9Pjhb0",
-  authDomain: "perhekalenteri-projekti.firebaseapp.com",
-  databaseURL: "https://perhekalenteri-projekti-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "perhekalenteri-projekti",
-  storageBucket: "perhekalenteri-projekti.appspot.com",
-  messagingSenderId: "588536838615",
-  appId: "1:588536838615:web:148de0581bbd46c42c7392"
+  apiKey: "AIzaSyBYqAhcMBFeuN6lcXnV9ydP3ltG3zpbFc4",
+  authDomain: "kalenteri-pasi.firebaseapp.com",
+  databaseURL: "https://kalenteri-pasi-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "kalenteri-pasi",
+  storageBucket: "kalenteri-pasi.firebasestorage.app",
+  messagingSenderId: "1054742450874",
+  appId: "1:1054742450874:web:67fd5799bb21fc28862883"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -17,7 +17,7 @@ const database = getDatabase(app);
 const auth = getAuth(app);
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '2.5.0';
+const VERSIO = '2.6.0';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: '--c-toni', Kaisa: '--c-kaisa', Oona: '--c-oona', perhe: '--c-perhe' };
