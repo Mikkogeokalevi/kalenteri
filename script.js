@@ -17,7 +17,7 @@ const database = getDatabase(app);
 const auth = getAuth(app);
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '2.3.2';
+const VERSIO = '2.3.3';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: '--c-toni', Kaisa: '--c-kaisa', Oona: '--c-oona', perhe: '--c-perhe' };
@@ -135,6 +135,17 @@ function pvmMerkkijono(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1
 function kloMerkkijono(d) { return d.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' }); }
 function cssVari(nimi) { return getComputedStyle(document.body).getPropertyValue(nimi).trim() || '#666'; }
 function henkiloVari(nimi) { return cssVari(KAYTTAJA_VARIT[nimi] || '--c-perhe'); }
+function kontrastiVari(taustavari) {
+    if (!taustavari || taustavari[0] !== '#' || taustavari.length < 7) return '#ffffff';
+    const r = parseInt(taustavari.substr(1, 2), 16) / 255;
+    const g = parseInt(taustavari.substr(3, 2), 16) / 255;
+    const b = parseInt(taustavari.substr(5, 2), 16) / 255;
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) > 0.55 ? '#0f172a' : '#ffffff';
+}
+function lyhennaTeksti(teksti, max = 10) {
+    if (!teksti) return '';
+    return teksti.length > max ? teksti.slice(0, max).trimEnd() + '…' : teksti;
+}
 function kategoriaInfo(kat) { return KATEGORIAT[kat] || mukautetutKategoriat[kat] || KATEGORIAT.muu; }
 
 // Kaikki kategoriat: valmiit ensin, sitten mukautetut aakkosjärjestyksessä
@@ -783,8 +794,15 @@ function luoKoskeeTiedot(ketakoskee) {
 }
 
 function asetaVariTaiLuokka(el, tiedot) {
-    if (tiedot.type === 'class') el.style.backgroundColor = tiedot.vari || cssVari('--c-perhe');
-    else el.style.background = tiedot.value;
+    if (tiedot.type === 'class') {
+        el.style.backgroundColor = tiedot.vari || '#666';
+        el.style.color = kontrastiVari(tiedot.vari);
+        el.style.textShadow = 'none';
+    } else {
+        el.style.background = tiedot.value;
+        el.style.color = '#fff';
+        el.style.textShadow = '0 1px 2px rgba(0,0,0,0.4)';
+    }
 }
 
 // ============ AGENDA ============
@@ -1067,8 +1085,8 @@ function naytaTapahtumatKalenterissa() {
                         merkki = document.createElement('div');
                         merkki.className = 'tapahtuma-palkki';
                         merkki.textContent = currentDate.getTime() === alkuAikaNolla
-                            ? `${kategoriaInfo(tapahtuma.kategoria).ikoni} ${tapahtuma.otsikko}`
-                            : `› ${tapahtuma.otsikko}`;
+                            ? `${kategoriaInfo(tapahtuma.kategoria).ikoni} ${lyhennaTeksti(tapahtuma.otsikko, 10)}`
+                            : `› ${lyhennaTeksti(tapahtuma.otsikko, 10)}`;
                     }
                     merkki.title = tapahtuma.otsikko;
                     asetaVariTaiLuokka(merkki, tiedot);
@@ -1085,14 +1103,21 @@ function naytaTapahtumatKalenterissa() {
         if (alkuAikaNolla === loppuAikaNolla && !tapahtuma.kokoPaiva) {
             const paivaEl = document.querySelector(`.paiva[data-paivamaara="${tapahtuma.alku.substring(0, 10)}"]`);
             if (paivaEl) {
-                const kuvake = document.createElement('div');
-                kuvake.title = `${tapahtuma.otsikko} ${kloMerkkijono(new Date(tapahtuma.alku))}`;
                 const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
-                kuvake.textContent = kategoriaInfo(tapahtuma.kategoria).ikoni;
-                kuvake.className = 'tapahtuma-kuvake';
-                asetaVariTaiLuokka(kuvake, tiedot);
-                kuvake.addEventListener('click', (e) => { e.stopPropagation(); avaaTapahtuma(tapahtuma.key); });
-                paivaEl.querySelector('.tapahtumat-container').appendChild(kuvake);
+                let merkki;
+                if (matchMedia('(min-width: 900px)').matches) {
+                    merkki = document.createElement('div');
+                    merkki.className = 'tapahtuma-palkki';
+                    merkki.textContent = `${kloMerkkijono(new Date(tapahtuma.alku))} ${lyhennaTeksti(tapahtuma.otsikko, 10)}`;
+                } else {
+                    merkki = document.createElement('div');
+                    merkki.className = 'tapahtuma-kuvake';
+                    merkki.textContent = kategoriaInfo(tapahtuma.kategoria).ikoni;
+                }
+                merkki.title = `${tapahtuma.otsikko} ${kloMerkkijono(new Date(tapahtuma.alku))}`;
+                asetaVariTaiLuokka(merkki, tiedot);
+                merkki.addEventListener('click', (e) => { e.stopPropagation(); avaaTapahtuma(tapahtuma.key); });
+                paivaEl.querySelector('.tapahtumat-container').appendChild(merkki);
             }
         }
     });
