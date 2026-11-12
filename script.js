@@ -30,7 +30,7 @@ if ('launchQueue' in window) {
 }
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '2.7.3';
+const VERSIO = '2.8.0';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: '--c-toni', Kaisa: '--c-kaisa', Oona: '--c-oona', perhe: '--c-perhe' };
@@ -448,6 +448,7 @@ function lisaaKuuntelijat() {
     // Lomakesheet
     sheetLomake.addEventListener('click', (e) => { if (e.target === sheetLomake) suljeSheet(sheetLomake); });
     document.getElementById('peruuta-lomake-btn').addEventListener('click', () => suljeSheet(sheetLomake));
+    document.getElementById('sulje-lomake-x').addEventListener('click', () => suljeSheet(sheetLomake));
     document.getElementById('tapahtuma-lomake').addEventListener('submit', (e) => { e.preventDefault(); tallennaTapahtuma(); });
     document.getElementById('poista-tapahtuma-btn').addEventListener('click', poistaTapahtuma);
     document.getElementById('f-alku').addEventListener('input', function () {
@@ -1148,10 +1149,18 @@ function piirraKuukausi() {
 function handlePaivaClick(event) {
     const paivaEl = event.target.closest('.paiva');
     if (!paivaEl || paivaEl.classList.contains('tyhja') ||
-        event.target.closest('.tapahtuma-kuvake') || event.target.closest('.tapahtuma-palkki')) return;
+        event.target.closest('.tapahtuma-kuvake') || event.target.closest('.tapahtuma-palkki') ||
+        event.target.closest('.tapahtuma-viiva')) return;
     const pvm = paivaEl.dataset.paivamaara;
     if (!pvm) return;
-    avaaLomake('lisaa', null, { alku: pvm + 'T09:00', loppu: pvm + 'T10:00' });
+    // Päivä jossa on merkintöjä -> päivänäkymä; tyhjä päivä -> uuden merkinnän lomake
+    const onMerkintoja = paivaEl.querySelector('.tapahtumat-container').children.length > 0;
+    if (onMerkintoja) {
+        nykyinenPaiva = new Date(pvm + 'T12:00:00');
+        asetaNakyma('paiva');
+    } else {
+        avaaLomake('lisaa', null, { alku: pvm + 'T09:00', loppu: pvm + 'T10:00' });
+    }
 }
 
 function naytaTapahtumatKalenterissa() {
@@ -1171,11 +1180,16 @@ function naytaTapahtumatKalenterissa() {
                 const paivaEl = document.querySelector(`.paiva[data-paivamaara="${pvm}"]`);
                 if (paivaEl) {
                     let merkki;
-                    if (mobiili) {
-                        // Mobiilissa värirenkaallinen pallo + kategoria-emoji
+                    if (mobiili && currentDate.getTime() === alkuAikaNolla) {
+                        // Alkupäivä: värirenkaallinen pallo + kategoria-emoji
                         merkki = document.createElement('div');
                         merkki.className = 'tapahtuma-kuvake';
                         merkki.textContent = kategoriaInfo(tapahtuma.kategoria).ikoni;
+                    } else if (mobiili) {
+                        // Jatkopäivä: ohut väriviiva; päätepäivä ei ylitä solureunaa oikealle
+                        merkki = document.createElement('div');
+                        merkki.className = 'tapahtuma-viiva' +
+                            (currentDate.getTime() === loppuAikaNolla ? ' viiva-loppu' : '');
                     } else {
                         merkki = document.createElement('div');
                         merkki.className = 'tapahtuma-palkki';
