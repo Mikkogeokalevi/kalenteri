@@ -17,7 +17,7 @@ const database = getDatabase(app);
 const auth = getAuth(app);
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '2.2.1';
+const VERSIO = '2.2.2';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: 'var(--c-toni)', Kaisa: 'var(--c-kaisa)', Oona: 'var(--c-oona)', perhe: 'var(--c-perhe)' };
@@ -193,6 +193,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     lataaTeema();
+    const loginVersio = document.getElementById('login-versio');
+    if (loginVersio) loginVersio.textContent = `v${VERSIO}`;
     taytaKategoriavalinnat();
     lisaaKuuntelijat();
 });

@@ -192,6 +192,7 @@ input.kytkin:checked::before { transform: translateX(20px); }
 .login-box label { display: block; margin-bottom: 6px; }
 .login-box input { margin-bottom: 16px; }
 .login-box .btn-primary { width: 100%; padding: 14px; font-size: 1em; }
+.login-versio { margin-top: 20px; color: var(--text-3); font-size: 0.78em; font-weight: 600; letter-spacing: 0.02em; }
 #login-error { color: #ef4444; text-align: center; margin-top: 14px; font-size: 0.9em; }
 
 /* ---------- App shell ---------- */
