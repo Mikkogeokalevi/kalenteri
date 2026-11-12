@@ -17,7 +17,7 @@ const database = getDatabase(app);
 const auth = getAuth(app);
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '2.4.1';
+const VERSIO = '2.4.3';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: '--c-toni', Kaisa: '--c-kaisa', Oona: '--c-oona', perhe: '--c-perhe' };
@@ -347,8 +347,8 @@ function paivitaTanaanBanneri() {
 function lisaaKuuntelijat() {
     document.getElementById('logout-btn').addEventListener('click', () => { suljeSheet(sheetAsetukset); handleLogout(); });
     document.getElementById('sulje-asetukset-btn').addEventListener('click', () => suljeSheet(sheetAsetukset));
-    asetuksetBtn.addEventListener('click', () => avaaSheet(sheetAsetukset));
-    kayttajaPallo.addEventListener('click', () => avaaSheet(sheetAsetukset));
+    asetuksetBtn.addEventListener('click', () => { avaaSheet(sheetAsetukset); piirraKategoriaHallinta(); });
+    kayttajaPallo.addEventListener('click', () => { avaaSheet(sheetAsetukset); piirraKategoriaHallinta(); });
 
     // Näkymävalitsin
     nakymaValitsin.addEventListener('click', (e) => {
@@ -527,6 +527,10 @@ function kuunteleKategorioita() {
         piirraKategoriaHallinta();
         piirraNakyma();
         piirraHistoria();
+    }, (virhe) => {
+        console.error('Kategorioiden luku estetty:', virhe.code || virhe.message);
+        const lista = document.getElementById('kategoria-lista');
+        if (lista) lista.innerHTML = '<p class="kat-ohje">⚠️ Kategorioiden luku estetty tietokannan säännöillä — katso ohje alta.</p>';
     });
 }
 
@@ -583,9 +587,16 @@ function tallennaKategoria() {
         ? update(ref(database, `kategoriat/${muokattavaKategoriaId}`), data)
         : push(ref(database, 'kategoriat'), data);
     lupaus.then(() => {
+        kuunteleKategorioita(); // uudelleenkytkee kuuntelijan jos se oli kuollut (esim. sääntömuutos)
         naytaIlmoitus(muokattavaKategoriaId ? 'Kategoria päivitetty' : `Kategoria "${nimi}" lisätty`);
         peruutaKategoriaMuokkaus();
-    }).catch(err => { console.error('Kategoriatallennus epäonnistui:', err); naytaIlmoitus('Tallennus epäonnistui'); });
+    }).catch(err => {
+        console.error('Kategoriatallennus epäonnistui:', err.code, err.message);
+        const syy = (err.code || err.message || '').includes('PERMISSION_DENIED')
+            ? ' – tietokannan säännöt estävät (lisää "kategoriat" Firebase-sääntöihin)'
+            : ` (${err.code || err.message})`;
+        naytaIlmoitus('Tallennus epäonnistui' + syy, 5000);
+    });
 }
 
 function poistaKategoria(id, nimi) {
