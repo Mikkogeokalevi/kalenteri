@@ -210,6 +210,11 @@ input.kytkin:checked::before { transform: translateX(20px); }
 .appbar-vasen { display: flex; align-items: center; gap: 10px; min-width: 0; }
 #header-logo { height: 38px; width: auto; border-radius: 10px; }
 .appbar-tekstit h1 { font-size: 1.15em; line-height: 1.2; white-space: nowrap; }
+.versio-merkki {
+    font-size: 0.55em; font-weight: 700; vertical-align: middle;
+    color: var(--accent); background: var(--accent-pehmeä);
+    padding: 2px 8px; border-radius: 999px; letter-spacing: 0.02em;
+}
 #tanaan-banneri { font-size: 0.75em; color: var(--text-3); display: block; white-space: nowrap; }
 .appbar-oikea { display: flex; align-items: center; gap: 4px; }
 .kayttaja-pallo {
@@ -709,6 +714,23 @@ input.kytkin:checked::before { transform: translateX(20px); }
     .sheet-kahva { display: none; }
     @keyframes sheetSkaala { from { transform: scale(0.96) translateY(10px); opacity: 0; } }
 }
+
+/* ---------- HISTORIA-PANEELI ---------- */
+#panel-historia { display: none; }
+body[data-panel="historia"] #panel-historia { display: block; }
+body[data-panel="historia"] #panel-kalenteri,
+body[data-panel="historia"] #sivuraita { display: none !important; }
+@media (min-width: 900px) {
+    body[data-panel="historia"] #panel-historia { grid-column: 1 / -1; }
+}
+.historia-tyokalut { margin-bottom: 14px; }
+.historia-yla { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.historia-yla h3 { font-size: 1.1em; flex: 1; }
+.historia-takaisi { padding: 8px 10px; font-size: 0.85em; }
+.historia-maara { color: var(--text-3); font-size: 0.85em; font-weight: 600; }
+#historia-haku { margin-bottom: 10px; }
+#historia-vuosi, #historia-sort { width: auto; padding: 8px 34px 8px 12px; font-size: 0.85em; border-radius: 999px; min-height: 36px; }
+#historia-lista { max-width: 760px; }
 
 /* Vähennä liikettä jos käyttäjä niin pyytää */
 @media (prefers-reduced-motion: reduce) {

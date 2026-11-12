@@ -16,6 +16,9 @@ const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
 
+// --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
+const VERSIO = '2.2.0';
+
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: 'var(--c-toni)', Kaisa: 'var(--c-kaisa)', Oona: 'var(--c-oona)', perhe: 'var(--c-perhe)' };
 const HENKILOT = ['Toni', 'Kaisa', 'Oona'];
@@ -43,8 +46,9 @@ let loginOverlay, loginForm, appShell, appbar, tanaanBanneri, asetuksetBtn, kayt
     tehtavalistaToggle, tehtavalistaSisalto, avoimetTehtavatLaskuri,
     avaaArkistoBtn, avaaMenneetBtn,
     tabbar, tabTehtavatBadge, fabLisaa, ptrIndikaattori,
-    sheetTapahtuma, sheetLomake, sheetLaajuus, sheetMenneet, sheetArkisto, sheetAsetukset,
-    menneetHakuKentta, menneetTapahtumatLista, edellinenSivuBtn, seuraavaSivuBtn, sivuInfo,
+    sheetTapahtuma, sheetLomake, sheetLaajuus, sheetArkisto, sheetAsetukset,
+    panelHistoria, historiaHaku, historiaSuodatin, historiaKategoria, historiaVuosi,
+    historiaSort, historiaLista, historiaLisaaBtn, historiaMaara, historiaTakaisiBtn,
     arkistoidutTehtavatLista, ilmoitusEl;
 
 // --- Sovelluksen tila ---
@@ -55,7 +59,7 @@ let agendaAlkuPvm = paivaNolla(new Date());
 let agendaNaytetyt = AGENDA_PAIVIA_PER_ERÄ;
 let unsubscribeFromEvents = null;
 let unsubscribeFromTasks = null;
-let menneetSivu = 0;
+let historiaNaytetyt = 25;
 let kaikkiTehtavat = [];
 let muistutusAsetukset = { kaytossa: false, ajoitus: 60, tehtavat: false };
 let muistutusIntervalli = null;
@@ -101,14 +105,18 @@ function alustaElementit() {
     sheetTapahtuma = document.getElementById('sheet-tapahtuma');
     sheetLomake = document.getElementById('sheet-lomake');
     sheetLaajuus = document.getElementById('sheet-laajuus');
-    sheetMenneet = document.getElementById('sheet-menneet');
     sheetArkisto = document.getElementById('sheet-arkisto');
     sheetAsetukset = document.getElementById('sheet-asetukset');
-    menneetHakuKentta = document.getElementById('menneet-haku-kentta');
-    menneetTapahtumatLista = document.getElementById('menneet-tapahtumat-lista');
-    edellinenSivuBtn = document.getElementById('edellinen-sivu-btn');
-    seuraavaSivuBtn = document.getElementById('seuraava-sivu-btn');
-    sivuInfo = document.getElementById('sivu-info');
+    panelHistoria = document.getElementById('panel-historia');
+    historiaHaku = document.getElementById('historia-haku');
+    historiaSuodatin = document.getElementById('historia-suodatin');
+    historiaKategoria = document.getElementById('historia-kategoria');
+    historiaVuosi = document.getElementById('historia-vuosi');
+    historiaSort = document.getElementById('historia-sort');
+    historiaLista = document.getElementById('historia-lista');
+    historiaLisaaBtn = document.getElementById('historia-lisaa-btn');
+    historiaMaara = document.getElementById('historia-maara');
+    historiaTakaisiBtn = document.getElementById('historia-takaisi-btn');
     arkistoidutTehtavatLista = document.getElementById('arkistoidut-tehtavat-lista');
     ilmoitusEl = document.getElementById('ilmoitus');
 }
@@ -206,6 +214,8 @@ function startAppForUser(userName) {
     appShell.classList.remove('hidden');
     loginOverlay.classList.add('hidden');
     document.getElementById('current-user-name').textContent = nykyinenKayttaja;
+    document.getElementById('versio-naytto').textContent = `v${VERSIO}`;
+    document.getElementById('versio-teksti').textContent = `Kauppisen perhekalenteri · v${VERSIO}`;
     kayttajaPallo.textContent = nykyinenKayttaja.charAt(0).toUpperCase();
     kayttajaPallo.title = `Kirjautunut: ${nykyinenKayttaja}`;
     document.body.classList.remove('theme-toni', 'theme-kaisa', 'theme-oona');
@@ -252,11 +262,13 @@ function taytaKategoriavalinnat() {
         fKat.appendChild(o);
     });
     kategoriaSuodatin.innerHTML = '<option value="kaikki">Kaikki kategoriat</option>';
+    historiaKategoria.innerHTML = '<option value="kaikki">Kaikki kategoriat</option>';
     Object.entries(KATEGORIAT).forEach(([id, k]) => {
         const o = document.createElement('option');
         o.value = id;
         o.textContent = `${k.ikoni} ${k.nimi}`;
         kategoriaSuodatin.appendChild(o);
+        historiaKategoria.appendChild(o.cloneNode(true));
     });
 }
 
@@ -290,31 +302,18 @@ function lisaaKuuntelijat() {
 
     // Haku ja suodattimet
     hakuKentta.addEventListener('input', () => { piirraNakyma(); });
-    tulevatSuodatin.addEventListener('click', (e) => {
-        const target = e.target;
-        if (!target.classList.contains('filter-btn')) return;
-        const suodatin = target.dataset.filter;
-        const kaikkiBtn = tulevatSuodatin.querySelector('[data-filter="kaikki"]');
-        const perheBtn = tulevatSuodatin.querySelector('[data-filter="perhe"]');
-        const personBtns = tulevatSuodatin.querySelectorAll('.filter-btn:not([data-filter="kaikki"]):not([data-filter="perhe"])');
-        if (suodatin === 'kaikki') {
-            personBtns.forEach(btn => btn.classList.remove('active'));
-            perheBtn.classList.remove('active');
-            kaikkiBtn.classList.add('active');
-        } else if (suodatin === 'perhe') {
-            personBtns.forEach(btn => btn.classList.remove('active'));
-            kaikkiBtn.classList.remove('active');
-            perheBtn.classList.toggle('active');
-        } else {
-            kaikkiBtn.classList.remove('active');
-            perheBtn.classList.remove('active');
-            target.classList.toggle('active');
-        }
-        if (!tulevatSuodatin.querySelector('.filter-btn.active')) kaikkiBtn.classList.add('active');
-        piirraNakyma();
-    });
+    lisaaSuodatinKuuntelija(tulevatSuodatin, () => piirraNakyma());
     kategoriaSuodatin.addEventListener('change', () => piirraNakyma());
     agendaLisaaBtn.addEventListener('click', () => { agendaNaytetyt += AGENDA_PAIVIA_PER_ERÄ; piirraAgenda(); });
+
+    // Historia-paneelin kontrollit
+    historiaHaku.addEventListener('input', () => { historiaNaytetyt = 25; piirraHistoria(); });
+    lisaaSuodatinKuuntelija(historiaSuodatin, () => { historiaNaytetyt = 25; piirraHistoria(); });
+    historiaKategoria.addEventListener('change', () => { historiaNaytetyt = 25; piirraHistoria(); });
+    historiaVuosi.addEventListener('change', () => { historiaNaytetyt = 25; piirraHistoria(); });
+    historiaSort.addEventListener('change', () => piirraHistoria());
+    historiaLisaaBtn.addEventListener('click', () => { historiaNaytetyt += 25; piirraHistoria(); });
+    historiaTakaisiBtn.addEventListener('click', () => vaihdaPaneli('kalenteri'));
 
     // Kuukausiruudukon päiväklikki
     kalenteriGrid.addEventListener('click', handlePaivaClick);
@@ -374,14 +373,9 @@ function lisaaKuuntelijat() {
         if (laajuusCallback) { laajuusCallback(laajuus); laajuusCallback = null; }
     });
 
-    // Menneet
-    avaaMenneetBtn.addEventListener('click', avaaMenneet);
-    document.getElementById('asetukset-menneet-btn').addEventListener('click', () => { suljeSheet(sheetAsetukset); avaaMenneet(); });
-    document.getElementById('sulje-menneet-modal-btn').addEventListener('click', () => suljeSheet(sheetMenneet));
-    sheetMenneet.addEventListener('click', (e) => { if (e.target === sheetMenneet) suljeSheet(sheetMenneet); });
-    menneetHakuKentta.addEventListener('input', () => { menneetSivu = 0; naytaMenneetTapahtumat(); });
-    edellinenSivuBtn.addEventListener('click', () => { if (menneetSivu > 0) { menneetSivu--; naytaMenneetTapahtumat(); } });
-    seuraavaSivuBtn.addEventListener('click', () => { menneetSivu++; naytaMenneetTapahtumat(); });
+    // Menneet (sivuraita + asetukset) → historia-paneeli
+    avaaMenneetBtn.addEventListener('click', () => vaihdaPaneli('historia'));
+    document.getElementById('asetukset-menneet-btn').addEventListener('click', () => { suljeSheet(sheetAsetukset); vaihdaPaneli('historia'); });
 
     // Tehtävät
     lisaaTehtavaNappi.addEventListener('click', lisaaTehtava);
@@ -435,6 +429,8 @@ function kuunteleTapahtumia() {
         });
         piirraNakyma();
         naytaTulevat();
+        paivitaHistoriaVuodet();
+        piirraHistoria();
     });
 }
 
@@ -512,10 +508,37 @@ function nakyvatTapahtumat() {
     return window.kaikkiTapahtumat.filter(t => t.nakyvyys?.[nykyinenKayttaja] && t.alku && t.loppu);
 }
 
-function suodataLista(tapahtumat) {
-    const hakutermi = hakuKentta.value.toLowerCase().trim();
-    const aktiiviset = Array.from(tulevatSuodatin.querySelectorAll('.filter-btn.active')).map(b => b.dataset.filter);
-    const katSuodin = kategoriaSuodatin.value;
+// Yleinen henkilösuodatin (agenda + historia)
+function lisaaSuodatinKuuntelija(container, onChange) {
+    container.addEventListener('click', (e) => {
+        const target = e.target;
+        if (!target.classList.contains('filter-btn')) return;
+        const suodatin = target.dataset.filter;
+        const kaikkiBtn = container.querySelector('[data-filter="kaikki"]');
+        const perheBtn = container.querySelector('[data-filter="perhe"]');
+        const personBtns = container.querySelectorAll('.filter-btn:not([data-filter="kaikki"]):not([data-filter="perhe"])');
+        if (suodatin === 'kaikki') {
+            personBtns.forEach(b => b.classList.remove('active'));
+            perheBtn.classList.remove('active');
+            kaikkiBtn.classList.add('active');
+        } else if (suodatin === 'perhe') {
+            personBtns.forEach(b => b.classList.remove('active'));
+            kaikkiBtn.classList.remove('active');
+            perheBtn.classList.toggle('active');
+        } else {
+            kaikkiBtn.classList.remove('active');
+            perheBtn.classList.remove('active');
+            target.classList.toggle('active');
+        }
+        if (!container.querySelector('.filter-btn.active')) kaikkiBtn.classList.add('active');
+        onChange();
+    });
+}
+
+function suodataLista(tapahtumat, hakuEl, suodatinEl, katEl) {
+    const hakutermi = hakuEl.value.toLowerCase().trim();
+    const aktiiviset = Array.from(suodatinEl.querySelectorAll('.filter-btn.active')).map(b => b.dataset.filter);
+    const katSuodin = katEl.value;
     return tapahtumat.filter(t => {
         if (hakutermi) {
             const teksti = ((t.otsikko || '') + ' ' + (t.kuvaus || '')).toLowerCase();
@@ -528,6 +551,37 @@ function suodataLista(tapahtumat) {
         if (aktiiviset.includes('perhe') && (ketakoskee.includes('perhe') || ketakoskee.length >= 3)) return true;
         return personSuotimet.length > 0 && personSuotimet.every(s => ketakoskee.includes(s));
     });
+}
+
+// Yhteinen lista-elementti (agenda + historia)
+function luoListaItem(t) {
+    const tiedot = luoKoskeeTiedot(t.ketakoskee);
+    const kat = kategoriaInfo(t.kategoria);
+    const item = document.createElement('div');
+    item.className = 'agenda-item';
+    const aika = new Date(t.alku);
+    const loppu = new Date(t.loppu);
+    const onMonipaivainen = paivaNolla(aika).getTime() !== paivaNolla(loppu).getTime();
+    let aikaHtml;
+    if (onMonipaivainen) {
+        aikaHtml = `${aika.getDate()}.&ndash;${loppu.getDate()}.${loppu.getMonth() + 1}.`;
+    } else if (t.kokoPaiva) {
+        aikaHtml = 'Koko<br>päivä';
+    } else {
+        aikaHtml = `${kloMerkkijono(aika)}<small>${kloMerkkijono(loppu)}</small>`;
+    }
+    item.innerHTML = `
+        <div class="agenda-aika">${aikaHtml}</div>
+        <div class="agenda-vari"></div>
+        <div class="agenda-tiedot">
+            <div class="agenda-otsikko">${esc(t.otsikko)}</div>
+            <div class="agenda-meta"><span class="kategoria-ikoni">${kat.ikoni}</span>${kat.nimi !== 'Muu' ? ' ' + kat.nimi : ''}</div>
+        </div>
+        <div class="agenda-initialit">${tiedot.initialit}</div>`;
+    asetaVariTaiLuokka(item.querySelector('.agenda-vari'), tiedot);
+    asetaVariTaiLuokka(item.querySelector('.agenda-initialit'), tiedot);
+    item.addEventListener('click', () => { haptic(); avaaTapahtuma(t.key); });
+    return item;
 }
 
 function tapahtumaAikaTeksti(t, lyhyt = false) {
@@ -569,9 +623,8 @@ function asetaVariTaiLuokka(el, tiedot) {
 // ============ AGENDA ============
 function piirraAgenda() {
     agendaLista.innerHTML = '';
-    const nyt = new Date();
     const lista = suodataLista(nakyvatTapahtumat()
-        .filter(t => new Date(t.loppu) >= agendaAlkuPvm))
+        .filter(t => new Date(t.loppu) >= agendaAlkuPvm), hakuKentta, tulevatSuodatin, kategoriaSuodatin)
         .sort((a, b) => new Date(a.alku) - new Date(b.alku));
 
     // Ryhmittele päiville
@@ -604,35 +657,7 @@ function piirraAgenda() {
         ryhmaEl.appendChild(otsikko);
 
         ryhmat.get(paivaStr).forEach(t => {
-            const tiedot = luoKoskeeTiedot(t.ketakoskee);
-            const kat = kategoriaInfo(t.kategoria);
-            const item = document.createElement('div');
-            item.className = 'agenda-item';
-            const aika = new Date(t.alku);
-            const loppu = new Date(t.loppu);
-            const onMonipaivainen = paivaNolla(aika).getTime() !== paivaNolla(loppu).getTime();
-            let aikaHtml;
-            if (onMonipaivainen) {
-                aikaHtml = `${aika.getDate()}.&ndash;${loppu.getDate()}.${loppu.getMonth() + 1}.`;
-            } else if (t.kokoPaiva) {
-                aikaHtml = 'Koko<br>päivä';
-            } else {
-                aikaHtml = `${kloMerkkijono(aika)}<small>${kloMerkkijono(loppu)}</small>`;
-            }
-            item.innerHTML = `
-                <div class="agenda-aika">${aikaHtml}</div>
-                <div class="agenda-vari"></div>
-                <div class="agenda-tiedot">
-                    <div class="agenda-otsikko">${esc(t.otsikko)}</div>
-                    <div class="agenda-meta"><span class="kategoria-ikoni">${kat.ikoni}</span>${kat.nimi !== 'Muu' ? ' ' + kat.nimi : ''}</div>
-                </div>
-                <div class="agenda-initialit">${tiedot.initialit}</div>`;
-            const variEl = item.querySelector('.agenda-vari');
-            const initEl = item.querySelector('.agenda-initialit');
-            asetaVariTaiLuokka(variEl, tiedot);
-            asetaVariTaiLuokka(initEl, tiedot);
-            item.addEventListener('click', () => { haptic(); avaaTapahtuma(t.key); });
-            ryhmaEl.appendChild(item);
+            ryhmaEl.appendChild(luoListaItem(t));
         });
         agendaLista.appendChild(ryhmaEl);
     });
@@ -941,52 +966,46 @@ function naytaTulevat() {
     });
 }
 
-// ============ MENNEET ============
-function avaaMenneet() {
-    menneetSivu = 0;
-    menneetHakuKentta.value = '';
-    naytaMenneetTapahtumat();
-    avaaSheet(sheetMenneet);
-}
-
-function naytaMenneetTapahtumat() {
-    if (!window.kaikkiTapahtumat) return;
-    const hakutermi = menneetHakuKentta.value.toLowerCase().trim();
+// ============ HISTORIA (menneet tapahtumat) ============
+function piirraHistoria() {
+    if (!historiaLista || !window.kaikkiTapahtumat) return;
+    historiaLista.innerHTML = '';
     const nyt = new Date();
-    const kaikkiMenneet = nakyvatTapahtumat()
-        .filter(t => {
-            if (new Date(t.loppu) >= nyt) return false;
-            if (hakutermi) {
-                const teksti = ((t.otsikko || '') + ' ' + (t.kuvaus || '')).toLowerCase();
-                return teksti.includes(hakutermi);
-            }
-            return true;
-        })
-        .sort((a, b) => new Date(b.alku) - new Date(a.alku));
-    const sivuja = Math.ceil(kaikkiMenneet.length / TAPAHTUMIA_PER_SIVU);
-    const sivun = kaikkiMenneet.slice(menneetSivu * TAPAHTUMIA_PER_SIVU, menneetSivu * TAPAHTUMIA_PER_SIVU + TAPAHTUMIA_PER_SIVU);
-    sivuInfo.textContent = `Sivu ${menneetSivu + 1} / ${sivuja || 1}`;
-    edellinenSivuBtn.disabled = menneetSivu === 0;
-    seuraavaSivuBtn.disabled = menneetSivu + 1 >= sivuja;
-    menneetTapahtumatLista.innerHTML = '';
-    if (sivun.length === 0) {
-        menneetTapahtumatLista.innerHTML = `<p style="text-align:center;color:var(--text-3);">${hakutermi ? 'Haulla ei löytynyt' : 'Ei'} menneitä tapahtumia.</p>`;
+    let lista = nakyvatTapahtumat().filter(t => new Date(t.loppu) < nyt);
+
+    const vuosi = historiaVuosi.value;
+    if (vuosi !== 'kaikki') lista = lista.filter(t => new Date(t.alku).getFullYear() === parseInt(vuosi));
+    lista = suodataLista(lista, historiaHaku, historiaSuodatin, historiaKategoria);
+
+    const sort = historiaSort.value;
+    if (sort === 'uusimmat') lista.sort((a, b) => new Date(b.alku) - new Date(a.alku));
+    else if (sort === 'vanhimmat') lista.sort((a, b) => new Date(a.alku) - new Date(b.alku));
+    else if (sort === 'otsikko') lista.sort((a, b) => (a.otsikko || '').localeCompare(b.otsikko || '', 'fi'));
+    else if (sort === 'kategoria') {
+        const jarjestys = Object.keys(KATEGORIAT);
+        lista.sort((a, b) => jarjestys.indexOf(a.kategoria || 'muu') - jarjestys.indexOf(b.kategoria || 'muu')
+            || new Date(b.alku) - new Date(a.alku));
+    }
+
+    historiaMaara.textContent = `${lista.length} tapahtumaa`;
+    const naytettavat = lista.slice(0, historiaNaytetyt);
+    historiaLisaaBtn.classList.toggle('hidden', lista.length <= historiaNaytetyt);
+    if (naytettavat.length === 0) {
+        historiaLista.innerHTML = '<p style="text-align:center;color:var(--text-3);padding:40px 0;">Valinnoilla ei löytynyt menneitä tapahtumia.</p>';
         return;
     }
-    sivun.forEach(t => {
-        const tiedot = luoKoskeeTiedot(t.ketakoskee);
-        const item = document.createElement('div');
-        item.className = 'tuleva-tapahtuma-item';
-        item.innerHTML = `
-            <div class="tapahtuma-item-luoja">${tiedot.initialit}</div>
-            <div class="tapahtuma-item-tiedot">
-                <div class="tapahtuma-item-aika">${tapahtumaAikaTeksti(t)}</div>
-                <div class="tapahtuma-item-otsikko">${esc(t.otsikko)}</div>
-            </div>`;
-        asetaVariTaiLuokka(item.querySelector('.tapahtuma-item-luoja'), tiedot);
-        item.addEventListener('click', () => { suljeSheet(sheetMenneet); avaaTapahtuma(t.key); });
-        menneetTapahtumatLista.appendChild(item);
-    });
+    naytettavat.forEach(t => historiaLista.appendChild(luoListaItem(t)));
+}
+
+function paivitaHistoriaVuodet() {
+    if (!historiaVuosi || !window.kaikkiTapahtumat) return;
+    const valittu = historiaVuosi.value;
+    const vuodet = [...new Set(window.kaikkiTapahtumat
+        .map(t => new Date(t.alku).getFullYear())
+        .filter(v => !isNaN(v)))].sort((a, b) => b - a);
+    historiaVuosi.innerHTML = '<option value="kaikki">Kaikki vuodet</option>' +
+        vuodet.map(v => `<option value="${v}">${v}</option>`).join('');
+    historiaVuosi.value = vuodet.includes(parseInt(valittu)) ? valittu : 'kaikki';
 }
 
 // ============ SHEET-HALLINTA ============

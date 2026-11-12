@@ -52,7 +52,7 @@ Vaalea/tumma teema: `document.documentElement[data-teema]` (`vaalea`/`tumma`), v
 
 - Suomenkieliset muuttuja-/funktionimet, noudata tyyliä
 - **ÄLÄ refaktoroi script.js:ää moduuleihin** — yritettiin, meni rikki
-- **Päivitä sw.js CACHE_NAME** aina kun julkaiset muutoksia
+- **NOSTA VERSIONUMEROA jokaisessa päivityksessä**: `VERSIO` script.js:n alussa (näkyy yläbannerissa + asetuksissa) JA `CACHE_NAME` sw.js:ssä — pidä ne samoina (nyt `2.1.0`)
 - Testaa kirjautuminen ennen pushia; sovellus on tuotannossa
 - `esc()` kaikkiin innerHTML-injektioihin käyttäjädatan kanssa
 - Käyttäjävärin luetaan aina `cssVari()`/`henkiloVari()`-funktiolla (teemat vaihtuvat)
