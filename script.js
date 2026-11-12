@@ -30,7 +30,7 @@ if ('launchQueue' in window) {
 }
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '2.7.1';
+const VERSIO = '2.7.2';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: '--c-toni', Kaisa: '--c-kaisa', Oona: '--c-oona', perhe: '--c-perhe' };
@@ -1674,7 +1674,24 @@ function vieTapahtumaICS(key) {
     }
 }
 
-// --- Tuonti: parsitaan VEVENT-lohkot ---
+// --- Tuonti: parsitaan VEVENT-lohkot (ics iCalendar 2.0 + vcs vCalendar 1.0) ---
+// vCalendar 1.0 käyttää usein quoted-printable-enkoodausta (=E4 -> ä) + CHARSET-määrettä
+function qpPurkaa(s, charset) {
+    const cleaned = String(s).replace(/=\r?\n/g, '');
+    const enc = new TextEncoder();
+    const bytes = [];
+    for (let i = 0; i < cleaned.length; i++) {
+        if (cleaned[i] === '=' && /^[0-9A-Fa-f]{2}$/.test(cleaned.substr(i + 1, 2))) {
+            bytes.push(parseInt(cleaned.substr(i + 1, 2), 16));
+            i += 2;
+        } else {
+            enc.encode(cleaned[i]).forEach(b => bytes.push(b));
+        }
+    }
+    try { return new TextDecoder((charset || 'utf-8').toLowerCase()).decode(new Uint8Array(bytes)); }
+    catch { return new TextDecoder('utf-8').decode(new Uint8Array(bytes)); }
+}
+
 function parsiICSArvo(arvo) {
     // Palauttaa { pvm: 'YYYY-MM-DD'|'YYYY-MM-DDTHH:MM', vainPvm: bool }
     const v = arvo.trim();
@@ -1708,12 +1725,14 @@ function parsiiICS(teksti) {
         const [nimi, ...parametrit] = vasen.split(';');
         const params = {};
         parametrit.forEach(p => { const [k, v] = p.split('='); if (k && v) params[k.toUpperCase()] = v; });
+        const dekoodattu = params['ENCODING'] === 'QUOTED-PRINTABLE'
+            ? qpPurkaa(arvo, params['CHARSET']) : arvo;
         switch (nimi.toUpperCase()) {
-            case 'SUMMARY': nykyinen.otsikko = icsUnescape(arvo); break;
-            case 'DESCRIPTION': nykyinen.kuvaus = icsUnescape(arvo); break;
-            case 'LOCATION': nykyinen.paikka = icsUnescape(arvo); break;
-            case 'URL': nykyinen.linkki = arvo.trim(); break;
-            case 'CATEGORIES': nykyinen.kategoriat = arvo.split(',').map(c => icsUnescape(c.trim())); break;
+            case 'SUMMARY': nykyinen.otsikko = icsUnescape(dekoodattu); break;
+            case 'DESCRIPTION': nykyinen.kuvaus = icsUnescape(dekoodattu); break;
+            case 'LOCATION': nykyinen.paikka = icsUnescape(dekoodattu); break;
+            case 'URL': nykyinen.linkki = dekoodattu.trim(); break;
+            case 'CATEGORIES': nykyinen.kategoriat = dekoodattu.split(',').map(c => icsUnescape(c.trim())); break;
             case 'DTSTART': {
                 const p = parsiICSArvo(arvo);
                 if (p) {
@@ -1786,8 +1805,15 @@ function parsiiICS(teksti) {
 function tuoIcsTiedosto(file) {
     const lukija = new FileReader();
     lukija.onload = () => {
+        // vCalendar 1.0 saattaa olla muussa merkistössä kuin UTF-8 — havaitse CHARSET
+        const puskuri = lukija.result;
+        let teksti = new TextDecoder('utf-8').decode(puskuri);
+        const csMatch = teksti.match(/CHARSET=["']?([^;:\r\n\s"']+)/i);
+        if (csMatch && !/^utf-?8$/i.test(csMatch[1])) {
+            try { teksti = new TextDecoder(csMatch[1].toLowerCase()).decode(puskuri); } catch { /* jätä utf-8 */ }
+        }
         let tapahtumat = [];
-        try { tapahtumat = parsiiICS(lukija.result); } catch (e) { console.error(e); }
+        try { tapahtumat = parsiiICS(teksti); } catch (e) { console.error(e); }
         if (tapahtumat.length === 0) {
             naytaIlmoitus('Tiedostosta ei löytynyt tapahtumia.');
             return;
@@ -1811,7 +1837,7 @@ function tuoIcsTiedosto(file) {
             });
         }
     };
-    lukija.readAsText(file, 'utf-8');
+    lukija.readAsArrayBuffer(file);
 }
 
 // ============ TEHTÄVÄT ============

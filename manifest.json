@@ -42,8 +42,9 @@
     {
       "action": "./index.html?tuonti=ics",
       "accept": {
-        "text/calendar": [".ics"],
-        "application/ics": [".ics"]
+        "text/calendar": [".ics", ".vcs"],
+        "application/ics": [".ics"],
+        "text/x-vcalendar": [".vcs"]
       },
       "icons": [{ "src": "logo.png", "sizes": "192x192" }],
       "launch_type": "single-client"
