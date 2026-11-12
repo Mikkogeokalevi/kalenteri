@@ -30,7 +30,7 @@ if ('launchQueue' in window) {
 }
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '2.7.2';
+const VERSIO = '2.7.3';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: '--c-toni', Kaisa: '--c-kaisa', Oona: '--c-oona', perhe: '--c-perhe' };
@@ -1818,6 +1818,7 @@ function tuoIcsTiedosto(file) {
             naytaIlmoitus('Tiedostosta ei löytynyt tapahtumia.');
             return;
         }
+        suljeSheet(sheetAsetukset);
         if (tapahtumat.length === 1) {
             // Yksi -> avaa lomake esitäytettynä (käyttäjä valitsee kenet koskee)
             avaaLomake('lisaa', tapahtumat[0]);
