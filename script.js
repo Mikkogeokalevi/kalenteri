@@ -17,7 +17,7 @@ const database = getDatabase(app);
 const auth = getAuth(app);
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '2.2.0';
+const VERSIO = '2.2.1';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: 'var(--c-toni)', Kaisa: 'var(--c-kaisa)', Oona: 'var(--c-oona)', perhe: 'var(--c-perhe)' };
@@ -170,9 +170,9 @@ function haptic() { if (navigator.vibrate) navigator.vibrate(8); }
 // ============ KÄYNNISTYS ============
 document.addEventListener('DOMContentLoaded', () => {
     alustaElementit();
-    lataaTeema();
-    taytaKategoriavalinnat();
-    lisaaKuuntelijat();
+    // Kriittiset ensin: login + auth eivät saa rikkoutua vaikka jokin
+    // myöhempi alustus epäonnistuisi (esim. välimuistista tullut vanha HTML)
+    loginForm.addEventListener('submit', handleLogin);
     onAuthStateChanged(auth, user => {
         if (user) {
             let userName = user.displayName;
@@ -192,6 +192,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.className = document.body.className.replace(/theme-\w+/g, '').trim();
         }
     });
+    lataaTeema();
+    taytaKategoriavalinnat();
+    lisaaKuuntelijat();
 });
 
 function handleLogin(event) {
@@ -201,7 +204,20 @@ function handleLogin(event) {
     const loginError = document.getElementById('login-error');
     signInWithEmailAndPassword(auth, email, pass)
         .then(() => { loginError.classList.add('hidden'); loginForm.reset(); })
-        .catch(() => { loginError.classList.remove('hidden'); });
+        .catch((error) => {
+            console.error('Kirjautumisvirhe:', error.code, error.message);
+            const viestit = {
+                'auth/invalid-credential': 'Väärä sähköposti tai salasana.',
+                'auth/wrong-password': 'Väärä sähköposti tai salasana.',
+                'auth/user-not-found': 'Tunnusta ei löydy.',
+                'auth/invalid-email': 'Virheellinen sähköpostiosoite.',
+                'auth/too-many-requests': 'Liian monta yritystä – odota hetki ja yritä uudelleen.',
+                'auth/network-request-failed': 'Verkkovirhe – tarkista yhteys ja lataa sivu uudelleen.',
+                'auth/user-disabled': 'Tili on poistettu käytöstä.'
+            };
+            loginError.textContent = viestit[error.code] || `Kirjautuminen epäonnistui (${error.code || 'tuntematon virhe'}).`;
+            loginError.classList.remove('hidden');
+        });
 }
 
 function handleLogout() {
@@ -262,13 +278,13 @@ function taytaKategoriavalinnat() {
         fKat.appendChild(o);
     });
     kategoriaSuodatin.innerHTML = '<option value="kaikki">Kaikki kategoriat</option>';
-    historiaKategoria.innerHTML = '<option value="kaikki">Kaikki kategoriat</option>';
+    if (historiaKategoria) historiaKategoria.innerHTML = '<option value="kaikki">Kaikki kategoriat</option>';
     Object.entries(KATEGORIAT).forEach(([id, k]) => {
         const o = document.createElement('option');
         o.value = id;
         o.textContent = `${k.ikoni} ${k.nimi}`;
         kategoriaSuodatin.appendChild(o);
-        historiaKategoria.appendChild(o.cloneNode(true));
+        if (historiaKategoria) historiaKategoria.appendChild(o.cloneNode(true));
     });
 }
 
@@ -281,7 +297,6 @@ function paivitaTanaanBanneri() {
 
 // ============ KUUNTELIJAT ============
 function lisaaKuuntelijat() {
-    loginForm.addEventListener('submit', handleLogin);
     document.getElementById('logout-btn').addEventListener('click', () => { suljeSheet(sheetAsetukset); handleLogout(); });
     document.getElementById('sulje-asetukset-btn').addEventListener('click', () => suljeSheet(sheetAsetukset));
     asetuksetBtn.addEventListener('click', () => avaaSheet(sheetAsetukset));
@@ -306,14 +321,16 @@ function lisaaKuuntelijat() {
     kategoriaSuodatin.addEventListener('change', () => piirraNakyma());
     agendaLisaaBtn.addEventListener('click', () => { agendaNaytetyt += AGENDA_PAIVIA_PER_ERÄ; piirraAgenda(); });
 
-    // Historia-paneelin kontrollit
-    historiaHaku.addEventListener('input', () => { historiaNaytetyt = 25; piirraHistoria(); });
-    lisaaSuodatinKuuntelija(historiaSuodatin, () => { historiaNaytetyt = 25; piirraHistoria(); });
-    historiaKategoria.addEventListener('change', () => { historiaNaytetyt = 25; piirraHistoria(); });
-    historiaVuosi.addEventListener('change', () => { historiaNaytetyt = 25; piirraHistoria(); });
-    historiaSort.addEventListener('change', () => piirraHistoria());
-    historiaLisaaBtn.addEventListener('click', () => { historiaNaytetyt += 25; piirraHistoria(); });
-    historiaTakaisiBtn.addEventListener('click', () => vaihdaPaneli('kalenteri'));
+    // Historia-paneelin kontrollit (null-suojaus: vanha välimuistiversio ei sisällä näitä)
+    if (historiaHaku) {
+        historiaHaku.addEventListener('input', () => { historiaNaytetyt = 25; piirraHistoria(); });
+        lisaaSuodatinKuuntelija(historiaSuodatin, () => { historiaNaytetyt = 25; piirraHistoria(); });
+        historiaKategoria.addEventListener('change', () => { historiaNaytetyt = 25; piirraHistoria(); });
+        historiaVuosi.addEventListener('change', () => { historiaNaytetyt = 25; piirraHistoria(); });
+        historiaSort.addEventListener('change', () => piirraHistoria());
+        historiaLisaaBtn.addEventListener('click', () => { historiaNaytetyt += 25; piirraHistoria(); });
+        historiaTakaisiBtn.addEventListener('click', () => vaihdaPaneli('kalenteri'));
+    }
 
     // Kuukausiruudukon päiväklikki
     kalenteriGrid.addEventListener('click', handlePaivaClick);

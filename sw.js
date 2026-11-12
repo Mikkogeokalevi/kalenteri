@@ -1,21 +1,22 @@
-// Service Worker - Kauppisen perhekalenteri v2.2.0
+// Service Worker - Kauppisen perhekalenteri v2.2.1
 // HUOM: pidä versionumero synkassa script.js:n VERSIO-vakion kanssa!
-const CACHE_NAME = 'kalenteri-v2.2.0';
+const CACHE_NAME = 'kalenteri-v2.2.1';
 const urlsToCache = [
   './',
   './index.html',
   './style.css',
   './script.js',
   './logo.png',
-  './manifest.json',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap'
+  './manifest.json'
 ];
+const FONT_CSS_URL = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap';
 
-// Asennus - välimuistiin tallennus
+// Asennus - välimuistiin tallennus (fontti erikseen: sen epäonnistuminen ei saa kaataa asennusta)
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(urlsToCache))
+      .then((cache) => cache.addAll(urlsToCache)
+        .then(() => cache.add(FONT_CSS_URL).catch(() => {})))
       .then(() => self.skipWaiting())
   );
 });
@@ -41,6 +42,7 @@ self.addEventListener('activate', (event) => {
 // - Fontit (gstatic/googleapis): cache-first (muuttumattomat fonttitiedostot)
 // - Muut (omat tiedostot): network-first, välimuisti varalla
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
   const url = event.request.url;
 
   if (url.includes('firebasedatabase.app') ||
