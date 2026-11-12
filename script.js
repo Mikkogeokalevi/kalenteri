@@ -17,7 +17,7 @@ const database = getDatabase(app);
 const auth = getAuth(app);
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '2.3.3';
+const VERSIO = '2.4.0';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: '--c-toni', Kaisa: '--c-kaisa', Oona: '--c-oona', perhe: '--c-perhe' };
@@ -418,12 +418,10 @@ function lisaaKuuntelijat() {
         const loppuInput = document.getElementById('f-loppu');
         if (!loppuInput.value || loppuInput.value < this.value) loppuInput.value = this.value;
         loppuInput.min = this.value;
+        paivitaLomakeAikat();
     });
-    document.getElementById('f-koko-paiva').addEventListener('change', (e) => {
-        const wrap = document.getElementById('loppu-wrap');
-        wrap.classList.toggle('hidden', e.target.checked);
-        document.getElementById('f-loppu').required = !e.target.checked;
-    });
+    document.getElementById('f-loppu').addEventListener('input', paivitaLomakeAikat);
+    document.getElementById('f-koko-paiva').addEventListener('change', paivitaLomakeAikat);
     // "Koko perhe" -valinta rastii kaikki
     document.querySelectorAll('input[name="f-ketakoskee"]').forEach(checkbox => {
         checkbox.addEventListener('change', (e) => {
@@ -1077,10 +1075,9 @@ function naytaTapahtumatKalenterissa() {
                 if (paivaEl) {
                     let merkki;
                     if (mobiili) {
-                        // Mobiilissa pelkkä väripallo — solut ovat liian kapeita tekstipaloille
+                        // Mobiilissa pelkkä väripallo — emoji ei erotu kirkkailla väreillä
                         merkki = document.createElement('div');
                         merkki.className = 'tapahtuma-kuvake';
-                        merkki.textContent = kategoriaInfo(tapahtuma.kategoria).ikoni;
                     } else {
                         merkki = document.createElement('div');
                         merkki.className = 'tapahtuma-palkki';
@@ -1112,7 +1109,6 @@ function naytaTapahtumatKalenterissa() {
                 } else {
                     merkki = document.createElement('div');
                     merkki.className = 'tapahtuma-kuvake';
-                    merkki.textContent = kategoriaInfo(tapahtuma.kategoria).ikoni;
                 }
                 merkki.title = `${tapahtuma.otsikko} ${kloMerkkijono(new Date(tapahtuma.alku))}`;
                 asetaVariTaiLuokka(merkki, tiedot);
@@ -1268,6 +1264,35 @@ function avaaTapahtuma(key) {
 }
 
 // ============ TAPAHTUMALOMAKE ============
+// Aikakentät: "koko päivä" → pelkät päivämäärät ja jaksoloppu;
+// ajastettu → kellonajat. Toisto vain yksittäisille ajastetuille tapahtumille.
+function paivitaLomakeAikat() {
+    const kokoPaiva = document.getElementById('f-koko-paiva').checked;
+    const fAlku = document.getElementById('f-alku');
+    const fLoppu = document.getElementById('f-loppu');
+    const haluttu = kokoPaiva ? 'date' : 'datetime-local';
+    if (fAlku.type !== haluttu) {
+        const alkuV = fAlku.value, loppuV = fLoppu.value;
+        fAlku.type = haluttu;
+        fLoppu.type = haluttu;
+        if (kokoPaiva) {
+            fAlku.value = alkuV.substring(0, 10);
+            fLoppu.value = (loppuV || alkuV).substring(0, 10);
+        } else {
+            const ad = alkuV.substring(0, 10);
+            const ld = (loppuV || alkuV).substring(0, 10);
+            fAlku.value = ad ? ad + 'T09:00' : '';
+            fLoppu.value = ld ? ld + (ld === ad ? 'T10:00' : 'T18:00') : '';
+        }
+    }
+    fLoppu.required = !kokoPaiva;
+    fLoppu.min = fAlku.value || '';
+    const toistuuRivi = document.getElementById('f-toistuminen-tyyppi').closest('.kentta-rivi');
+    const muokkaus = sheetLomake.dataset.tila === 'muokkaa';
+    const samapaiva = (fAlku.value || '').substring(0, 10) === ((fLoppu.value || fAlku.value) || '').substring(0, 10);
+    toistuuRivi.classList.toggle('hidden', muokkaus || kokoPaiva || !samapaiva);
+}
+
 function avaaLomake(tila, tapahtuma = null, esitäyte = null) {
     const lomake = document.getElementById('tapahtuma-lomake');
     lomake.reset();
@@ -1276,8 +1301,6 @@ function avaaLomake(tila, tapahtuma = null, esitäyte = null) {
     document.getElementById('f-tallenna').textContent = onMuokkaus ? 'Tallenna' : 'Lisää kalenteriin';
     document.getElementById('poista-tapahtuma-btn').classList.toggle('hidden', !onMuokkaus);
     document.getElementById('f-id').value = onMuokkaus ? tapahtuma.key : '';
-    // Toistumisasetukset näkyvät vain lisäyksessä
-    document.getElementById('f-toistuminen-tyyppi').closest('.kentta-rivi').classList.toggle('hidden', onMuokkaus);
 
     const lähde = tapahtuma || {};
     document.getElementById('f-otsikko').value = onMuokkaus || tapahtuma ? (lähde.otsikko || '') : '';
@@ -1285,15 +1308,19 @@ function avaaLomake(tila, tapahtuma = null, esitäyte = null) {
     document.getElementById('f-kategoria').value = lähde.kategoria || 'muu';
     document.getElementById('f-linkki').value = lähde.linkki || '';
     document.getElementById('f-koko-paiva').checked = !!lähde.kokoPaiva;
-    document.getElementById('loppu-wrap').classList.toggle('hidden', !!lähde.kokoPaiva);
+    const aikaTyyppi = lähde.kokoPaiva ? 'date' : 'datetime-local';
+    const aikaPituus = lähde.kokoPaiva ? 10 : 16;
+    document.getElementById('f-alku').type = aikaTyyppi;
+    document.getElementById('f-loppu').type = aikaTyyppi;
+    document.getElementById('loppu-wrap').classList.remove('hidden');
     document.getElementById('f-loppu').required = !lähde.kokoPaiva;
 
     if (onMuokkaus || (tapahtuma && !esitäyte)) {
-        document.getElementById('f-alku').value = (lähde.alku || '').substring(0, 16);
-        document.getElementById('f-loppu').value = (lähde.loppu || '').substring(0, 16);
+        document.getElementById('f-alku').value = (lähde.alku || '').substring(0, aikaPituus);
+        document.getElementById('f-loppu').value = (lähde.loppu || '').substring(0, aikaPituus);
     } else if (esitäyte) {
-        document.getElementById('f-alku').value = esitäyte.alku || '';
-        document.getElementById('f-loppu').value = esitäyte.loppu || '';
+        document.getElementById('f-alku').value = (esitäyte.alku || '').substring(0, aikaPituus);
+        document.getElementById('f-loppu').value = (esitäyte.loppu || '').substring(0, aikaPituus);
     }
 
     // Ketä koskee
@@ -1313,6 +1340,7 @@ function avaaLomake(tila, tapahtuma = null, esitäyte = null) {
     });
 
     sheetLomake.dataset.tila = tila;
+    paivitaLomakeAikat();
     avaaSheet(sheetLomake);
     setTimeout(() => document.getElementById('f-otsikko').focus(), 350);
 }
@@ -1370,8 +1398,9 @@ function tallennaTapahtuma() {
         }
     } else {
         data.luoja = nykyinenKayttaja;
+        const toistuuSallittu = !document.getElementById('f-toistuminen-tyyppi').closest('.kentta-rivi').classList.contains('hidden');
         data.toistuminen = {
-            tyyppi: document.getElementById('f-toistuminen-tyyppi').value,
+            tyyppi: toistuuSallittu ? document.getElementById('f-toistuminen-tyyppi').value : 'ei',
             paattyy: document.getElementById('f-toistuminen-paattyy').value || null
         };
         if (data.toistuminen.tyyppi !== 'ei') {
