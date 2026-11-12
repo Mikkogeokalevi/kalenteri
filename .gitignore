@@ -3,3 +3,8 @@ firebase-export*.json
 firebase-import*.json
 *-export.json
 *-import.json
+
+# Ladatut kalenterimerkinnät (.ics/.vcs) — paikallisia tiedostoja, ei repoihin
+miitit/
+*.ics
+*.vcs
