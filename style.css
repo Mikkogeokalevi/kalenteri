@@ -385,7 +385,7 @@ input.kytkin:checked::before { transform: translateX(20px); }
 .viikko-nro { display: flex; align-items: center; justify-content: center; }
 .paiva {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--r-m); height: 120px; padding: 5px;
+    border-radius: var(--r-m); height: 120px; padding: 5px; min-width: 0;
     display: flex; flex-direction: column; cursor: pointer;
     transition: border-color var(--siirtyma), box-shadow var(--siirtyma);
 }
@@ -711,7 +711,9 @@ input.kytkin:checked::before { transform: translateX(20px); }
     .appbar-tekstit h1 { font-size: 1em; }
     #tanaan-banneri { font-size: 0.7em; }
     .paiva { height: 82px; padding: 3px; border-radius: 9px; }
-    .lisaa-palkki { font-size: 0.6em; padding: 0 4px; }
+    .tapahtumat-container { flex-direction: row; flex-wrap: wrap; align-content: flex-start; }
+    .tapahtuma-kuvake { flex-shrink: 0; }
+    .lisaa-palkki { font-size: 0.6em; padding: 0 4px; align-self: center; }
     .paiva.tanaan { padding: 2px; }
     .paiva-numero { font-size: 0.75em; }
     .paiva.tanaan .paiva-numero { width: 20px; height: 20px; font-size: 0.7em; }

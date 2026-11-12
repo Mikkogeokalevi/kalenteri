@@ -17,10 +17,10 @@ const database = getDatabase(app);
 const auth = getAuth(app);
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '2.3.1';
+const VERSIO = '2.3.2';
 
 // --- Vakiot ---
-const KAYTTAJA_VARIT = { Toni: 'var(--c-toni)', Kaisa: 'var(--c-kaisa)', Oona: 'var(--c-oona)', perhe: 'var(--c-perhe)' };
+const KAYTTAJA_VARIT = { Toni: '--c-toni', Kaisa: '--c-kaisa', Oona: '--c-oona', perhe: '--c-perhe' };
 const HENKILOT = ['Toni', 'Kaisa', 'Oona'];
 const KATEGORIAT = {
     tyo:      { nimi: 'Työ',       ikoni: '💼' },
@@ -287,6 +287,13 @@ function asetaTeema(teema) {
     localStorage.setItem('kalenteri-teema', teema);
     document.querySelectorAll('#teema-valitsin .seg-btn').forEach(b =>
         b.classList.toggle('active', b.dataset.teema === teema));
+    // Inline-lasketut henkilövärit pitää piirtää uudelleen teeman vaihtuessa
+    if (nykyinenKayttaja) {
+        piirraNakyma();
+        naytaTulevat();
+        piirraHistoria();
+        piirraTehtavalista();
+    }
 }
 
 function taytaKategoriavalinnat() {
@@ -1045,21 +1052,28 @@ function naytaTapahtumatKalenterissa() {
         if (onMonipaivainenTaiKokoPaiva) {
             let currentDate = new Date(alkuAikaNolla);
             const tiedot = luoKoskeeTiedot(tapahtuma.ketakoskee);
+            const mobiili = !matchMedia('(min-width: 900px)').matches;
             while (currentDate.getTime() <= loppuAikaNolla) {
                 const pvm = pvmMerkkijono(currentDate);
                 const paivaEl = document.querySelector(`.paiva[data-paivamaara="${pvm}"]`);
                 if (paivaEl) {
-                    const palkki = document.createElement('div');
-                    palkki.className = 'tapahtuma-palkki';
-                    palkki.title = tapahtuma.otsikko;
-                    asetaVariTaiLuokka(palkki, tiedot);
-                    if (currentDate.getTime() === alkuAikaNolla) {
-                        palkki.textContent = `${kategoriaInfo(tapahtuma.kategoria).ikoni} ${tapahtuma.otsikko}`;
+                    let merkki;
+                    if (mobiili) {
+                        // Mobiilissa pelkkä väripallo — solut ovat liian kapeita tekstipaloille
+                        merkki = document.createElement('div');
+                        merkki.className = 'tapahtuma-kuvake';
+                        merkki.textContent = kategoriaInfo(tapahtuma.kategoria).ikoni;
                     } else {
-                        palkki.textContent = `› ${tapahtuma.otsikko}`;
+                        merkki = document.createElement('div');
+                        merkki.className = 'tapahtuma-palkki';
+                        merkki.textContent = currentDate.getTime() === alkuAikaNolla
+                            ? `${kategoriaInfo(tapahtuma.kategoria).ikoni} ${tapahtuma.otsikko}`
+                            : `› ${tapahtuma.otsikko}`;
                     }
-                    palkki.addEventListener('click', (e) => { e.stopPropagation(); avaaTapahtuma(tapahtuma.key); });
-                    paivaEl.querySelector('.tapahtumat-container').appendChild(palkki);
+                    merkki.title = tapahtuma.otsikko;
+                    asetaVariTaiLuokka(merkki, tiedot);
+                    merkki.addEventListener('click', (e) => { e.stopPropagation(); avaaTapahtuma(tapahtuma.key); });
+                    paivaEl.querySelector('.tapahtumat-container').appendChild(merkki);
                 }
                 currentDate.setDate(currentDate.getDate() + 1);
             }
@@ -1083,7 +1097,7 @@ function naytaTapahtumatKalenterissa() {
         }
     });
     // Rajoita näkyvien merkkien määrä per solu — "+N" avaa päivänäkymän
-    const maxNakyvat = matchMedia('(min-width: 900px)').matches ? 3 : 2;
+    const maxNakyvat = matchMedia('(min-width: 900px)').matches ? 3 : 4;
     document.querySelectorAll('#kalenteri-grid .tapahtumat-container').forEach(c => {
         const items = [...c.children];
         if (items.length <= maxNakyvat) return;
