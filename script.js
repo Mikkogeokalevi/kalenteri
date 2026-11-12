@@ -17,7 +17,7 @@ const database = getDatabase(app);
 const auth = getAuth(app);
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '2.4.0';
+const VERSIO = '2.4.1';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: '--c-toni', Kaisa: '--c-kaisa', Oona: '--c-oona', perhe: '--c-perhe' };
@@ -792,6 +792,21 @@ function luoKoskeeTiedot(ketakoskee) {
 }
 
 function asetaVariTaiLuokka(el, tiedot) {
+    if (el.classList.contains('tapahtuma-kuvake')) {
+        // Värirengas + vaalea tausta — emoji erottuu kaikilla taustaväreillä
+        el.style.backgroundColor = 'rgba(255,255,255,0.94)';
+        el.style.color = '#0f172a';
+        el.style.boxShadow = '0 1px 3px rgba(0,0,0,0.3)';
+        if (tiedot.type === 'class') {
+            el.style.border = `2.5px solid ${tiedot.vari || '#666'}`;
+        } else {
+            const v = tiedot.value.match(/#[0-9a-f]{6}/gi) || ['#666', '#666'];
+            el.style.border = `2.5px solid ${v[0]}`;
+            el.style.borderRightColor = v[1] || v[0];
+            el.style.borderBottomColor = v[1] || v[0];
+        }
+        return;
+    }
     if (tiedot.type === 'class') {
         el.style.backgroundColor = tiedot.vari || '#666';
         el.style.color = kontrastiVari(tiedot.vari);
@@ -1075,9 +1090,10 @@ function naytaTapahtumatKalenterissa() {
                 if (paivaEl) {
                     let merkki;
                     if (mobiili) {
-                        // Mobiilissa pelkkä väripallo — emoji ei erotu kirkkailla väreillä
+                        // Mobiilissa värirenkaallinen pallo + kategoria-emoji
                         merkki = document.createElement('div');
                         merkki.className = 'tapahtuma-kuvake';
+                        merkki.textContent = kategoriaInfo(tapahtuma.kategoria).ikoni;
                     } else {
                         merkki = document.createElement('div');
                         merkki.className = 'tapahtuma-palkki';
@@ -1109,6 +1125,7 @@ function naytaTapahtumatKalenterissa() {
                 } else {
                     merkki = document.createElement('div');
                     merkki.className = 'tapahtuma-kuvake';
+                    merkki.textContent = kategoriaInfo(tapahtuma.kategoria).ikoni;
                 }
                 merkki.title = `${tapahtuma.otsikko} ${kloMerkkijono(new Date(tapahtuma.alku))}`;
                 asetaVariTaiLuokka(merkki, tiedot);
