@@ -16,8 +16,21 @@ const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
 
+// PWA file_handlers: .ics-tiedosto avattu suoraan sovellukseen (esim. c:geo "Lisää kalenteriin")
+if ('launchQueue' in window) {
+    window.launchQueue.setConsumer((params) => {
+        (params.files || []).forEach(async (fh) => {
+            try {
+                const f = await fh.getFile();
+                if (nykyinenKayttaja) tuoIcsTiedosto(f);
+                else odottavaIcsTiedosto = f; // kirjautumisen jälkeen
+            } catch (e) { console.error('ICS-avaus epäonnistui:', e); }
+        });
+    });
+}
+
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '2.6.0';
+const VERSIO = '2.7.1';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: '--c-toni', Kaisa: '--c-kaisa', Oona: '--c-oona', perhe: '--c-perhe' };
@@ -68,6 +81,7 @@ let unsubscribeFromTasks = null;
 let unsubscribeFromCategories = null;
 let unsubscribeFromHistory = null;
 let historiaVanhat = [];
+let odottavaIcsTiedosto = null; // .ics käynnistettiin ennen kirjautumista
 let mukautetutKategoriat = {};
 let muokattavaKategoriaId = null;
 let historiaNaytetyt = 25;
@@ -286,6 +300,11 @@ function startAppForUser(userName) {
         avaaLomake('lisaa');
         history.replaceState(null, '', location.pathname);
     }
+    if (odottavaIcsTiedosto) {
+        const f = odottavaIcsTiedosto;
+        odottavaIcsTiedosto = null;
+        tuoIcsTiedosto(f);
+    }
 }
 
 // ============ TEEMA ============
@@ -412,6 +431,18 @@ function lisaaKuuntelijat() {
         const t = haeTapahtuma(sheetTapahtuma.dataset.tapahtumaId);
         suljeSheet(sheetTapahtuma);
         avaaLomake('lisaa', t);
+    });
+    document.getElementById('vie-ics-btn').addEventListener('click', () => {
+        vieTapahtumaICS(sheetTapahtuma.dataset.tapahtumaId);
+    });
+    document.getElementById('tuo-ics-btn').addEventListener('click', () => {
+        document.getElementById('ics-tiedosto').click();
+    });
+    document.getElementById('ics-tiedosto').addEventListener('change', function () {
+        if (this.files && this.files[0]) {
+            tuoIcsTiedosto(this.files[0]);
+            this.value = '';
+        }
     });
 
     // Lomakesheet
@@ -1568,6 +1599,219 @@ function poistaTapahtuma() {
             remove(ref(database, `tapahtumat/${key}`)).then(() => naytaIlmoitus('Tapahtuma poistettu.'));
         }
     }
+}
+
+// ============ ICS (iCalendar) VIENTI + TUONTI ============
+// Vienti: yksi tapahtuma -> .ics-tiedosto (jaa/lataa). Tuonti: .ics -> lomake/eräajona.
+
+function icsEscape(s) {
+    return String(s || '')
+        .replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,')
+        .replace(/\r?\n/g, '\\n');
+}
+function icsUnescape(s) {
+    return String(s || '')
+        .replace(/\\n|\\N/g, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
+}
+function icsPvmNro(iso) { return iso.substring(0, 10).replace(/-/g, ''); }
+function icsFold(rivi) { // rivita 75 merkkiin, jatko-rivi alkaa välilyönnillä
+    const osat = [];
+    while (rivi.length > 75) { osat.push(rivi.substring(0, 75)); rivi = ' ' + rivi.substring(75); }
+    osat.push(rivi);
+    return osat.join('\r\n');
+}
+
+function rakennaICS(t) {
+    const rivit = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Kauppisen perhekalenteri//FI',
+        'CALSCALE:GREGORIAN',
+        'BEGIN:VEVENT',
+        `UID:${t.key || Date.now()}@kauppisen-perhekalenteri`,
+        `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')}`,
+        `SUMMARY:${icsEscape(t.otsikko)}`
+    ];
+    if (t.kokoPaiva) {
+        // Koko päivä: DTEND on standardissa eksklusiivinen (päivä lopun JÄLKEEN)
+        rivit.push(`DTSTART;VALUE=DATE:${icsPvmNro(t.alku)}`);
+        const loppuD = new Date(t.loppu.substring(0, 10) + 'T00:00');
+        loppuD.setDate(loppuD.getDate() + 1);
+        rivit.push(`DTEND;VALUE=DATE:${icsPvmNro(pvmMerkkijono(loppuD))}`);
+    } else {
+        rivit.push(`DTSTART:${icsPvmNro(t.alku)}T${t.alku.substring(11, 16).replace(':', '')}00`);
+        rivit.push(`DTEND:${icsPvmNro(t.loppu)}T${t.loppu.substring(11, 16).replace(':', '')}00`);
+    }
+    if (t.kuvaus) rivit.push(`DESCRIPTION:${icsEscape(t.kuvaus)}`);
+    if (t.linkki) rivit.push(`URL:${t.linkki}`);
+    // Toistuva: RRULE vain jos toistumistieto on säilynyt instanssissa
+    if (t.onToistuva && t.toistuminen && t.toistuminen.tyyppi && t.toistuminen.tyyppi !== 'ei') {
+        const freq = { paivittain: 'DAILY', viikoittain: 'WEEKLY', kuukausittain: 'MONTHLY' }[t.toistuminen.tyyppi];
+        if (freq) {
+            let rrule = `RRULE:FREQ=${freq}`;
+            if (t.toistuminen.paattyy) rrule += `;UNTIL=${icsPvmNro(t.toistuminen.paattyy)}T235959`;
+            rivit.push(rrule);
+        }
+    }
+    rivit.push('END:VEVENT', 'END:VCALENDAR');
+    return rivit.map(icsFold).join('\r\n');
+}
+
+function vieTapahtumaICS(key) {
+    const t = haeTapahtuma(key);
+    if (!t) return;
+    const ics = rakennaICS(t);
+    const tiedostonNimi = `${(t.otsikko || 'tapahtuma').replace(/[^\wäöåÄÖÅ \-]/g, '').trim().replace(/\s+/g, '_') || 'tapahtuma'}.ics`;
+    const tiedosto = new File([ics], tiedostonNimi, { type: 'text/calendar' });
+    if (navigator.canShare && navigator.canShare({ files: [tiedosto] })) {
+        navigator.share({ files: [tiedosto], title: t.otsikko }).catch(() => {});
+    } else {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(tiedosto);
+        a.download = tiedostonNimi;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+}
+
+// --- Tuonti: parsitaan VEVENT-lohkot ---
+function parsiICSArvo(arvo) {
+    // Palauttaa { pvm: 'YYYY-MM-DD'|'YYYY-MM-DDTHH:MM', vainPvm: bool }
+    const v = arvo.trim();
+    if (/^\d{8}$/.test(v)) {
+        return { pvm: `${v.substr(0, 4)}-${v.substr(4, 2)}-${v.substr(6, 2)}`, vainPvm: true };
+    }
+    const m = v.match(/^(\d{8})T(\d{6})(Z?)$/);
+    if (!m) return null;
+    const iso = `${m[1].substr(0, 4)}-${m[1].substr(4, 2)}-${m[1].substr(6, 2)}T${m[2].substr(0, 2)}:${m[2].substr(2, 2)}`;
+    if (m[3] === 'Z') {
+        // UTC -> paikallinen aika
+        const d = new Date(`${m[1].substr(0, 4)}-${m[1].substr(4, 2)}-${m[1].substr(6, 2)}T${m[2].substr(0, 2)}:${m[2].substr(2, 2)}:${m[2].substr(4, 2)}Z`);
+        return { pvm: `${pvmMerkkijono(d)}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`, vainPvm: false };
+    }
+    return { pvm: iso, vainPvm: false };
+}
+
+function parsiiICS(teksti) {
+    // Avaa rivitytetyt rivit ja kerää ominaisuudet VEVENT-lohkoista
+    const rivit = teksti.replace(/\r?\n[ \t]/g, '').split(/\r?\n/);
+    const tapahtumat = [];
+    let nykyinen = null;
+    for (const rivi of rivit) {
+        if (rivi === 'BEGIN:VEVENT') { nykyinen = {}; continue; }
+        if (rivi === 'END:VEVENT') { if (nykyinen) tapahtumat.push(nykyinen); nykyinen = null; continue; }
+        if (!nykyinen) continue;
+        const kaksoispiste = rivi.indexOf(':');
+        if (kaksoispiste < 0) continue;
+        const vasen = rivi.substring(0, kaksoispiste);
+        const arvo = rivi.substring(kaksoispiste + 1);
+        const [nimi, ...parametrit] = vasen.split(';');
+        const params = {};
+        parametrit.forEach(p => { const [k, v] = p.split('='); if (k && v) params[k.toUpperCase()] = v; });
+        switch (nimi.toUpperCase()) {
+            case 'SUMMARY': nykyinen.otsikko = icsUnescape(arvo); break;
+            case 'DESCRIPTION': nykyinen.kuvaus = icsUnescape(arvo); break;
+            case 'LOCATION': nykyinen.paikka = icsUnescape(arvo); break;
+            case 'URL': nykyinen.linkki = arvo.trim(); break;
+            case 'CATEGORIES': nykyinen.kategoriat = arvo.split(',').map(c => icsUnescape(c.trim())); break;
+            case 'DTSTART': {
+                const p = parsiICSArvo(arvo);
+                if (p) {
+                    nykyinen.alku = p.pvm;
+                    nykyinen.vainPvm = p.vainPvm || params['VALUE'] === 'DATE';
+                }
+                break;
+            }
+            case 'DTEND': {
+                const p = parsiICSArvo(arvo);
+                if (p) {
+                    nykyinen.loppu = p.pvm;
+                    nykyinen.loppuEksklusiivinen = p.vainPvm || params['VALUE'] === 'DATE';
+                }
+                break;
+            }
+            case 'RRULE': {
+                const r = {};
+                arvo.split(';').forEach(os => { const [k, v] = os.split('='); r[k] = v; });
+                const tyyppi = { DAILY: 'paivittain', WEEKLY: 'viikoittain', MONTHLY: 'kuukausittain' }[r.FREQ];
+                if (tyyppi) {
+                    nykyinen.toistuminen = {
+                        tyyppi,
+                        paattyy: r.UNTIL ? (r.UNTIL.substring(0, 8).replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3')) : null
+                    };
+                }
+                break;
+            }
+        }
+    }
+    // Muunna sovelluksen muotoon
+    return tapahtumat.filter(v => v.alku).map(v => {
+        let alku, loppu;
+        if (v.vainPvm) {
+            alku = `${v.alku}T00:00`;
+            // DTEND eksklusiivinen -> vähennä yksi päivä; puuttuessa sama päivä
+            if (v.loppu) {
+                const d = new Date(v.loppu + 'T00:00');
+                d.setDate(d.getDate() - 1);
+                loppu = `${pvmMerkkijono(d)}T23:59`;
+            } else {
+                loppu = `${v.alku}T23:59`;
+            }
+        } else {
+            alku = v.alku;
+            loppu = v.loppu || v.alku;
+        }
+        const kuvausOsat = [v.kuvaus, v.paikka ? `Paikka: ${v.paikka}` : null].filter(Boolean);
+        // Kategoriamatchi: CATEGORIES vs. tunnetut kategoriat (id tai nimi, kirjainkoolla ei väliä)
+        let kategoria = 'muu';
+        if (v.kategoriat) {
+            const tulos = kaikkiKategoriat().find(([id, k]) =>
+                v.kategoriat.some(c => c.toLowerCase() === id.toLowerCase() || c.toLowerCase() === k.nimi.toLowerCase()));
+            if (tulos) kategoria = tulos[0];
+        }
+        const t = {
+            otsikko: v.otsikko || 'Tuotu tapahtuma',
+            kuvaus: kuvausOsat.join('\n'),
+            kategoria,
+            linkki: v.linkki || '',
+            alku, loppu,
+            kokoPaiva: !!v.vainPvm,
+            nakyvyys: { Toni: true, Kaisa: true, Oona: true }
+        };
+        if (v.toistuminen && !v.vainPvm) t.toistuminen = v.toistuminen;
+        return t;
+    });
+}
+
+function tuoIcsTiedosto(file) {
+    const lukija = new FileReader();
+    lukija.onload = () => {
+        let tapahtumat = [];
+        try { tapahtumat = parsiiICS(lukija.result); } catch (e) { console.error(e); }
+        if (tapahtumat.length === 0) {
+            naytaIlmoitus('Tiedostosta ei löytynyt tapahtumia.');
+            return;
+        }
+        if (tapahtumat.length === 1) {
+            // Yksi -> avaa lomake esitäytettynä (käyttäjä valitsee kenet koskee)
+            avaaLomake('lisaa', tapahtumat[0]);
+            naytaIlmoitus('Tarkista tiedot ja tallenna.');
+        } else {
+            // Monta -> erätallennus oletuksilla (toistot tulevat yksittäisinä merkintöinä)
+            const lupaukset = tapahtumat.map(t => {
+                const data = { ...t, ketakoskee: ['perhe'], luoja: nykyinenKayttaja };
+                delete data.toistuminen;
+                return push(ref(database, 'tapahtumat'), data);
+            });
+            Promise.allSettled(lupaukset).then(tulokset => {
+                const virheet = tulokset.filter(r => r.status === 'rejected').length;
+                naytaIlmoitus(virheet
+                    ? `Tuotu ${tapahtumat.length - virheet}/${tapahtumat.length} tapahtumaa.`
+                    : `Tuotu ${tapahtumat.length} tapahtumaa.`);
+            });
+        }
+    };
+    lukija.readAsText(file, 'utf-8');
 }
 
 // ============ TEHTÄVÄT ============

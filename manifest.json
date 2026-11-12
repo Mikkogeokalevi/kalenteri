@@ -37,5 +37,16 @@
       "url": "./index.html?uusi=1",
       "icons": [{ "src": "logo.png", "sizes": "192x192" }]
     }
+  ],
+  "file_handlers": [
+    {
+      "action": "./index.html?tuonti=ics",
+      "accept": {
+        "text/calendar": [".ics"],
+        "application/ics": [".ics"]
+      },
+      "icons": [{ "src": "logo.png", "sizes": "192x192" }],
+      "launch_type": "single-client"
+    }
   ]
 }

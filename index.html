@@ -235,6 +235,7 @@
             <p id="view-linkki-container" class="hidden"><a id="view-linkki" href="#" target="_blank" rel="noopener noreferrer" class="btn-secondary btn-link">Avaa linkki ↗</a></p>
             <p class="view-luoja"><em>Luonut: <span id="view-luoja"></span></em></p>
             <div class="sheet-napit">
+                <button type="button" id="vie-ics-btn" class="btn-secondary">Vie kalenteriin</button>
                 <button type="button" id="kopioi-btn" class="btn-secondary">Kopioi</button>
                 <button type="button" id="muokkaa-btn" class="btn-primary">Muokkaa</button>
                 <button type="button" id="sulje-btn" class="btn-ghost">Sulje</button>
@@ -428,6 +429,14 @@
                 </div>
             </div>
             <div class="asetus-osio">
+                <h4>Tuonti</h4>
+                <div class="asetus-rivi">
+                    <button id="tuo-ics-btn" class="btn-secondary">Tuo kalenterimerkintä (.ics)</button>
+                    <input type="file" id="ics-tiedosto" accept=".ics,text/calendar" class="hidden">
+                </div>
+                <p class="muistutus-status">Tuo tapahtumia muista kalenterisovelluksista (Outlook, Google, Apple).</p>
+            </div>
+            <div class="asetus-osio">
                 <h4>Muut</h4>
                 <div class="asetus-rivi">
                     <button id="asetukset-menneet-btn" class="btn-secondary">Menneet tapahtumat</button>
@@ -444,8 +453,28 @@
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js')
-                .then(() => console.log('Service Worker rekisteröity'))
+                .then((reg) => {
+                    console.log('Service Worker rekisteröity');
+                    reg.update(); // pakota päivitystarkistus jokaisella käynnistyksellä
+                })
                 .catch((err) => console.log('Service Worker virhe:', err));
+
+            // Kun uusi SW ottaa ohjauksen, lataa sivu tuoreilla tiedostoilla
+            if (navigator.serviceWorker.controller) {
+                let paivitetaan = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (paivitetaan) return;
+                    paivitetaan = true;
+                    location.reload();
+                });
+            }
+
+            // Kun sovellus palaa taustalta, tarkista päivitykset
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    navigator.serviceWorker.getRegistration().then(r => r && r.update());
+                }
+            });
         }
     </script>
 </body>
