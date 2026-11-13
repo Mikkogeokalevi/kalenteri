@@ -30,7 +30,7 @@ if ('launchQueue' in window) {
 }
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '2.8.0';
+const VERSIO = '2.8.1';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: '--c-toni', Kaisa: '--c-kaisa', Oona: '--c-oona', perhe: '--c-perhe' };
@@ -240,6 +240,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     lataaTeema();
+    // Työkalupalkin sticky-offset = appbarin todellinen korkeus (safe-area huomioiden)
+    const paivitaAppbarKorkeus = () => {
+        const a = document.getElementById('appbar');
+        if (a) document.documentElement.style.setProperty('--appbar-h', a.offsetHeight + 'px');
+    };
+    paivitaAppbarKorkeus();
+    window.addEventListener('resize', paivitaAppbarKorkeus);
     const loginVersio = document.getElementById('login-versio');
     if (loginVersio) loginVersio.textContent = `v${VERSIO}`;
     taytaEmojiValitsin();
