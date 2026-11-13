@@ -8,3 +8,6 @@ firebase-import*.json
 miitit/
 *.ics
 *.vcs
+
+# Windows-komentoheittoja (nul-laite ei toimi Git Bashissa)
+nul
