@@ -508,7 +508,7 @@ input.kytkin:checked::before { transform: translateX(20px); }
 }
 .tehtava-vasen input[type="checkbox"]:checked { background: var(--v-ok); border-color: var(--v-ok); }
 .tehtava-vasen input[type="checkbox"]:checked::after { content: '✓'; color: #fff; font-size: 0.8em; font-weight: 700; }
-.tehtava-tiedot { flex: 1; min-width: 0; }
+.tehtava-tiedot { flex: 1; min-width: 0; cursor: pointer; }
 .tehtava-teksti { margin: 0; font-weight: 500; }
 .tehtava-meta { font-size: 0.75em; color: var(--text-3); display: block; margin-top: 2px; }
 .tehtava-oikea { display: flex; align-items: center; gap: 6px; }
@@ -545,6 +545,40 @@ input.kytkin:checked::before { transform: translateX(20px); }
 .lisaa-tehtava-lomake { display: flex; gap: 8px; }
 .lisaa-tehtava-lomake input { flex: 1; }
 .lisaa-tehtava-lomake .btn-primary { flex-shrink: 0; padding: 12px 20px; }
+
+/* ---------- TEHTÄVÄKORTTI ---------- */
+.tehtava-sheet-meta { font-size: 0.8em; color: var(--text-3); margin-top: 2px; }
+.ts-osio-otsikko {
+    font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--text-3); margin: 16px 0 8px;
+}
+.alitehtava-rivi {
+    display: flex; align-items: center; gap: 10px; padding: 9px 10px;
+    border: 1px solid var(--border); border-radius: var(--r-m);
+    background: var(--surface-2); margin-bottom: 6px;
+}
+.alitehtava-rivi input[type="checkbox"] {
+    width: 22px; height: 22px; border-radius: 50%; appearance: none; -webkit-appearance: none;
+    border: 2px solid var(--border-2); cursor: pointer; flex-shrink: 0; margin: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all var(--siirtyma);
+}
+.alitehtava-rivi input[type="checkbox"]:checked { background: var(--v-ok); border-color: var(--v-ok); }
+.alitehtava-rivi input[type="checkbox"]:checked::after { content: '✓'; color: #fff; font-size: 0.8em; font-weight: 700; }
+.alitehtava-teksti { flex: 1; min-width: 0; }
+.alitehtava-rivi.tehty .alitehtava-teksti { text-decoration: line-through; opacity: 0.55; }
+.alitehtava-poista {
+    width: 28px; height: 28px; border: none; background: transparent;
+    color: var(--text-3); border-radius: 6px; font-size: 1.1em; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.alitehtava-poista:hover { background: var(--surface-3); color: var(--v-poista); }
+.lisaa-alitehtava-lomake { display: flex; gap: 8px; }
+.lisaa-alitehtava-lomake input { flex: 1; }
+#tehtava-kuvaus { width: 100%; resize: vertical; min-height: 70px; }
+.ts-napit { margin-top: 18px; }
+#ts-e-teksti { width: 100%; margin-bottom: 4px; }
+#ts-muokkaus .maarapaiva-container { margin-top: 10px; }
 
 /* ---------- TAB BAR (mobiili) ---------- */
 #tabbar {

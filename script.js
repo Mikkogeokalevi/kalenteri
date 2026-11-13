@@ -30,7 +30,7 @@ if ('launchQueue' in window) {
 }
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '2.9.2';
+const VERSIO = '3.0.0';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: '--c-toni', Kaisa: '--c-kaisa', Oona: '--c-oona', perhe: '--c-perhe' };
@@ -65,7 +65,7 @@ let loginOverlay, loginForm, appShell, appbar, tanaanBanneri, asetuksetBtn, kayt
     tehtavalistaToggle, tehtavalistaSisalto, avoimetTehtavatLaskuri,
     avaaArkistoBtn, avaaMenneetBtn,
     tabbar, tabTehtavatBadge, fabLisaa, ptrIndikaattori,
-    sheetTapahtuma, sheetLomake, sheetLaajuus, sheetArkisto, sheetAsetukset,
+    sheetTapahtuma, sheetLomake, sheetLaajuus, sheetArkisto, sheetAsetukset, sheetTehtava,
     panelHistoria, historiaHaku, historiaSuodatin, historiaKategoria, historiaVuosi,
     historiaSort, historiaLista, historiaLisaaBtn, historiaMaara, historiaTakaisiBtn,
     arkistoidutTehtavatLista, ilmoitusEl;
@@ -86,6 +86,7 @@ let mukautetutKategoriat = {};
 let muokattavaKategoriaId = null;
 let historiaNaytetyt = 25;
 let kaikkiTehtavat = [];
+let tehtavaSheetEdit = false; // tehtäväkortti on muokkaustilassa — älä ylikirjoita kenttiä kuuntelijasta
 let muistutusAsetukset = { kaytossa: false, ajoitus: 60, tehtavat: false };
 let muistutusIntervalli = null;
 let banneriIntervalli = null;
@@ -132,6 +133,7 @@ function alustaElementit() {
     sheetLaajuus = document.getElementById('sheet-laajuus');
     sheetArkisto = document.getElementById('sheet-arkisto');
     sheetAsetukset = document.getElementById('sheet-asetukset');
+    sheetTehtava = document.getElementById('sheet-tehtava');
     panelHistoria = document.getElementById('panel-historia');
     historiaHaku = document.getElementById('historia-haku');
     historiaSuodatin = document.getElementById('historia-suodatin');
@@ -503,6 +505,40 @@ function lisaaKuuntelijat() {
     document.getElementById('sulje-arkisto-modal-btn').addEventListener('click', () => suljeSheet(sheetArkisto));
     sheetArkisto.addEventListener('click', (e) => { if (e.target === sheetArkisto) suljeSheet(sheetArkisto); });
 
+    // Tehtäväkortti (alalista + muistiinpanot + muokkaus)
+    sheetTehtava.addEventListener('click', (e) => { if (e.target === sheetTehtava) suljeSheet(sheetTehtava); });
+    document.getElementById('sulje-tehtava-btn').addEventListener('click', () => suljeSheet(sheetTehtava));
+    document.getElementById('ts-valmis-btn').addEventListener('click', () => {
+        const t = haeTehtava(sheetTehtava.dataset.tehtavaId);
+        if (t) { paivitaTehtavanTila(t.key, !t.tehty); suljeSheet(sheetTehtava); }
+    });
+    document.getElementById('ts-muokkaa-btn').addEventListener('click', avaaTehtavaMuokkaus);
+    document.getElementById('ts-arkistoi-btn').addEventListener('click', () => {
+        arkistoiTehtava(sheetTehtava.dataset.tehtavaId);
+        suljeSheet(sheetTehtava);
+    });
+    document.getElementById('ts-poista-btn').addEventListener('click', () => poistaTehtava(sheetTehtava.dataset.tehtavaId));
+    document.getElementById('lisaa-alitehtava-nappi').addEventListener('click', lisaaAlitehtava);
+    document.getElementById('uusi-alitehtava-teksti').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); lisaaAlitehtava(); }
+    });
+    document.getElementById('tehtava-kuvaus').addEventListener('change', (e) => {
+        const key = sheetTehtava.dataset.tehtavaId;
+        if (key) update(ref(database, `tehtavalista/${key}`), { kuvaus: e.target.value.trim() || null });
+    });
+    document.getElementById('ts-e-tallenna').addEventListener('click', tallennaTehtavaMuokkaus);
+    document.getElementById('ts-e-peruuta').addEventListener('click', () => {
+        tehtavaSheetEdit = false;
+        document.getElementById('ts-muokkaus').classList.add('hidden');
+        document.getElementById('ts-nakyma').classList.remove('hidden');
+    });
+    document.getElementById('ts-e-mp-toggle').addEventListener('change', (e) => {
+        document.getElementById('ts-e-maarapaiva').classList.toggle('hidden', !e.target.checked);
+    });
+    document.getElementById('ts-e-henkilot').addEventListener('click', (e) => {
+        if (e.target.classList.contains('assign-btn')) e.target.classList.toggle('active');
+    });
+
     // Välilehdet
     tabbar.addEventListener('click', (e) => {
         const btn = e.target.closest('.tab-btn');
@@ -590,6 +626,7 @@ function kuunteleTehtavia() {
         kaikkiTehtavat = [];
         snapshot.forEach(child => { kaikkiTehtavat.push({ key: child.key, ...child.val() }); });
         piirraTehtavalista();
+        paivitaTehtavaSheet();
         if (!sheetArkisto.classList.contains('hidden')) avaaArkisto();
     }, (error) => {
         console.error('Tehtäväkuuntelija epäonnistui:', error);
@@ -1950,13 +1987,16 @@ function rakennaTehtavaItemView(itemElement, tehtava) {
     let metaTeksti = '';
     if (tehtava.maarapaiva) {
         const pvm = new Date(tehtava.maarapaiva);
-        metaTeksti += `📅 ${pvm.toLocaleDateString('fi-FI', { day: 'numeric', month: 'numeric' })} ${kloMerkkijono(pvm)} · `;
+        metaTeksti += `🔔 ${pvm.toLocaleDateString('fi-FI', { day: 'numeric', month: 'numeric' })} ${kloMerkkijono(pvm)} · `;
     }
+    const ali = alitehtavatLista(tehtava);
+    if (ali.length) metaTeksti += `☑ ${ali.filter(a => a.tehty).length}/${ali.length} · `;
     metaTeksti += `Lisäsi ${tehtava.luoja}`;
     if (tehtava.muokattuAika) metaTeksti += ` (muokattu)`;
     meta.textContent = metaTeksti;
     tiedot.appendChild(teksti);
     tiedot.appendChild(meta);
+    tiedot.addEventListener('click', () => avaaTehtavaSheet(tehtava));
     vasen.appendChild(checkbox);
     vasen.appendChild(tiedot);
     const oikea = document.createElement('div');
@@ -1977,7 +2017,8 @@ function rakennaTehtavaItemView(itemElement, tehtava) {
     const muokkaaNappi = document.createElement('button');
     muokkaaNappi.className = 'muokkaa-tehtava-nappi';
     muokkaaNappi.innerHTML = '✏️';
-    muokkaaNappi.addEventListener('click', () => siirryMuokkaustilaan(itemElement, tehtava));
+    muokkaaNappi.title = 'Avaa tehtävä';
+    muokkaaNappi.addEventListener('click', () => avaaTehtavaSheet(tehtava));
     const arkistoiNappi = document.createElement('button');
     arkistoiNappi.className = 'arkistoi-tehtava-nappi';
     arkistoiNappi.innerHTML = '📥';
@@ -1989,60 +2030,7 @@ function rakennaTehtavaItemView(itemElement, tehtava) {
     itemElement.appendChild(oikea);
 }
 
-function siirryMuokkaustilaan(itemElement, tehtava) {
-    itemElement.classList.add('is-editing');
-    itemElement.innerHTML = '';
-    const vasen = document.createElement('div');
-    vasen.className = 'tehtava-vasen';
-    const editInput = document.createElement('input');
-    editInput.type = 'text';
-    editInput.value = tehtava.teksti;
-    editInput.className = 'edit-input';
-    const editMp = document.createElement('input');
-    editMp.type = 'datetime-local';
-    editMp.value = tehtava.maarapaiva || '';
-    vasen.appendChild(editInput);
-    vasen.appendChild(editMp);
-    const oikea = document.createElement('div');
-    oikea.className = 'tehtava-oikea edit-controls';
-    const assignContainer = document.createElement('div');
-    assignContainer.className = 'assign-buttons';
-    HENKILOT.forEach(nimi => {
-        const btn = document.createElement('button');
-        btn.className = 'assign-btn';
-        btn.dataset.assignee = nimi;
-        btn.textContent = nimi.charAt(0);
-        if (tehtava.kohdistettu && tehtava.kohdistettu.includes(nimi)) btn.classList.add('active');
-        btn.addEventListener('click', () => btn.classList.toggle('active'));
-        assignContainer.appendChild(btn);
-    });
-    const tallennaNappi = document.createElement('button');
-    tallennaNappi.textContent = 'Tallenna';
-    tallennaNappi.className = 'btn-primary pieni-nappi';
-    tallennaNappi.addEventListener('click', () => {
-        const uusiTeksti = editInput.value.trim();
-        if (uusiTeksti) {
-            const kohdistukset = Array.from(assignContainer.querySelectorAll('.assign-btn.active')).map(b => b.dataset.assignee);
-            update(ref(database, `tehtavalista/${tehtava.key}`), {
-                teksti: uusiTeksti,
-                kohdistettu: kohdistukset,
-                maarapaiva: editMp.value || null,
-                muokannut: nykyinenKayttaja,
-                muokattuAika: serverTimestamp()
-            });
-        }
-    });
-    const peruutaNappi = document.createElement('button');
-    peruutaNappi.textContent = 'Peruuta';
-    peruutaNappi.className = 'btn-ghost pieni-nappi';
-    peruutaNappi.addEventListener('click', () => rakennaTehtavaItemView(itemElement, tehtava));
-    oikea.appendChild(assignContainer);
-    oikea.appendChild(tallennaNappi);
-    oikea.appendChild(peruutaNappi);
-    itemElement.appendChild(vasen);
-    itemElement.appendChild(oikea);
-    editInput.focus();
-}
+let korostaTehtavaKey = null; // tuore lisäys korostetaan + scrollataan näkyviin
 
 let korostaTehtavaKey = null; // tuore lisäys korostetaan + scrollataan näkyviin
 
@@ -2081,6 +2069,136 @@ function lisaaTehtava() {
         console.error('Tehtävän lisäys kaatui:', err);
         naytaIlmoitus(`Lisäys epäonnistui (${err.message || 'virhe'})`, 6000);
     }
+}
+
+function haeTehtava(key) { return kaikkiTehtavat.find(t => t.key === key) || null; }
+
+// Firebase voi palauttaa taulukot oliona riippuen avaimista — normalisoi aina
+function alitehtavatLista(t) {
+    if (!t.alitehtavat) return [];
+    return Array.isArray(t.alitehtavat) ? t.alitehtavat.slice() : Object.values(t.alitehtavat);
+}
+
+// ============ TEHTÄVÄKORTTI (modaali) ============
+function avaaTehtavaSheet(tehtava) {
+    tehtavaSheetEdit = false;
+    sheetTehtava.dataset.tehtavaId = tehtava.key;
+    document.getElementById('ts-muokkaus').classList.add('hidden');
+    document.getElementById('ts-nakyma').classList.remove('hidden');
+    document.getElementById('uusi-alitehtava-teksti').value = '';
+    document.getElementById('tehtava-kuvaus').value = tehtava.kuvaus || '';
+    avaaSheet(sheetTehtava);
+    paivitaTehtavaSheet();
+}
+
+// Pehmeä päivitys kun data muuttuu — ei koskaan ylikirjoita kesken olevaa muokkausta
+function paivitaTehtavaSheet() {
+    if (sheetTehtava.classList.contains('hidden')) return;
+    const t = haeTehtava(sheetTehtava.dataset.tehtavaId);
+    if (!t || t.tila === 'arkistoitu') { suljeSheet(sheetTehtava); return; }
+    if (tehtavaSheetEdit) return;
+    document.getElementById('tehtava-sheet-otsikko').textContent = t.teksti;
+    let metaTeksti = '';
+    if (t.maarapaiva) {
+        const mp = new Date(t.maarapaiva);
+        metaTeksti += `🔔 ${mp.toLocaleDateString('fi-FI', { day: 'numeric', month: 'numeric' })} ${kloMerkkijono(mp)} · `;
+    }
+    metaTeksti += `Lisäsi ${t.luoja || '?'}`;
+    if (t.kohdistettu && t.kohdistettu.length) metaTeksti += ` · ${t.kohdistettu.join(', ')}`;
+    if (t.muokattuAika) metaTeksti += ' (muokattu)';
+    document.getElementById('ts-meta').textContent = metaTeksti;
+    piirraAlitehtavat(t);
+    const ta = document.getElementById('tehtava-kuvaus');
+    if (document.activeElement !== ta && ta.value !== (t.kuvaus || '')) ta.value = t.kuvaus || '';
+    document.getElementById('ts-valmis-btn').textContent = t.tehty ? '↩ Palauta' : 'Valmis ✓';
+}
+
+function piirraAlitehtavat(t) {
+    const kont = document.getElementById('ts-ali-lista');
+    kont.innerHTML = '';
+    const lista = alitehtavatLista(t);
+    const valmiit = lista.filter(a => a.tehty).length;
+    document.getElementById('ts-ali-otsikko').textContent =
+        lista.length ? `Alakohteet (${valmiit}/${lista.length})` : 'Alakohteet';
+    lista.forEach((a, i) => {
+        const rivi = document.createElement('div');
+        rivi.className = 'alitehtava-rivi' + (a.tehty ? ' tehty' : '');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = !!a.tehty;
+        cb.addEventListener('change', () => {
+            const l = alitehtavatLista(haeTehtava(t.key) || t);
+            l[i] = { ...l[i], tehty: cb.checked };
+            update(ref(database, `tehtavalista/${t.key}`), { alitehtavat: l });
+        });
+        const span = document.createElement('span');
+        span.className = 'alitehtava-teksti';
+        span.textContent = a.teksti;
+        const del = document.createElement('button');
+        del.className = 'alitehtava-poista';
+        del.textContent = '×';
+        del.addEventListener('click', () => {
+            const l = alitehtavatLista(haeTehtava(t.key) || t);
+            l.splice(i, 1);
+            update(ref(database, `tehtavalista/${t.key}`), { alitehtavat: l });
+        });
+        rivi.appendChild(cb);
+        rivi.appendChild(span);
+        rivi.appendChild(del);
+        kont.appendChild(rivi);
+    });
+}
+
+function lisaaAlitehtava() {
+    const input = document.getElementById('uusi-alitehtava-teksti');
+    const teksti = input.value.trim();
+    const key = sheetTehtava.dataset.tehtavaId;
+    if (!teksti || !key) return;
+    const l = alitehtavatLista(haeTehtava(key) || {});
+    l.push({ teksti, tehty: false });
+    update(ref(database, `tehtavalista/${key}`), { alitehtavat: l });
+    input.value = '';
+    input.focus();
+    haptic();
+}
+
+function avaaTehtavaMuokkaus() {
+    const t = haeTehtava(sheetTehtava.dataset.tehtavaId);
+    if (!t) return;
+    tehtavaSheetEdit = true;
+    document.getElementById('ts-e-teksti').value = t.teksti || '';
+    const mpT = document.getElementById('ts-e-mp-toggle');
+    const mpI = document.getElementById('ts-e-maarapaiva');
+    mpT.checked = !!t.maarapaiva;
+    mpI.value = t.maarapaiva || '';
+    mpI.classList.toggle('hidden', !t.maarapaiva);
+    document.querySelectorAll('#ts-e-henkilot .assign-btn').forEach(b =>
+        b.classList.toggle('active', !!(t.kohdistettu && t.kohdistettu.includes(b.dataset.assignee))));
+    document.getElementById('ts-nakyma').classList.add('hidden');
+    document.getElementById('ts-muokkaus').classList.remove('hidden');
+    document.getElementById('ts-e-teksti').focus();
+}
+
+function tallennaTehtavaMuokkaus() {
+    const key = sheetTehtava.dataset.tehtavaId;
+    const teksti = document.getElementById('ts-e-teksti').value.trim();
+    if (!teksti || !key) return;
+    const mpT = document.getElementById('ts-e-mp-toggle');
+    const mpI = document.getElementById('ts-e-maarapaiva');
+    const kohd = Array.from(document.querySelectorAll('#ts-e-henkilot .assign-btn.active'))
+        .map(b => b.dataset.assignee);
+    update(ref(database, `tehtavalista/${key}`), {
+        teksti,
+        kohdistettu: kohd,
+        maarapaiva: (mpT.checked && mpI.value) ? mpI.value : null,
+        muokannut: nykyinenKayttaja,
+        muokattuAika: serverTimestamp()
+    }).then(() => {
+        tehtavaSheetEdit = false;
+        document.getElementById('ts-muokkaus').classList.add('hidden');
+        document.getElementById('ts-nakyma').classList.remove('hidden');
+        paivitaTehtavaSheet();
+    });
 }
 
 function paivitaTehtavanTila(key, onkoTehty) {

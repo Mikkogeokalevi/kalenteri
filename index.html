@@ -371,6 +371,53 @@
         </div>
     </div>
 
+    <!-- ============ SHEET: TEHTÄVÄN TIEDOT (alalista + muistiinpanot) ============ -->
+    <div id="sheet-tehtava" class="sheet-overlay hidden">
+        <div class="sheet">
+            <div class="sheet-kahva"></div>
+            <div class="sheet-header">
+                <h2 id="tehtava-sheet-otsikko">Tehtävä</h2>
+                <button id="sulje-tehtava-btn" class="icon-btn">&times;</button>
+            </div>
+            <div id="ts-nakyma">
+                <div id="ts-meta" class="tehtava-sheet-meta"></div>
+                <div class="ts-osio-otsikko" id="ts-ali-otsikko">Alakohteet</div>
+                <div id="ts-ali-lista"></div>
+                <div class="lisaa-alitehtava-lomake">
+                    <input type="text" id="uusi-alitehtava-teksti" placeholder="Lisää rivi, esim. maitoa">
+                    <button id="lisaa-alitehtava-nappi" class="btn-primary pieni-nappi">+</button>
+                </div>
+                <div class="ts-osio-otsikko">Muistiinpanot</div>
+                <textarea id="tehtava-kuvaus" rows="3" placeholder="Vapaata tekstiä, esim. lisätiedot tehtävästä..."></textarea>
+                <div class="sheet-napit ts-napit">
+                    <button id="ts-valmis-btn" class="btn-primary">Valmis ✓</button>
+                    <button id="ts-muokkaa-btn" class="btn-secondary">Muokkaa</button>
+                    <button id="ts-arkistoi-btn" class="btn-secondary">Arkistoi</button>
+                    <button id="ts-poista-btn" class="btn-danger">Poista</button>
+                </div>
+            </div>
+            <div id="ts-muokkaus" class="hidden">
+                <input type="text" id="ts-e-teksti" class="edit-input" placeholder="Tehtävän otsikko">
+                <div class="maarapaiva-container">
+                    <label>
+                        <input type="checkbox" id="ts-e-mp-toggle"> Muistutus klo
+                    </label>
+                    <input type="datetime-local" id="ts-e-maarapaiva" class="hidden">
+                </div>
+                <div id="ts-e-henkilot" class="assign-buttons">
+                    <small>Kenelle:</small>
+                    <button class="assign-btn" data-assignee="Toni">T</button>
+                    <button class="assign-btn" data-assignee="Kaisa">K</button>
+                    <button class="assign-btn" data-assignee="Oona">O</button>
+                </div>
+                <div class="sheet-napit">
+                    <button id="ts-e-tallenna" class="btn-primary">Tallenna</button>
+                    <button id="ts-e-peruuta" class="btn-ghost">Peruuta</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ============ SHEET: ASETUKSET ============ -->
     <div id="sheet-asetukset" class="sheet-overlay hidden">
         <div class="sheet">
