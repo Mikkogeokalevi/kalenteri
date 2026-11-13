@@ -576,10 +576,10 @@ input.kytkin:checked::before { transform: translateX(20px); }
 .lisaa-alitehtava-lomake { display: flex; gap: 8px; }
 .lisaa-alitehtava-lomake input { flex: 1; }
 #tehtava-kuvaus { width: 100%; resize: vertical; min-height: 70px; }
-.ts-napit { margin-top: 18px; }
+/* Kortin napit aina pystyyn (ylikirjoittaa .sheet-napit-riviasettelun) */
+.ts-napit { margin-top: 18px; flex-direction: column; }
 .ts-nappipari { display: flex; gap: 8px; }
 .ts-nappipari > button { flex: 1; }
-@media (max-width: 899px) { .ts-nappipari > button { width: auto; } }
 #ts-e-teksti { width: 100%; margin-bottom: 4px; }
 #ts-muokkaus .maarapaiva-container { margin-top: 10px; }
 
