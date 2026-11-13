@@ -30,7 +30,7 @@ if ('launchQueue' in window) {
 }
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '2.8.2';
+const VERSIO = '2.9.0';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: '--c-toni', Kaisa: '--c-kaisa', Oona: '--c-oona', perhe: '--c-perhe' };
@@ -1858,9 +1858,7 @@ function tuoIcsTiedosto(file) {
 // ============ TEHTÄVÄT ============
 function piirraTehtavalista() {
     tehtavatContainer.innerHTML = '';
-    const nakyvat = kaikkiTehtavat
-        .filter(t => t.tila !== 'arkistoitu')
-        .sort((a, b) => a.tehty - b.tehty);
+    const nakyvat = kaikkiTehtavat.filter(t => t.tila !== 'arkistoitu');
     const avoimet = nakyvat.filter(t => !t.tehty);
     avoimetTehtavatLaskuri.textContent = `${avoimet.length} avointa`;
     if (avoimet.length > 0) {
@@ -1871,9 +1869,26 @@ function piirraTehtavalista() {
         tehtavatContainer.innerHTML = '<p style="text-align:center;color:var(--text-3);">Lista on tyhjä. 🎉</p>';
         return;
     }
-    nakyvat.forEach(tehtava => {
+    // Ryhmät: hälytykselliset muistutukset (ajan mukaan) / lista / valmiit
+    const muistutukset = nakyvat.filter(t => !t.tehty && t.maarapaiva)
+        .sort((a, b) => new Date(a.maarapaiva) - new Date(b.maarapaiva));
+    const lista = nakyvat.filter(t => !t.tehty && !t.maarapaiva);
+    const tehdy = nakyvat.filter(t => t.tehty);
+
+    const lisaaOtsikko = (teksti) => {
+        const o = document.createElement('div');
+        o.className = 'tehtava-ryhma-otsikko';
+        o.textContent = teksti;
+        tehtavatContainer.appendChild(o);
+    };
+    const lisaaItem = (tehtava) => {
         const wrap = document.createElement('div');
         wrap.className = 'tehtava-wrap';
+        if (tehtava.key === korostaTehtavaKey) {
+            wrap.classList.add('uusi-flash');
+            korostaTehtavaKey = null;
+            setTimeout(() => wrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 100);
+        }
         const tausta = document.createElement('div');
         tausta.className = 'swipe-tausta';
         tausta.textContent = tehtava.tehty ? '↩' : '✓';
@@ -1886,7 +1901,13 @@ function piirraTehtavalista() {
         wrap.appendChild(item);
         lisaaTehtavaSwipe(item, tehtava);
         tehtavatContainer.appendChild(wrap);
-    });
+    };
+    if (muistutukset.length > 0) { lisaaOtsikko('🔔 Muistutukset'); muistutukset.forEach(lisaaItem); }
+    if (lista.length > 0) {
+        if (muistutukset.length > 0) lisaaOtsikko('Lista');
+        lista.forEach(lisaaItem);
+    }
+    if (tehdy.length > 0) { lisaaOtsikko('Valmiit'); tehdy.forEach(lisaaItem); }
 }
 
 function maaritaTehtavanTila(tehtava) {
@@ -2014,6 +2035,8 @@ function siirryMuokkaustilaan(itemElement, tehtava) {
     editInput.focus();
 }
 
+let korostaTehtavaKey = null; // tuore lisäys korostetaan + scrollataan näkyviin
+
 function lisaaTehtava() {
     const teksti = uusiTehtavaTeksti.value.trim();
     if (!teksti) return;
@@ -2027,13 +2050,20 @@ function lisaaTehtava() {
     const mpToggle = document.getElementById('lisaa-maarapaiva-toggle');
     const mpInput = document.getElementById('uusi-tehtava-maarapaiva');
     if (mpToggle.checked && mpInput.value) uusi.maarapaiva = mpInput.value;
-    push(ref(database, 'tehtavalista'), uusi).then(() => {
+    const uusiRef = push(ref(database, 'tehtavalista'), uusi);
+    uusiRef.then(() => {
+        korostaTehtavaKey = uusiRef.key;
         uusiTehtavaTeksti.value = '';
         document.querySelectorAll('#lisaa-tehtava-henkilot .assign-btn').forEach(b => b.classList.remove('active'));
         mpToggle.checked = false;
         mpInput.classList.add('hidden');
         mpInput.value = '';
+        // Varmista ettei lista ole jäänyt pienennettyä piiloon
+        if (tehtavalistaSisalto) tehtavalistaSisalto.classList.remove('hidden');
         haptic();
+    }).catch(err => {
+        console.error('Tehtävän lisäys epäonnistui:', err);
+        naytaIlmoitus(`Lisäys epäonnistui (${err.code || 'virhe'})`, 5000);
     });
 }
 
@@ -2089,6 +2119,8 @@ function vaihdaPaneli(paneli) {
         b.classList.toggle('active', b.dataset.panel === paneli));
     if (paneli === 'historia') kuunteleHistoriaa();
     else lopetaHistoriaKuuntelu();
+    // Tehtävät-paneelissa lista ei saa olla pienennetty piiloon
+    if (paneli === 'tehtavat' && tehtavalistaSisalto) tehtavalistaSisalto.classList.remove('hidden');
     haptic();
 }
 
@@ -2240,9 +2272,11 @@ function alustaMuistutukset() {
     muistutusIntervalli = setInterval(() => {
         tarkistaMuistutukset();
         tarkistaTehtavaMuistutukset();
+        tarkistaTehtavaHalyt();
     }, 30000);
     tarkistaMuistutukset();
     tarkistaTehtavaMuistutukset();
+    tarkistaTehtavaHalyt();
 }
 
 function muistutettuJo(avain) {
@@ -2283,6 +2317,22 @@ function tarkistaTehtavaMuistutukset() {
     } else {
         localStorage.setItem('muistutus-tehtavat-pvm', tanaan);
     }
+}
+
+// Yksittäisten tehtävien hälytykset määräpäivän ajankohtana (tarkistetaan 30 s välein)
+function tarkistaTehtavaHalyt() {
+    if (!muistutusAsetukset.kaytossa || !nykyinenKayttaja) return;
+    const nyt = Date.now();
+    kaikkiTehtavat.forEach(t => {
+        if (t.tehty || t.tila === 'arkistoitu' || !t.maarapaiva) return;
+        if (t.kohdistettu && t.kohdistettu.length > 0 && !t.kohdistettu.includes(nykyinenKayttaja)) return;
+        const mp = new Date(t.maarapaiva).getTime();
+        if (isNaN(mp)) return;
+        // Laukaise kerran kun aika koittaa — sietää myös myöhässä avaamisen (30 min ikkuna)
+        if (mp <= nyt && nyt - mp < 30 * 60000 && !muistutettuJo(`${t.key}|mp|${t.maarapaiva}`)) {
+            lahetaMuistutus('Muistutus', t.teksti);
+        }
+    });
 }
 
 function lahetaMuistutus(otsikko, viesti) {
