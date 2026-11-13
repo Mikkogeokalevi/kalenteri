@@ -1,6 +1,6 @@
-// Service Worker - Kauppisen perhekalenteri v3.0.2
+// Service Worker - Kauppisen perhekalenteri v3.0.3
 // HUOM: pidä versionumero synkassa script.js:n VERSIO-vakion kanssa!
-const CACHE_NAME = 'kalenteri-v3.0.2';
+const CACHE_NAME = 'kalenteri-v3.0.3';
 const urlsToCache = [
   './',
   './index.html',

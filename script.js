@@ -30,7 +30,7 @@ if ('launchQueue' in window) {
 }
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '3.0.2';
+const VERSIO = '3.0.3';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: '--c-toni', Kaisa: '--c-kaisa', Oona: '--c-oona', perhe: '--c-perhe' };
@@ -508,6 +508,7 @@ function lisaaKuuntelijat() {
     // Tehtäväkortti (alalista + muistiinpanot + muokkaus)
     sheetTehtava.addEventListener('click', (e) => { if (e.target === sheetTehtava) suljeSheet(sheetTehtava); });
     document.getElementById('sulje-tehtava-btn').addEventListener('click', () => suljeSheet(sheetTehtava));
+    document.getElementById('ts-sulje-btn').addEventListener('click', () => suljeSheet(sheetTehtava));
     document.getElementById('ts-valmis-btn').addEventListener('click', () => {
         const t = haeTehtava(sheetTehtava.dataset.tehtavaId);
         if (t) { paivitaTehtavanTila(t.key, !t.tehty); suljeSheet(sheetTehtava); }
@@ -2109,7 +2110,14 @@ function paivitaTehtavaSheet() {
     piirraAlitehtavat(t);
     const ta = document.getElementById('tehtava-kuvaus');
     if (document.activeElement !== ta && ta.value !== (t.kuvaus || '')) ta.value = t.kuvaus || '';
-    document.getElementById('ts-valmis-btn').textContent = t.tehty ? '↩ Palauta' : 'Valmis ✓';
+    const vBtn = document.getElementById('ts-valmis-btn');
+    if (t.tehty) {
+        vBtn.textContent = '✓ Valmis — palauta avoimeksi';
+        vBtn.className = 'btn-primary';
+    } else {
+        vBtn.textContent = 'Merkitse valmiiksi ✓';
+        vBtn.className = 'btn-secondary';
+    }
 }
 
 function piirraAlitehtavat(t) {

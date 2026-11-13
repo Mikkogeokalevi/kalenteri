@@ -390,11 +390,16 @@
                 <div class="ts-osio-otsikko">Muistiinpanot</div>
                 <textarea id="tehtava-kuvaus" rows="3" placeholder="Vapaata tekstiä, esim. lisätiedot tehtävästä..."></textarea>
                 <div class="sheet-napit ts-napit">
-                    <button id="ts-valmis-btn" class="btn-primary">Valmis ✓</button>
-                    <button id="ts-muokkaa-btn" class="btn-secondary">Muokkaa</button>
-                    <button id="ts-kopioi-btn" class="btn-secondary">Kopioi</button>
-                    <button id="ts-arkistoi-btn" class="btn-secondary">Arkistoi</button>
-                    <button id="ts-poista-btn" class="btn-danger">Poista</button>
+                    <button id="ts-sulje-btn" class="btn-ghost">Sulje</button>
+                    <button id="ts-valmis-btn" class="btn-secondary">Merkitse valmiiksi ✓</button>
+                    <div class="ts-nappipari">
+                        <button id="ts-muokkaa-btn" class="btn-secondary">Muokkaa</button>
+                        <button id="ts-kopioi-btn" class="btn-secondary">Kopioi</button>
+                    </div>
+                    <div class="ts-nappipari">
+                        <button id="ts-arkistoi-btn" class="btn-secondary">Arkistoi</button>
+                        <button id="ts-poista-btn" class="btn-danger">Poista</button>
+                    </div>
                 </div>
             </div>
             <div id="ts-muokkaus" class="hidden">
