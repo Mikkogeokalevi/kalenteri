@@ -30,7 +30,7 @@ if ('launchQueue' in window) {
 }
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '2.9.1';
+const VERSIO = '2.9.2';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: '--c-toni', Kaisa: '--c-kaisa', Oona: '--c-oona', perhe: '--c-perhe' };
@@ -497,7 +497,9 @@ function lisaaKuuntelijat() {
     document.getElementById('lisaa-maarapaiva-toggle').addEventListener('change', (e) => {
         document.getElementById('uusi-tehtava-maarapaiva').classList.toggle('hidden', !e.target.checked);
     });
-    avaaArkistoBtn.addEventListener('click', avaaArkisto);
+    // Arkisto-nappi on tehtavalista-toggle-otsikon sisällä — estä klikin kupla,
+    // ettei lista pienene aina arkistoa avattaessa
+    avaaArkistoBtn.addEventListener('click', (e) => { e.stopPropagation(); avaaArkisto(); });
     document.getElementById('sulje-arkisto-modal-btn').addEventListener('click', () => suljeSheet(sheetArkisto));
     sheetArkisto.addEventListener('click', (e) => { if (e.target === sheetArkisto) suljeSheet(sheetArkisto); });
 
@@ -571,7 +573,7 @@ function kuunteleHistoriaa() {
         query(ref(database, 'tapahtumat'), orderByChild('alku'), endAt(synkkausRajaISO())),
         (snapshot) => {
             historiaVanhat = [];
-            snapshot.forEach(child => historiaVanhat.push({ key: child.key, ...child.val() }));
+            snapshot.forEach(child => { historiaVanhat.push({ key: child.key, ...child.val() }); });
             paivitaHistoriaVuodet();
             piirraHistoria();
         });
@@ -586,7 +588,7 @@ function kuunteleTehtavia() {
     const tehtavatRef = ref(database, 'tehtavalista');
     unsubscribeFromTasks = onValue(tehtavatRef, (snapshot) => {
         kaikkiTehtavat = [];
-        snapshot.forEach(child => kaikkiTehtavat.push({ key: child.key, ...child.val() }));
+        snapshot.forEach(child => { kaikkiTehtavat.push({ key: child.key, ...child.val() }); });
         piirraTehtavalista();
         if (!sheetArkisto.classList.contains('hidden')) avaaArkisto();
     }, (error) => {
