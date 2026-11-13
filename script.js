@@ -30,7 +30,7 @@ if ('launchQueue' in window) {
 }
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '3.0.1';
+const VERSIO = '3.0.2';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: '--c-toni', Kaisa: '--c-kaisa', Oona: '--c-oona', perhe: '--c-perhe' };
@@ -2030,8 +2030,6 @@ function rakennaTehtavaItemView(itemElement, tehtava) {
     itemElement.appendChild(vasen);
     itemElement.appendChild(oikea);
 }
-
-let korostaTehtavaKey = null; // tuore lisäys korostetaan + scrollataan näkyviin
 
 let korostaTehtavaKey = null; // tuore lisäys korostetaan + scrollataan näkyviin
 
