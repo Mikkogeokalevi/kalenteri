@@ -161,6 +161,7 @@
                 <div class="tulevat-tapahtumat tulevat-box">
                     <h3>Tulevat tapahtumat</h3>
                     <div id="tulevat-tapahtumat-lista"></div>
+                    <button id="avaa-menneet-modal-btn" class="btn-secondary menneet-nappi">Menneet tapahtumat</button>
                 </div>
 
                 <div class="tehtavalista tehtavat-box">
@@ -173,26 +174,8 @@
                     </div>
                     <div id="tehtavalista-sisalto">
                         <div id="tehtavat-container"></div>
-                        <div class="lisaa-tehtava-container">
-                            <div class="maarapaiva-container">
-                                <label>
-                                    <input type="checkbox" id="lisaa-maarapaiva-toggle"> Muistutus klo
-                                </label>
-                                <input type="datetime-local" id="uusi-tehtava-maarapaiva" class="hidden">
-                            </div>
-                            <div id="lisaa-tehtava-henkilot" class="assign-buttons">
-                                <small>Kenelle:</small>
-                                <button class="assign-btn" data-assignee="Toni">T</button>
-                                <button class="assign-btn" data-assignee="Kaisa">K</button>
-                                <button class="assign-btn" data-assignee="Oona">O</button>
-                            </div>
-                            <div class="lisaa-tehtava-lomake">
-                                <input type="text" id="uusi-tehtava-teksti" placeholder="Kirjoita uusi tehtävä...">
-                                <button id="lisaa-tehtava-nappi" class="btn-primary">Lisää</button>
-                            </div>
-                        </div>
+                        <button id="uusi-tehtava-btn" class="btn-primary uusi-tehtava-nappi">＋ Lisää uusi tehtävä</button>
                     </div>
-                    <button id="avaa-menneet-modal-btn" class="btn-secondary tulevat-box">Menneet tapahtumat</button>
                 </div>
             </aside>
         </main>
@@ -380,6 +363,21 @@
                 <button id="sulje-tehtava-btn" class="icon-btn">&times;</button>
             </div>
             <div id="ts-nakyma">
+                <div id="ts-e-lohko" class="hidden">
+                    <input type="text" id="ts-e-teksti" class="edit-input" placeholder="Tehtävän otsikko">
+                    <div class="maarapaiva-container">
+                        <label>
+                            <input type="checkbox" id="ts-e-mp-toggle"> Muistutus klo
+                        </label>
+                        <input type="datetime-local" id="ts-e-maarapaiva" class="hidden">
+                    </div>
+                    <div id="ts-e-henkilot" class="assign-buttons">
+                        <small>Kenelle:</small>
+                        <button class="assign-btn" data-assignee="Toni">T</button>
+                        <button class="assign-btn" data-assignee="Kaisa">K</button>
+                        <button class="assign-btn" data-assignee="Oona">O</button>
+                    </div>
+                </div>
                 <div id="ts-meta" class="tehtava-sheet-meta"></div>
                 <div class="ts-osio-otsikko" id="ts-ali-otsikko">Alakohteet</div>
                 <div id="ts-ali-lista"></div>
@@ -389,7 +387,7 @@
                 </div>
                 <div class="ts-osio-otsikko">Muistiinpanot</div>
                 <textarea id="tehtava-kuvaus" rows="3" placeholder="Vapaata tekstiä, esim. lisätiedot tehtävästä..."></textarea>
-                <div class="sheet-napit ts-napit">
+                <div class="sheet-napit ts-napit" id="ts-napit">
                     <button id="ts-sulje-btn" class="btn-secondary">Sulje</button>
                     <button id="ts-valmis-btn" class="btn-secondary">Merkitse valmiiksi ✓</button>
                     <div class="ts-nappipari">
@@ -403,19 +401,6 @@
                 </div>
             </div>
             <div id="ts-muokkaus" class="hidden">
-                <input type="text" id="ts-e-teksti" class="edit-input" placeholder="Tehtävän otsikko">
-                <div class="maarapaiva-container">
-                    <label>
-                        <input type="checkbox" id="ts-e-mp-toggle"> Muistutus klo
-                    </label>
-                    <input type="datetime-local" id="ts-e-maarapaiva" class="hidden">
-                </div>
-                <div id="ts-e-henkilot" class="assign-buttons">
-                    <small>Kenelle:</small>
-                    <button class="assign-btn" data-assignee="Toni">T</button>
-                    <button class="assign-btn" data-assignee="Kaisa">K</button>
-                    <button class="assign-btn" data-assignee="Oona">O</button>
-                </div>
                 <div class="sheet-napit">
                     <button id="ts-e-tallenna" class="btn-primary">Tallenna</button>
                     <button id="ts-e-peruuta" class="btn-ghost">Peruuta</button>

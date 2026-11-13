@@ -529,11 +529,11 @@ input.kytkin:checked::before { transform: translateX(20px); }
 .edit-controls .assign-buttons { margin: 0; }
 .tehtava-item.is-editing { flex-direction: column; align-items: stretch; }
 .tehtava-item.is-editing .tehtava-vasen { flex-direction: column; align-items: stretch; }
-.lisaa-tehtava-container { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+.uusi-tehtava-nappi { width: 100%; margin-top: 12px; }
+.menneet-nappi { width: 100%; margin-top: 10px; }
 .maarapaiva-container { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
 .maarapaiva-container label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 500; }
 .maarapaiva-container input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
-#uusi-tehtava-maarapaiva { flex: 1; min-width: 200px; }
 .assign-buttons { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .assign-buttons small { color: var(--text-3); font-weight: 600; }
 .assign-btn {
@@ -542,9 +542,6 @@ input.kytkin:checked::before { transform: translateX(20px); }
     background: var(--surface-3); color: var(--text-2); border: 2px solid var(--border);
 }
 .assign-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-pehmeä); }
-.lisaa-tehtava-lomake { display: flex; gap: 8px; }
-.lisaa-tehtava-lomake input { flex: 1; }
-.lisaa-tehtava-lomake .btn-primary { flex-shrink: 0; padding: 12px 20px; }
 
 /* ---------- TEHTÄVÄKORTTI ---------- */
 .tehtava-sheet-meta { font-size: 0.8em; color: var(--text-3); margin-top: 2px; }
@@ -581,7 +578,8 @@ input.kytkin:checked::before { transform: translateX(20px); }
 .ts-nappipari { display: flex; gap: 8px; }
 .ts-nappipari > button { flex: 1; }
 #ts-e-teksti { width: 100%; margin-bottom: 4px; }
-#ts-muokkaus .maarapaiva-container { margin-top: 10px; }
+#ts-e-lohko .maarapaiva-container { margin-top: 10px; }
+#ts-e-lohko { margin-bottom: 12px; }
 
 /* ---------- TAB BAR (mobiili) ---------- */
 #tabbar {
