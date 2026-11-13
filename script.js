@@ -30,7 +30,7 @@ if ('launchQueue' in window) {
 }
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '2.9.0';
+const VERSIO = '2.9.1';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: '--c-toni', Kaisa: '--c-kaisa', Oona: '--c-oona', perhe: '--c-perhe' };
@@ -203,6 +203,7 @@ function viikonAlku(d) {
 
 function naytaIlmoitus(viesti, kesto = 3000) {
     ilmoitusEl.textContent = viesti;
+    ilmoitusEl.classList.remove('hidden'); // .hidden on display:none !important — pitää poistaa!
     ilmoitusEl.classList.add('nayta');
     clearTimeout(naytaIlmoitus._t);
     naytaIlmoitus._t = setTimeout(() => ilmoitusEl.classList.remove('nayta'), kesto);
@@ -557,6 +558,9 @@ function kuunteleTapahtumia() {
         naytaTulevat();
         paivitaHistoriaVuodet();
         piirraHistoria();
+    }, (error) => {
+        console.error('Tapahtumakuuntelija epäonnistui:', error);
+        naytaIlmoitus(`Tapahtumien lataus epäonnistui (${error.code || 'virhe'})`, 6000);
     });
 }
 
@@ -585,6 +589,9 @@ function kuunteleTehtavia() {
         snapshot.forEach(child => kaikkiTehtavat.push({ key: child.key, ...child.val() }));
         piirraTehtavalista();
         if (!sheetArkisto.classList.contains('hidden')) avaaArkisto();
+    }, (error) => {
+        console.error('Tehtäväkuuntelija epäonnistui:', error);
+        naytaIlmoitus(`Tehtävien lataus epäonnistui (${error.code || 'virhe'})`, 6000);
     });
 }
 
@@ -2040,31 +2047,38 @@ let korostaTehtavaKey = null; // tuore lisäys korostetaan + scrollataan näkyvi
 function lisaaTehtava() {
     const teksti = uusiTehtavaTeksti.value.trim();
     if (!teksti) return;
-    const kohdistetut = Array.from(document.querySelectorAll('#lisaa-tehtava-henkilot .assign-btn.active'))
-        .map(b => b.dataset.assignee);
-    const uusi = {
-        teksti, tehty: false, luoja: nykyinenKayttaja,
-        lisattyAika: serverTimestamp(), tila: 'aktiivinen'
-    };
-    if (kohdistetut.length > 0) uusi.kohdistettu = kohdistetut;
-    const mpToggle = document.getElementById('lisaa-maarapaiva-toggle');
-    const mpInput = document.getElementById('uusi-tehtava-maarapaiva');
-    if (mpToggle.checked && mpInput.value) uusi.maarapaiva = mpInput.value;
-    const uusiRef = push(ref(database, 'tehtavalista'), uusi);
-    uusiRef.then(() => {
+    try {
+        const kohdistetut = Array.from(document.querySelectorAll('#lisaa-tehtava-henkilot .assign-btn.active'))
+            .map(b => b.dataset.assignee);
+        const uusi = {
+            teksti, tehty: false, luoja: nykyinenKayttaja,
+            lisattyAika: serverTimestamp(), tila: 'aktiivinen'
+        };
+        if (kohdistetut.length > 0) uusi.kohdistettu = kohdistetut;
+        const mpToggle = document.getElementById('lisaa-maarapaiva-toggle');
+        const mpInput = document.getElementById('uusi-tehtava-maarapaiva');
+        if (mpToggle.checked && mpInput.value) uusi.maarapaiva = mpInput.value;
+        const uusiRef = push(ref(database, 'tehtavalista'), uusi);
+        // Optimistinen UI: tyhjennä lomake + korosta heti, onValue piirtää rivin
         korostaTehtavaKey = uusiRef.key;
         uusiTehtavaTeksti.value = '';
         document.querySelectorAll('#lisaa-tehtava-henkilot .assign-btn').forEach(b => b.classList.remove('active'));
         mpToggle.checked = false;
         mpInput.classList.add('hidden');
         mpInput.value = '';
-        // Varmista ettei lista ole jäänyt pienennettyä piiloon
         if (tehtavalistaSisalto) tehtavalistaSisalto.classList.remove('hidden');
         haptic();
-    }).catch(err => {
-        console.error('Tehtävän lisäys epäonnistui:', err);
-        naytaIlmoitus(`Lisäys epäonnistui (${err.code || 'virhe'})`, 5000);
-    });
+        uusiRef.then(() => {
+            naytaIlmoitus('Tehtävä lisätty ✓', 1800);
+        }).catch(err => {
+            console.error('Tehtävän lisäys epäonnistui:', err);
+            uusiTehtavaTeksti.value = teksti; // palauta teksti epäonnistuessa
+            naytaIlmoitus(`Lisäys epäonnistui (${err.code || 'virhe'})`, 6000);
+        });
+    } catch (err) {
+        console.error('Tehtävän lisäys kaatui:', err);
+        naytaIlmoitus(`Lisäys epäonnistui (${err.message || 'virhe'})`, 6000);
+    }
 }
 
 function paivitaTehtavanTila(key, onkoTehty) {
