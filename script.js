@@ -30,7 +30,7 @@ if ('launchQueue' in window) {
 }
 
 // --- Versio: päivitä AINA kun julkaiset muutoksia (myös sw.js CACHE_NAME!) ---
-const VERSIO = '3.0.0';
+const VERSIO = '3.0.1';
 
 // --- Vakiot ---
 const KAYTTAJA_VARIT = { Toni: '--c-toni', Kaisa: '--c-kaisa', Oona: '--c-oona', perhe: '--c-perhe' };
@@ -513,6 +513,7 @@ function lisaaKuuntelijat() {
         if (t) { paivitaTehtavanTila(t.key, !t.tehty); suljeSheet(sheetTehtava); }
     });
     document.getElementById('ts-muokkaa-btn').addEventListener('click', avaaTehtavaMuokkaus);
+    document.getElementById('ts-kopioi-btn').addEventListener('click', () => kopioiTehtava(sheetTehtava.dataset.tehtavaId));
     document.getElementById('ts-arkistoi-btn').addEventListener('click', () => {
         arkistoiTehtava(sheetTehtava.dataset.tehtavaId);
         suljeSheet(sheetTehtava);
@@ -2201,6 +2202,33 @@ function tallennaTehtavaMuokkaus() {
     });
 }
 
+// Kopioi tehtävä uudeksi pohjaksi — rastit nollautuvat, muistutusaikaa ei kopioida
+function kopioiTehtava(key) {
+    const t = haeTehtava(key);
+    if (!t) return;
+    const kopio = {
+        teksti: t.teksti,
+        tehty: false,
+        luoja: nykyinenKayttaja,
+        lisattyAika: serverTimestamp(),
+        tila: 'aktiivinen'
+    };
+    if (t.kohdistettu && t.kohdistettu.length) kopio.kohdistettu = t.kohdistettu.slice();
+    if (t.kuvaus) kopio.kuvaus = t.kuvaus;
+    const ali = alitehtavatLista(t);
+    if (ali.length) kopio.alitehtavat = ali.map(a => ({ teksti: a.teksti, tehty: false }));
+    const uusiRef = push(ref(database, 'tehtavalista'), kopio);
+    uusiRef.then(() => {
+        korostaTehtavaKey = uusiRef.key;
+        naytaIlmoitus('Tehtävä kopioitu ✓', 1800);
+        const uusi = haeTehtava(uusiRef.key);
+        if (uusi) avaaTehtavaSheet(uusi); // avaa kopio heti muokattavaksi
+    }).catch(err => {
+        console.error('Kopiointi epäonnistui:', err);
+        naytaIlmoitus(`Kopiointi epäonnistui (${err.code || 'virhe'})`, 5000);
+    });
+}
+
 function paivitaTehtavanTila(key, onkoTehty) {
     update(ref(database, `tehtavalista/${key}`), { tehty: onkoTehty });
     haptic();
@@ -2228,6 +2256,11 @@ function avaaArkisto() {
             teksti.textContent = tehtava.teksti;
             const nappulat = document.createElement('div');
             nappulat.className = 'arkisto-item-nappulat';
+            const kopioi = document.createElement('button');
+            kopioi.textContent = 'Kopioi';
+            kopioi.className = 'pieni-nappi';
+            kopioi.title = 'Luo uusi tehtävä tämän pohjalta';
+            kopioi.addEventListener('click', () => kopioiTehtava(tehtava.key));
             const palauta = document.createElement('button');
             palauta.textContent = 'Palauta';
             palauta.className = 'pieni-nappi';
@@ -2238,6 +2271,7 @@ function avaaArkisto() {
             poista.addEventListener('click', () => poistaTehtava(tehtava.key));
             nappulat.appendChild(palauta);
             nappulat.appendChild(poista);
+            nappulat.appendChild(kopioi);
             item.appendChild(teksti);
             item.appendChild(nappulat);
             arkistoidutTehtavatLista.appendChild(item);
